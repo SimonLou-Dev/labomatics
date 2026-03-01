@@ -1,0 +1,22 @@
+# Credentials — ne jamais versionner
+.env
+credentials.csv
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+dist/
+build/
+
+# Images OpenWrt téléchargées par le script build
+*.img
+*.img.gz
+*.bin
+
+# Éditeurs
+.vscode/
+.idea/
+*.swp
