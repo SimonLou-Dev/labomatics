@@ -160,7 +160,7 @@ def allocate_vxlan_subnet(proxmox, config: InfraConfig) -> tuple[str, str]:
     for subnet in pool_net.subnets(new_prefix=24):
         if subnet in used or subnet in excluded_nets:
             continue
-        router_ip = str(subnet.broadcast_address - 1)   # .254
+        router_ip = str(subnet.broadcast_address - 1)  # .254
         return router_ip, str(subnet)
 
     raise ValueError("Pool VXLAN épuisé — aucun subnet /24 disponible")

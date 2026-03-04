@@ -65,12 +65,14 @@ def load_students(csv_path: Path) -> list[Student]:
     with open(csv_path, newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for row in reader:
-            students.append(Student(
-                id=int(row["id"]),
-                nom=row["nom"].strip(),
-                prenom=row.get("prenom", "").strip(),
-                flavor=row.get("flavor", "").strip(),
-            ))
+            students.append(
+                Student(
+                    id=int(row["id"]),
+                    nom=row["nom"].strip(),
+                    prenom=row.get("prenom", "").strip(),
+                    flavor=row.get("flavor", "").strip(),
+                )
+            )
 
     if not students:
         raise ValueError(f"CSV vide : {csv_path}")

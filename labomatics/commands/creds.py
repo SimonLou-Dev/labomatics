@@ -30,7 +30,8 @@ def cmd_credentials(args) -> None:
         return
 
     table = Table(
-        show_header=True, header_style="bold magenta",
+        show_header=True,
+        header_style="bold magenta",
         title="Credentials étudiants",
     )
     table.add_column("Nom", style="cyan")

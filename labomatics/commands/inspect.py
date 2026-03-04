@@ -79,7 +79,9 @@ def cmd_vnets(args) -> None:
         console.print(f"[dim]Aucun VNet dans la zone '{zone_filter}'.[/dim]")
         return
 
-    table = Table(show_header=True, header_style="bold magenta", title=f"VNets — zone {zone_filter}")
+    table = Table(
+        show_header=True, header_style="bold magenta", title=f"VNets — zone {zone_filter}"
+    )
     table.add_column("VNet", style="cyan")
     table.add_column("Tag VXLAN", justify="right")
     table.add_column("Alias")
@@ -123,8 +125,7 @@ def cmd_vms(args) -> None:
         for m in sorted(members, key=lambda x: x.get("vmid", 0)):
             status = m.get("status", "—")
             status_str = (
-                f"[green]{status}[/green]" if status == "running"
-                else f"[dim]{status}[/dim]"
+                f"[green]{status}[/green]" if status == "running" else f"[dim]{status}[/dim]"
             )
             mem_mb = m.get("mem", 0) // (1024 * 1024)
             mem_max_mb = m.get("maxmem", 0) // (1024 * 1024)

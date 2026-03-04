@@ -41,7 +41,8 @@ def cmd_status(args) -> None:
         return
 
     table = Table(
-        show_header=True, header_style="bold magenta",
+        show_header=True,
+        header_style="bold magenta",
         title="État des ressources étudiants",
     )
     table.add_column("Étudiant", style="cyan", no_wrap=True)
@@ -64,7 +65,9 @@ def cmd_status(args) -> None:
 
         # CPU et RAM : seulement pour les VMs running
         cpu_used_cores = sum(m.get("cpus", 0) for m in all_members if m.get("status") == "running")
-        ram_used_mb = sum(m.get("maxmem", 0) for m in all_members if m.get("status") == "running") // (1024 * 1024)
+        ram_used_mb = sum(
+            m.get("maxmem", 0) for m in all_members if m.get("status") == "running"
+        ) // (1024 * 1024)
 
         # Disk : toutes les VMs
         disk_used_gb = sum(m.get("disk", 0) for m in all_members) // (1024 * 1024 * 1024)

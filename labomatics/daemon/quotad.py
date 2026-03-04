@@ -83,7 +83,9 @@ def _stop_highest_ram_vm(proxmox, pool_name: str, running: list[dict], openwrt_v
     # Exclure OpenWrt
     candidates = [m for m in running if m.get("vmid") != openwrt_vmid]
     if not candidates:
-        log.warning("[%s] Dépassement quota mais aucune VM arrêtable (uniquement OpenWrt)", pool_name)
+        log.warning(
+            "[%s] Dépassement quota mais aucune VM arrêtable (uniquement OpenWrt)", pool_name
+        )
         return
 
     # VM qui consomme le plus de RAM
@@ -98,12 +100,16 @@ def _stop_highest_ram_vm(proxmox, pool_name: str, running: list[dict], openwrt_v
 
     log.warning(
         "[%s] Quota dépassé → arrêt de %s (vmid=%s, RAM=%dMB)",
-        pool_name, name, vmid, victim.get("maxmem", 0) // (1024 * 1024),
+        pool_name,
+        name,
+        vmid,
+        victim.get("maxmem", 0) // (1024 * 1024),
     )
 
     try:
         # Annoter la description
         import datetime
+
         msg = f"[labomatics-quotad] Arrêtée automatiquement le {datetime.datetime.now():%Y-%m-%d %H:%M} — quota dépassé"
         proxmox.nodes(node).qemu(vmid).config.put(description=msg)
     except Exception:
@@ -162,7 +168,9 @@ def run_daemon() -> None:
         description="Daemon de surveillance des quotas labomatics",
     )
     parser.add_argument("--debug", action="store_true", help="Mode debug (logs verbeux)")
-    parser.add_argument("--once", action="store_true", help="Exécuter une seule vérification et quitter")
+    parser.add_argument(
+        "--once", action="store_true", help="Exécuter une seule vérification et quitter"
+    )
     args = parser.parse_args()
 
     _setup_logging(args.debug)

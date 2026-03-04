@@ -40,14 +40,18 @@ def cmd_recreate(args) -> None:
             f"[bold]VM VMID  :[/bold] {openwrt_vmid}  nœud={existing_vm.get('node')}"
         )
         if not getattr(args, "yes", False):
-            if not ask_confirm(f"Recréer la VM de {student.nom} ? (la VM sera détruite puis redéployée)"):
+            if not ask_confirm(
+                f"Recréer la VM de {student.nom} ? (la VM sera détruite puis redéployée)"
+            ):
                 console.print("[dim]Annulé.[/dim]")
                 return
 
         console.print(f"\n[bold red]Suppression de la VM {openwrt_vmid}...[/bold red]")
         destroy_student(proxmox, existing_vm["node"], openwrt_vmid, student.vm_name())
     else:
-        console.print(f"[yellow]⚠  Aucune VM trouvée pour {student.nom} (vmid={openwrt_vmid}), déploiement direct.[/yellow]")
+        console.print(
+            f"[yellow]⚠  Aucune VM trouvée pour {student.nom} (vmid={openwrt_vmid}), déploiement direct.[/yellow]"
+        )
 
     console.print(f"\n[bold green]Déploiement de {student.nom}...[/bold green]")
     deploy_student(proxmox, config, student)

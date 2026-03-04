@@ -36,6 +36,7 @@ def make_connection():
     """Crée la connexion Proxmox depuis la configuration."""
     from ..config import load_proxmox_settings
     from ..proxmox import connect
+
     settings = load_proxmox_settings()
     return connect(settings)
 
@@ -43,6 +44,7 @@ def make_connection():
 def load_students_from_config(config: "InfraConfig"):
     """Charge les étudiants depuis le CSV référencé dans infra.yaml."""
     from ..students import load_students
+
     csv_path = _find_students_csv(config)
     return load_students(csv_path)
 

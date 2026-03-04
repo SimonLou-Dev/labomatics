@@ -86,13 +86,17 @@ def deploy_student(
     target_node = pick_node(proxmox)
 
     # Clone complet depuis la template (stockage partagé requis)
-    task = proxmox.nodes(source_node).qemu(template_id).clone.post(
-        newid=vmid,
-        name=name,
-        full=1,
-        storage=storage,
-        target=target_node,
-        pool=student.pool_name(),
+    task = (
+        proxmox.nodes(source_node)
+        .qemu(template_id)
+        .clone.post(
+            newid=vmid,
+            name=name,
+            full=1,
+            storage=storage,
+            target=target_node,
+            pool=student.pool_name(),
+        )
     )
     wait_for_task(proxmox, source_node, task)
 
