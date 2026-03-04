@@ -1,5 +1,10 @@
 # labomatics
 
+[![PyPI](https://img.shields.io/pypi/v/labomatics)](https://pypi.org/project/labomatics)
+[![Python](https://img.shields.io/pypi/pyversions/labomatics)](https://pypi.org/project/labomatics)
+[![Licence: MIT](https://img.shields.io/badge/licence-MIT-blue.svg)](https://github.com/esgilabs/labomatics-cli/blob/main/LICENSE)
+[![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://esgilabs.github.io/labomatics-cli/)
+
 CLI Python pour déployer automatiquement des environnements de lab réseau
 sur un cluster Proxmox à partir d'un CSV d'étudiants.
 
@@ -184,11 +189,11 @@ labomatics-cli/
 
 ## Documentation
 
-- **[docs/admin/](docs/admin/)** — installation, configuration, CLI (administrateurs Proxmox)
-- **[docs/openwrt/](docs/openwrt/)** — réseau, DHCP, NAT, firewall (étudiants)
+- **[Admin](https://esgilabs.github.io/labomatics-cli/admin/overview/)** — installation, configuration, CLI (administrateurs Proxmox)
+- **[Utilisateur OpenWrt](https://esgilabs.github.io/labomatics-cli/openwrt/base/)** — réseau, DHCP, NAT, firewall (étudiants)
 
 ---
 
 ## Licence
 
-MIT — voir [LICENSE](LICENSE).
+MIT — voir [LICENSE](https://github.com/esgilabs/labomatics-cli/blob/main/LICENSE).
