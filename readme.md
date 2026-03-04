@@ -2,8 +2,8 @@
 
 [![PyPI](https://img.shields.io/pypi/v/labomatics)](https://pypi.org/project/labomatics)
 [![Python](https://img.shields.io/pypi/pyversions/labomatics)](https://pypi.org/project/labomatics)
-[![Licence: MIT](https://img.shields.io/badge/licence-MIT-blue.svg)](https://github.com/esgilabs/labomatics-cli/blob/main/LICENSE)
-[![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://esgilabs.github.io/labomatics-cli/)
+[![Licence: MIT](https://img.shields.io/badge/licence-MIT-blue.svg)](https://github.com/SimonLou-Dev/labomatrics/blob/main/LICENSE)
+[![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://simonlou-dev.github.io/labomatrics/)
 
 CLI Python pour déployer automatiquement des environnements de lab réseau
 sur un cluster Proxmox à partir d'un CSV d'étudiants.
@@ -40,7 +40,7 @@ pip install labomatics
 Ou depuis les sources :
 
 ```bash
-git clone https://github.com/esgilabs/labomatics-cli
+git clone https://github.com/SimonLou-Dev/labomatrics
 cd labomatics-cli
 pip install -e ".[dev]"
 ```
@@ -189,11 +189,11 @@ labomatics-cli/
 
 ## Documentation
 
-- **[Admin](https://esgilabs.github.io/labomatics-cli/admin/overview/)** — installation, configuration, CLI (administrateurs Proxmox)
-- **[Utilisateur OpenWrt](https://esgilabs.github.io/labomatics-cli/openwrt/base/)** — réseau, DHCP, NAT, firewall (étudiants)
+- **[Admin](https://simonlou-dev.github.io/labomatrics/admin/overview/)** — installation, configuration, CLI (administrateurs Proxmox)
+- **[Utilisateur OpenWrt](https://simonlou-dev.github.io/labomatrics/openwrt/base/)** — réseau, DHCP, NAT, firewall (étudiants)
 
 ---
 
 ## Licence
 
-MIT — voir [LICENSE](https://github.com/esgilabs/labomatics-cli/blob/main/LICENSE).
+MIT — voir [LICENSE](https://github.com/SimonLou-Dev/labomatrics/blob/main/LICENSE).
