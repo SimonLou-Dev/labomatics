@@ -47,8 +47,10 @@ def print_diff(
         return
 
     table = Table(
-        show_header=True, header_style="bold white",
-        title="[bold]Changements à appliquer[/bold]", title_justify="left",
+        show_header=True,
+        header_style="bold white",
+        title="[bold]Changements à appliquer[/bold]",
+        title_justify="left",
     )
     table.add_column("", width=6)
     table.add_column("Pool / Étudiant", style="cyan", no_wrap=True)
@@ -69,11 +71,14 @@ def print_diff(
     for p in to_remove:
         table.add_row(
             "[bold red]−[/bold red]",
-            p["poolid"], "—", "—", "—", "—",
+            p["poolid"],
+            "—",
+            "—",
+            "—",
+            "—",
         )
 
     console.print(table)
     console.print(
-        f"  [green]+ {len(to_add)} à créer[/green]   "
-        f"[red]− {len(to_remove)} à supprimer[/red]\n"
+        f"  [green]+ {len(to_add)} à créer[/green]   [red]− {len(to_remove)} à supprimer[/red]\n"
     )

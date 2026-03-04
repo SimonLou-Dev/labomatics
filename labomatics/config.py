@@ -73,24 +73,24 @@ class FlavorConfig(BaseModel):
     Les valeurs à 0 signifient « illimité ».
     """
 
-    cpu: int = 0    # vCPU max (VMs running dans le pool)
-    ram: int = 0    # MB max (VMs running)
-    disk: int = 0   # GB max (toutes VMs, running ou non)
+    cpu: int = 0  # vCPU max (VMs running dans le pool)
+    ram: int = 0  # MB max (VMs running)
+    disk: int = 0  # GB max (toutes VMs, running ou non)
 
 
 # ── Daemon quotas ─────────────────────────────────────────────────────────────
 
 
 class QuotadConfig(BaseModel):
-    interval: int = 30      # secondes entre chaque vérification
-    action: str = "stop"    # "stop" | "alert-only"
+    interval: int = 30  # secondes entre chaque vérification
+    action: str = "stop"  # "stop" | "alert-only"
 
 
 # ── Templates ─────────────────────────────────────────────────────────────────
 
 
 class TemplateProvisioningConfig(BaseModel):
-    method: str = "ssh"         # "ssh" | "guest-agent"
+    method: str = "ssh"  # "ssh" | "guest-agent"
     user: str = "root"
     commands: list[str] = []
 
@@ -99,9 +99,7 @@ class TemplateConfig(BaseModel):
     name: str
     vmid: int
     packer: str | None = None
-    provisioning: TemplateProvisioningConfig = Field(
-        default_factory=TemplateProvisioningConfig
-    )
+    provisioning: TemplateProvisioningConfig = Field(default_factory=TemplateProvisioningConfig)
 
 
 # ── Config principale ─────────────────────────────────────────────────────────

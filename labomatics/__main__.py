@@ -49,8 +49,7 @@ def main() -> None:
         description="labomatics — CLI Proxmox pilotée par CSV étudiant",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="\n".join(
-            f"  {line}" for line in __doc__.strip().splitlines()
-            if line.startswith("  ")
+            f"  {line}" for line in __doc__.strip().splitlines() if line.startswith("  ")
         ),
     )
     sub = parser.add_subparsers(dest="command", metavar="<commande>")
@@ -100,19 +99,19 @@ def main() -> None:
     args = parser.parse_args()
 
     dispatch = {
-        "apply":          cmd_apply,
-        "diff":           cmd_diff,
-        "pools":          cmd_pools,
-        "zones":          cmd_zones,
-        "vnets":          cmd_vnets,
-        "vms":            cmd_vms,
-        "find":           cmd_find,
-        "credentials":    cmd_credentials,
-        "ips":            cmd_ips,
-        "status":         cmd_status,
-        "recreate":       cmd_recreate,
+        "apply": cmd_apply,
+        "diff": cmd_diff,
+        "pools": cmd_pools,
+        "zones": cmd_zones,
+        "vnets": cmd_vnets,
+        "vms": cmd_vms,
+        "find": cmd_find,
+        "credentials": cmd_credentials,
+        "ips": cmd_ips,
+        "status": cmd_status,
+        "recreate": cmd_recreate,
         "build-template": cmd_build_template,
-        "init":           cmd_init,
+        "init": cmd_init,
     }
 
     try:

@@ -33,9 +33,7 @@ def wait_for_task(
         status = proxmox.nodes(node).tasks(task_id).status.get()
         if status["status"] == "stopped":
             if status.get("exitstatus") != "OK":
-                raise RuntimeError(
-                    f"Task {task_id} failed: {status.get('exitstatus')}"
-                )
+                raise RuntimeError(f"Task {task_id} failed: {status.get('exitstatus')}")
             return
         time.sleep(poll_interval)
     raise TimeoutError(f"Task {task_id} timeout after {timeout}s")

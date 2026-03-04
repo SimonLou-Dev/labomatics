@@ -17,10 +17,7 @@ from proxmoxer import ProxmoxAPI
 def check_sdn_zone_exists(proxmox: ProxmoxAPI, zone_name: str) -> bool:
     """Vérifie si une zone SDN VXLAN existe dans le cluster."""
     zones = proxmox.cluster.sdn.zones().get()
-    return any(
-        z for z in zones
-        if z.get("type") == "vxlan" and z.get("zone") == zone_name
-    )
+    return any(z for z in zones if z.get("type") == "vxlan" and z.get("zone") == zone_name)
 
 
 def list_vnets_in_zone(proxmox: ProxmoxAPI, zone_name: str) -> list[dict]:

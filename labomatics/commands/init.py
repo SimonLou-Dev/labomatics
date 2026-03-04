@@ -52,7 +52,9 @@ def cmd_init(args) -> None:
             shutil.copy(src, dst)
             console.print(f"  [green]✓ {dst_name} créé[/green]")
         else:
-            console.print(f"  [yellow]⚠  Template {src_name} introuvable (package incomplet)[/yellow]")
+            console.print(
+                f"  [yellow]⚠  Template {src_name} introuvable (package incomplet)[/yellow]"
+            )
 
     console.print(f"""
 [bold]Étapes suivantes :[/bold]

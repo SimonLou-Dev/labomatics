@@ -92,6 +92,7 @@ def _provision_via_ssh(proxmox, node: str, vmid: int, user: str, commands: list[
 
     # Récupérer l'IP depuis la config de la VM
     from ..proxmox import get_vm_wan_ip as _get_ip
+
     ip = _get_ip(proxmox, node, vmid)
     if not ip:
         raise RuntimeError(f"Impossible de récupérer l'IP de la VM vmid={vmid}")
@@ -169,10 +170,13 @@ def cmd_build_template(args) -> None:
     else:
         templates = config.templates
         if not templates:
-            console.print("[dim]Aucune template définie dans infra.yaml (section 'templates:').[/dim]")
+            console.print(
+                "[dim]Aucune template définie dans infra.yaml (section 'templates:').[/dim]"
+            )
             return
 
     from ..config import load_proxmox_settings
+
     settings = load_proxmox_settings()
 
     for tmpl in templates:
@@ -234,4 +238,6 @@ def cmd_build_template(args) -> None:
         # Étape 5 : Conversion en template
         _convert_to_template(proxmox, node, tmpl.vmid)
 
-        console.print(f"\n[bold green]✓ Template '{tmpl.name}' construite avec succès (vmid={tmpl.vmid})[/bold green]")
+        console.print(
+            f"\n[bold green]✓ Template '{tmpl.name}' construite avec succès (vmid={tmpl.vmid})[/bold green]"
+        )

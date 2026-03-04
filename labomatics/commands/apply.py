@@ -40,6 +40,7 @@ console = Console()
 def _resolve_vnet_for_pool(proxmox, config, pool_name: str) -> str | None:
     """Trouve le nom du VNet SDN d'un pool (depuis les VMs du pool ou les VNets)."""
     from ..proxmox import get_pool_vms
+
     vmid_start = config.openwrt.vmid_start
     for vm in get_pool_vms(proxmox, pool_name):
         vmid = vm.get("vmid")
@@ -127,7 +128,9 @@ def apply_adds(proxmox, config, to_add: list, creds: dict) -> dict:
     zone = config.openwrt.network.zone_name
 
     if not check_sdn_zone_exists(proxmox, zone):
-        console.print(f"[red]❌ Zone SDN '{zone}' introuvable — créer la zone avant d'appliquer[/red]")
+        console.print(
+            f"[red]❌ Zone SDN '{zone}' introuvable — créer la zone avant d'appliquer[/red]"
+        )
         return creds
 
     # Étape 1 : pools + VNets
@@ -186,6 +189,7 @@ def apply_adds(proxmox, config, to_add: list, creds: dict) -> dict:
             deploy_student(proxmox, config, student)
             # Mettre à jour la WAN IP réelle dans les credentials
             from ..proxmox import get_pool_vms, get_vm_wan_ip
+
             for vm in get_pool_vms(proxmox, student.pool_name()):
                 ip = get_vm_wan_ip(proxmox, vm["node"], vm["vmid"])
                 if ip:
