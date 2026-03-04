@@ -1,11 +1,38 @@
+version: "v1"
+
 openwrt:
   vmid_start: 10000
   template_vmid: 90200
   storage: zfs-store          # Stockage partagé entre tous les nœuds (Ceph/NFS/ZFS)
+  wan_bridge: vmbr0
   students_csv: students.csv
   template_pool: template     # Pool Proxmox global contenant les templates du lab
+
   network:
     zone_name: esgilab
-    wan_subnet: 172.16.0.0/24
-    wan_gateway: 172.16.0.254
-    vxlan_pool: 10.100.0.0/12
+
+    wan_pool:
+      network: 172.16.0.0/24
+      gateway: 172.16.0.254
+      exclude:
+        - "172.16.0.1-172.16.0.10"
+
+    vxlan_pool:
+      network: 10.100.0.0/12
+      exclude: []
+
+flavors:
+  CO1:
+    cpu: 4
+    ram: 8192
+    disk: 40
+  CO2:
+    cpu: 8
+    ram: 16384
+    disk: 80
+
+quotad:
+  interval: 30
+  action: stop
+
+templates: []

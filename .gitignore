@@ -1,6 +1,7 @@
 # Credentials — ne jamais versionner
 .env
 credentials.csv
+students.csv
 
 # Python
 __pycache__/
@@ -10,6 +11,12 @@ __pycache__/
 venv/
 dist/
 build/
+*.whl
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+htmlcov/
+.coverage
 
 # Images OpenWrt téléchargées par le script build
 *.img
