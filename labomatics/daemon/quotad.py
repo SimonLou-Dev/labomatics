@@ -19,7 +19,6 @@ Installation systemd :
 
 import logging
 import signal
-import sys
 import time
 
 from ..config import load_config, load_proxmox_settings
@@ -90,8 +89,12 @@ def _stop_highest_ram_vm(proxmox, pool_name: str, running: list[dict], openwrt_v
     # VM qui consomme le plus de RAM
     victim = max(candidates, key=lambda m: m.get("maxmem", 0))
     vmid = victim.get("vmid")
-    node = victim.get("node")
+    node: str | None = victim.get("node")
     name = victim.get("name", str(vmid))
+
+    if node is None:
+        log.warning("[%s] VM victime %s sans nœud, impossible d'arrêter", pool_name, name)
+        return
 
     log.warning(
         "[%s] Quota dépassé → arrêt de %s (vmid=%s, RAM=%dMB)",

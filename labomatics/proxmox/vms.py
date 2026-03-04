@@ -19,7 +19,7 @@ def pick_node(proxmox: ProxmoxAPI) -> str:
     online = [n for n in nodes if n.get("status") == "online"]
     if not online:
         raise RuntimeError("Aucun nœud Proxmox disponible dans le cluster")
-    return max(online, key=lambda n: n.get("maxmem", 0) - n.get("mem", 0))["node"]
+    return str(max(online, key=lambda n: n.get("maxmem", 0) - n.get("mem", 0))["node"])
 
 
 def vm_exists(proxmox: ProxmoxAPI, vmid: int) -> bool:
@@ -33,7 +33,8 @@ def find_vm_node(proxmox: ProxmoxAPI, vmid: int) -> str | None:
     resources = proxmox.cluster.resources.get(type="vm")
     for r in resources:
         if int(r.get("vmid", -1)) == vmid:
-            return r.get("node")
+            node = r.get("node")
+            return str(node) if node is not None else None
     return None
 
 
