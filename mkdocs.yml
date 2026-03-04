@@ -1,0 +1,58 @@
+site_name: labomatics
+site_url: https://esgilabs.github.io/labomatics-cli/
+site_description: CLI Proxmox pour la gestion de labs réseau étudiants
+site_author: esgilabs
+repo_url: https://github.com/esgilabs/labomatics-cli
+repo_name: esgilabs/labomatics-cli
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  language: fr
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Mode sombre
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Mode clair
+  features:
+    - navigation.tabs
+    - navigation.top
+    - search.highlight
+    - content.code.copy
+
+plugins:
+  - search
+
+nav:
+  - Accueil: index.md
+  - Administration:
+      - Vue d'ensemble: admin/overview.md
+      - Installation: admin/setup.md
+      - Référence CLI: admin/cli.md
+      - Build de template: admin/template.md
+  - Guide étudiant (OpenWrt):
+      - Démarrage: openwrt/base.md
+      - DHCP: openwrt/dhcp.md
+      - DNS: openwrt/dns.md
+      - NAT: openwrt/nat.md
+      - Firewall: openwrt/firewall.md
+      - Interface Proxmox: openwrt/proxmox.md
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - tables
+  - toc:
+      permalink: true
