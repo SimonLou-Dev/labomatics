@@ -18,7 +18,6 @@ from pathlib import Path
 from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings
 
-
 # ── Proxmox credentials (depuis l'environnement) ──────────────────────────────
 
 
@@ -165,4 +164,4 @@ def load_proxmox_settings() -> ProxmoxSettings:
             load_dotenv(candidate)
             break
 
-    return ProxmoxSettings()
+    return ProxmoxSettings()  # type: ignore[call-arg]
