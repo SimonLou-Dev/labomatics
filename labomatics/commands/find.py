@@ -7,9 +7,9 @@ from rich.console import Console
 from rich.panel import Panel
 
 from ..config import load_config
+from ..ip_pool import get_vm_vxlan_subnet, get_vm_wan_ip
 from ..proxmox import get_pool_vms, list_managed_pools, list_vnets_in_zone
-from ..ip_pool import get_vm_wan_ip, get_vm_vxlan_subnet
-from ._helpers import load_students_from_config, make_connection
+from ._helpers import make_connection
 
 console = Console()
 

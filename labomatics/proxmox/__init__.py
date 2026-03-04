@@ -7,9 +7,16 @@ directs depuis ``labomatics.proxmox`` :
     from labomatics.proxmox import connect, pick_node, create_pool
 """
 
+from .acl import (
+    create_proxmox_user,
+    delete_acl,
+    delete_proxmox_user,
+    delete_student_acls,
+    set_acl,
+    set_student_acls,
+    user_exists,
+)
 from .client import POOL_MARKER, connect
-from .tasks import wait_for_task
-from .vms import find_vm_node, get_vm_disk_size_gb, get_vm_vxlan_subnet, get_vm_wan_ip, pick_node, vm_exists
 from .pools import (
     add_vm_to_pool,
     create_pool,
@@ -26,14 +33,14 @@ from .sdn import (
     delete_vnet,
     list_vnets_in_zone,
 )
-from .acl import (
-    create_proxmox_user,
-    delete_acl,
-    delete_proxmox_user,
-    delete_student_acls,
-    set_acl,
-    set_student_acls,
-    user_exists,
+from .tasks import wait_for_task
+from .vms import (
+    find_vm_node,
+    get_vm_disk_size_gb,
+    get_vm_vxlan_subnet,
+    get_vm_wan_ip,
+    pick_node,
+    vm_exists,
 )
 
 __all__ = [

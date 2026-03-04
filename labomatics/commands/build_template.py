@@ -24,7 +24,6 @@ Exemple infra.yaml :
 """
 
 import subprocess
-import sys
 import time
 from pathlib import Path
 
@@ -41,7 +40,6 @@ PACKER_DIR = Path(__file__).parent.parent.parent / "packer"
 
 def _delete_existing_template(proxmox, vmid: int) -> None:
     """Supprime une template existante si elle existe."""
-    from ..deploy import destroy_student
 
     if not vm_exists(proxmox, vmid):
         return
@@ -140,7 +138,7 @@ def _provision_via_guest_agent(proxmox, node: str, vmid: int, commands: list[str
 
 def _convert_to_template(proxmox, node: str, vmid: int) -> None:
     """Supprime les NICs et convertit la VM en template Proxmox."""
-    console.print(f"  [cyan]Suppression des NICs...[/cyan]")
+    console.print("  [cyan]Suppression des NICs...[/cyan]")
     try:
         cfg = proxmox.nodes(node).qemu(vmid).config.get()
         nic_keys = [k for k in cfg if k.startswith("net")]
@@ -150,7 +148,7 @@ def _convert_to_template(proxmox, node: str, vmid: int) -> None:
     except Exception as e:
         console.print(f"  [yellow]⚠  Suppression NICs : {e}[/yellow]")
 
-    console.print(f"  [cyan]Conversion en template...[/cyan]")
+    console.print("  [cyan]Conversion en template...[/cyan]")
     proxmox.nodes(node).qemu(vmid).template.post()
     console.print(f"  [green]✓ vmid={vmid} converti en template[/green]")
 
@@ -215,13 +213,13 @@ def cmd_build_template(args) -> None:
                     _provision_via_ssh(proxmox, node, tmpl.vmid, prov.user, prov.commands)
                 elif prov.method == "guest-agent":
                     _provision_via_guest_agent(proxmox, node, tmpl.vmid, prov.commands)
-                console.print(f"  [green]✓ Provisioning terminé[/green]")
+                console.print("  [green]✓ Provisioning terminé[/green]")
             except Exception as e:
                 console.print(f"  [red]❌ Provisioning échoué : {e}[/red]")
                 continue
 
         # Étape 4 : Shutdown propre
-        console.print(f"  [cyan]Shutdown...[/cyan]")
+        console.print("  [cyan]Shutdown...[/cyan]")
         try:
             task = proxmox.nodes(node).qemu(tmpl.vmid).status.shutdown.post()
             wait_for_task(proxmox, node, task, timeout=120)

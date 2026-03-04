@@ -28,7 +28,6 @@ from proxmoxer import ProxmoxAPI
 from rich.console import Console
 
 from .proxmox import (
-    add_vm_to_pool,
     find_vm_node,
     get_pool_lxcs,
     get_pool_vms,

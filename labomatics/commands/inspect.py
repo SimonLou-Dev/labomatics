@@ -20,7 +20,6 @@ console = Console()
 
 def cmd_pools(args) -> None:
     """Liste les pools gérés par labomatics."""
-    config = load_config()
     proxmox = make_connection()
     pools = list_managed_pools(proxmox)
 
@@ -98,7 +97,6 @@ def cmd_vnets(args) -> None:
 
 def cmd_vms(args) -> None:
     """Liste les VMs des pools gérés (optionnel : --pool)."""
-    config = load_config()
     proxmox = make_connection()
 
     pool_filter = getattr(args, "pool", None)
