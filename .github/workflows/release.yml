@@ -1,0 +1,66 @@
+name: Release
+
+# Déclenché quand la CI se termine avec succès sur main.
+# Semantic-release analyse les commits conventionnels depuis le dernier tag,
+# détermine le type de bump (major/minor/patch), met à jour les versions,
+# crée le tag git + la GitHub Release, puis publie sur PyPI.
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+
+jobs:
+  release:
+    name: Semantic Release + PyPI
+    runs-on: ubuntu-latest
+
+    # Ne s'exécute que si la CI est passée
+    if: github.event.workflow_run.conclusion == 'success'
+
+    permissions:
+      contents: write   # push du commit de version bump + création de release/tag
+      id-token: write   # OIDC pour PyPI Trusted Publishing (sans secret)
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0              # historique complet requis par semantic-release
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install build tools
+        run: pip install hatch
+
+      # Analyse les commits conventionnels depuis le dernier tag,
+      # bump la version dans pyproject.toml et labomatics/__init__.py,
+      # crée le commit + tag + GitHub Release, build le wheel,
+      # attache le wheel à la Release.
+      - name: Python Semantic Release
+        id: release
+        uses: python-semantic-release/python-semantic-release@v9
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          git_committer_name: "github-actions[bot]"
+          git_committer_email: "github-actions[bot]@users.noreply.github.com"
+
+      # Publie le wheel sur PyPI uniquement si une nouvelle release a été créée.
+      #
+      # PyPI Trusted Publishing (OIDC) — aucun secret requis.
+      # À configurer une seule fois sur pypi.org :
+      #   Account → Publishing → Add a new publisher
+      #     Owner      : <votre-org-github>
+      #     Repository : labomatics-cli
+      #     Workflow   : release.yml
+      #     Environment: (laisser vide)
+      #
+      # Pour utiliser un token classique à la place :
+      #   with:
+      #     password: ${{ secrets.PYPI_TOKEN }}
+      - name: Publish to PyPI
+        if: steps.release.outputs.released == 'true'
+        uses: pypa/gh-action-pypi-publish@release/v1

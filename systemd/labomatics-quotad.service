@@ -1,0 +1,20 @@
+[Unit]
+Description=labomatics quota enforcement daemon
+After=network.target
+Documentation=https://github.com/esgilabs/labomatics-cli
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/local/bin/labomatics-quotad
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=labomatics-quotad
+
+# Fichier de configuration dans /etc/labomatics/
+EnvironmentFile=-/etc/labomatics/.env
+
+[Install]
+WantedBy=multi-user.target

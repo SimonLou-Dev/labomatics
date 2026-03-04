@@ -1,183 +1,194 @@
-# proxmox-lab — esgilabs
+# labomatics
 
-Outil CLI Python pour déployer automatiquement un environnement de lab réseau
+CLI Python pour déployer automatiquement des environnements de lab réseau
 sur un cluster Proxmox à partir d'un CSV d'étudiants.
 
-Pour chaque étudiant, le script provisionne : un pool Proxmox, un VNet VXLAN,
-une VM OpenWrt (routeur), un compte utilisateur et des ACL d'accès.
+Pour chaque étudiant, labomatics provisionne : un pool Proxmox, un VNet VXLAN,
+une VM OpenWrt (routeur), un compte utilisateur avec ACL, et un jeu de credentials.
 
-### Isolation par tenant
-
-Chaque étudiant est isolé dans son propre **pool Proxmox** qui délimite son périmètre
-de ressources : il ne voit et ne peut opérer que les VMs/LXC qui lui appartiennent.
-Son réseau interne est un VNet VXLAN dédié, sans communication possible vers les
-tenants voisins.
-
-### Pool de templates partagé
-
-Un pool `template` global (configurable) regroupe les templates accessibles en
-lecture à tous les étudiants. Ils peuvent cloner ces templates dans leur propre pool
-pour démarrer leurs VMs.
-
-Les templates peuvent être construites avec **Packer** —
-cf. [cours_m1_ansible](https://github.com/SimonLou-Dev/cours_m1_ansible) pour des
-exemples de pipelines Packer/Ansible ciblant Proxmox.
-
-> **Contrainte importante** : avant de convertir une VM en template, supprimer son
-> interface réseau (ou la déconnecter du VNet) — sinon le clone héritera d'une
-> configuration réseau figée et ne pourra pas être recloné à cause des permissions de l'utilisateur
+```
+pip install labomatics
+labomatics init       # crée /etc/labomatics/ avec les configs par défaut
+labomatics apply      # synchronise Proxmox avec le CSV
+```
 
 ---
 
-## Structure du projet
+## Fonctionnalités
 
+- **Déploiement piloté par CSV** — ajouter un étudiant dans `students.csv` suffit
+- **Allocation IP dynamique** — WAN et VXLAN lus depuis Proxmox, sans fichier d'état local
+- **Flavors** — profils de ressources (CPU/RAM/disk) assignés par étudiant
+- **Quotas natifs Proxmox** — limits sur les pools (`max_cpu/ram/disk`), 403 à la surcharge
+- **Daemon de quota** (`labomatics-quotad`) — surveille et stoppe la VM la plus gourmande si dépassement
+- **Build de template** — pipeline Packer → provisioning SSH/guest-agent → conversion template
+- **Isolation** — chaque étudiant est cantonné à son pool et son VNet VXLAN dédié
+
+---
+
+## Installation
+
+```bash
+pip install labomatics
 ```
-proxmox-lab/
-├── esgilabs/               # Package Python (CLI + logique)
-│   ├── __main__.py         # Entrée CLI : python -m esgilabs
-│   ├── commands/           # Implémentation des sous-commandes
-│   │   ├── apply.py        # apply, diff
-│   │   ├── inspect.py      # pools, zones, vnets, vms
-│   │   ├── find.py         # find
-│   │   └── creds.py        # credentials
-│   ├── proxmox/            # Couche API Proxmox
-│   │   ├── acl.py          # Utilisateurs + ACL
-│   │   ├── pools.py        # Pools de ressources
-│   │   ├── sdn.py          # Zones + VNets SDN
-│   │   ├── vms.py          # VMs + sélection de nœud
-│   │   ├── tasks.py        # Attente de tâches asynchrones
-│   │   └── client.py       # Connexion API
-│   ├── config.py           # Configuration (Pydantic)
-│   ├── students.py         # Gestion des étudiants (CSV + allocations réseau)
-│   ├── diff.py             # Calcul CSV ↔ Proxmox
-│   ├── credentials.py      # credentials.csv
-│   └── deploy.py           # Clone/suppression VM + LXC
-├── scripts/
-│   └── build-openwrt-vm-template.sh  # Build de la template OpenWrt
-├── docs/
-│   ├── admin/              # Documentation administrateur
-│   │   ├── overview.md     # Architecture + flux d'exécution
-│   │   ├── setup.md        # Installation, config, ordre de mise en place
-│   │   ├── cli.md          # Référence des commandes
-│   │   └── template.md     # Build de la template OpenWrt
-│   └── openwrt/            # Documentation utilisateur final
-│       ├── base.md         # Accès, réseau, credentials
-│       ├── proxmox.md      # Interface Proxmox, pool, templates
-│       ├── dhcp.md
-│       ├── nat.md
-│       ├── dns.md
-│       └── firewall.md
-├── infra.yaml              # Configuration de l'infrastructure
-├── students.csv            # Liste des étudiants (id, nom)
-├── .env                    # Credentials Proxmox (non versionné)
-└── requirements.txt
+
+Ou depuis les sources :
+
+```bash
+git clone https://github.com/esgilabs/labomatics-cli
+cd labomatics-cli
+pip install -e ".[dev]"
 ```
 
 ---
 
 ## Démarrage rapide
 
-### 1. Prérequis
+### 1. Prérequis Proxmox
 
-- Python 3.11+
-- Cluster Proxmox avec SDN activé
-- Zone VXLAN SDN créée (`esgilab` par défaut)
-- Au moins une template VM sur un stockage partagé (Ceph / NFS / ZFS répliqué)
+- Proxmox VE 8+ avec SDN activé
+- Zone VXLAN SDN créée (ex. `esgilab`)
+- Stockage partagé entre tous les nœuds (Ceph / NFS / ZFS répliqué)
+- Token API Proxmox avec les droits nécessaires (Administrator sur /)
+- Template OpenWrt sur le stockage partagé
 
-### 2. Installation
+### 2. Initialisation
 
 ```bash
-pip install -r requirements.txt
+sudo labomatics init
+# Crée /etc/labomatics/{infra.yaml, .env, students.csv}
 ```
 
 ### 3. Configuration
 
 ```bash
-cp .env.example .env
-# Renseigner PROXMOX_HOST, PROXMOX_TOKEN_ID, PROXMOX_TOKEN_SECRET
+# /etc/labomatics/.env
+PROXMOX_HOST=192.168.1.100
+PROXMOX_TOKEN_ID=root@pam!labomatics
+PROXMOX_TOKEN_SECRET=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 ```
 
-Éditer `infra.yaml` selon votre infrastructure :
-
 ```yaml
+# /etc/labomatics/infra.yaml
+version: "v1"
 openwrt:
   vmid_start: 10000
   template_vmid: 90200
-  storage: zfs-store          # Stockage partagé entre tous les nœuds
-  students_csv: students.csv
-  template_pool: template     # Pool contenant les templates du lab
+  storage: zfs-store
+  wan_bridge: vmbr0
   network:
     zone_name: esgilab
-    wan_subnet: 172.16.0.0/24
-    wan_gateway: 172.16.0.254
-    vxlan_pool: 10.100.0.0/12
+    wan_pool:
+      network: 172.16.0.0/24
+      gateway: 172.16.0.254
+      exclude: ["172.16.0.1-172.16.0.10"]
+    vxlan_pool:
+      network: 10.100.0.0/12
+      exclude: []
+flavors:
+  CO1: {cpu: 4, ram: 8192, disk: 40}
+  CO2: {cpu: 8, ram: 16384, disk: 80}
 ```
 
-### 4. Préparer les templates
-
-Placez vos templates sur le stockage partagé et ajoutez-les au pool `template` :
-
-```bash
-pvesh set /pools/template -vms <vmid>
-```
-
-> Le script `scripts/build-openwrt-vm-template.sh` permet de construire une template
-> OpenWrt (routeur). Pour les autres VMs du lab, utilisez Packer —
-> cf. [cours_m1_ansible](https://github.com/SimonLou-Dev/cours_m1_ansible).
->
-> **Important** : retirer l'interface réseau d'une VM avant de la convertir en
-> template, sinon le clonage sera impossible pour l'utilisateur
-
-### 5. Peupler le CSV étudiant
+### 4. Étudiants
 
 ```csv
-# students.csv
-id,nom
-18,jdupont
-240,mkorniev
+# /etc/labomatics/students.csv
+id,nom,prenom,flavor
+18,jdupont,Jean,CO1
+240,mkorniev,Mikhail,CO2
 ```
 
-### 6. Déployer
+L'`id` est stable et sert de clé pour le VMID et le tag VXLAN. Ne jamais le réutiliser.
+
+### 5. Déployer
 
 ```bash
-python -m esgilabs diff    # Aperçu sans modification
-python -m esgilabs apply   # Déploiement avec confirmation
+labomatics diff     # aperçu sans modification
+labomatics apply    # déploiement avec confirmation
 ```
 
 ---
 
 ## Commandes CLI
 
-| Commande                        | Description                                      |
-|---------------------------------|--------------------------------------------------|
-| `apply [--yes]`                 | Synchronise Proxmox avec le CSV                  |
-| `diff`                          | Affiche le diff sans rien modifier               |
-| `pools`                         | Liste les pools gérés                            |
-| `zones`                         | Liste les zones SDN                              |
-| `vnets [--zone ZONE]`           | Liste les VNets SDN                              |
-| `vms [--pool POOL]`             | Liste les VMs des pools gérés                    |
-| `find <IP\|VNet\|nom>`          | Recherche un étudiant                            |
-| `credentials`                   | Affiche les credentials générés                  |
-
-Voir [docs/admin/cli.md](docs/admin/cli.md) pour la référence complète.
+| Commande | Description |
+|---|---|
+| `apply [--yes]` | Synchronise Proxmox avec le CSV |
+| `diff` | Aperçu des changements (lecture seule) |
+| `pools` | Liste les pools gérés |
+| `zones` | Liste les zones SDN |
+| `vnets [--zone]` | Liste les VNets SDN |
+| `vms [--pool]` | Liste les VMs des pools gérés |
+| `find <query>` | Recherche par IP WAN, VNet ou nom |
+| `credentials` | Affiche les credentials générés |
+| `ips` | État des pools IP avec % d'utilisation |
+| `status` | Ressources CPU/RAM/disk par étudiant vs flavor |
+| `recreate <nom> [--yes]` | Recrée la VM OpenWrt d'un étudiant |
+| `build-template [nom]` | Build template via Packer + provisioning |
+| `init [--dir]` | Initialise la configuration |
 
 ---
 
-## Allocations réseau
+## Daemon de quota
 
-Toutes les allocations sont basées sur l'`id` CSV de l'étudiant (stable) :
+`labomatics-quotad` surveille les ressources des pools étudiants et arrête
+automatiquement la VM la plus gourmande en RAM si un quota est dépassé.
+La VM OpenWrt n'est jamais arrêtée.
 
-| Ressource       | Formule                              | Exemple (id=18)       |
-|-----------------|--------------------------------------|-----------------------|
-| VMID            | `vmid_start + id`                    | `10018`               |
-| IP WAN          | `wan_subnet + id`                    | `172.16.0.18`         |
-| Subnet VXLAN    | `vxlan_pool + id × 256` → `/24`     | `10.100.18.0/24`      |
-| VNet            | `vn{id:05d}`                         | `vn00018`             |
-| User Proxmox    | `nom@pve`                            | `jdupont@pve`         |
+```bash
+# Installation systemd
+cp systemd/labomatics-quotad.service /etc/systemd/system/
+systemctl enable --now labomatics-quotad
+```
+
+---
+
+## Build de template
+
+```bash
+# Construire toutes les templates définies dans infra.yaml
+labomatics build-template
+
+# Construire une template spécifique
+labomatics build-template ubuntu-24.04
+```
+
+Pipeline : suppression de l'existante → Packer build → provisioning SSH/guest-agent
+→ shutdown → suppression NICs → conversion template Proxmox.
+
+---
+
+## Structure du projet
+
+```
+labomatics-cli/
+├── labomatics/               # Package Python
+│   ├── commands/             # Sous-commandes CLI
+│   ├── proxmox/              # Couche API Proxmox
+│   ├── daemon/               # labomatics-quotad
+│   └── templates/            # Fichiers de config exemple
+├── docs/
+│   ├── admin/                # Documentation administrateur
+│   └── openwrt/              # Documentation utilisateur final
+├── scripts/
+│   └── build-openwrt-vm-template.sh
+├── systemd/
+│   └── labomatics-quotad.service
+├── infra.yaml                # Config de l'infra (exemple)
+├── students.csv              # CSV étudiants (exemple)
+└── pyproject.toml
+```
 
 ---
 
 ## Documentation
 
-- **[docs/admin/](docs/admin/)** — pour les administrateurs Proxmox
-- **[docs/openwrt/](docs/openwrt/)** — pour les étudiants (utilisateurs finaux)
+- **[docs/admin/](docs/admin/)** — installation, configuration, CLI (administrateurs Proxmox)
+- **[docs/openwrt/](docs/openwrt/)** — réseau, DHCP, NAT, firewall (étudiants)
+
+---
+
+## Licence
+
+MIT — voir [LICENSE](LICENSE).

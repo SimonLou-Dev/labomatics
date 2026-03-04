@@ -2,12 +2,8 @@
 """
 Commande ``credentials`` — affichage des credentials étudiants.
 
-Lit ``credentials.csv`` (généré par ``apply``) et l'affiche sous forme de
-tableau Rich. Ne fait aucun appel API Proxmox.
-
 .. warning::
-    Les mots de passe sont affichés en clair. Réserver l'accès à cette
-    commande aux administrateurs.
+    Les mots de passe sont affichés en clair. Réserver aux administrateurs.
 """
 
 from rich.console import Console
@@ -19,16 +15,16 @@ from ..credentials import creds_path, load_credentials
 console = Console()
 
 
-def cmd_credentials(_) -> None:
+def cmd_credentials(args) -> None:
     """Affiche les credentials étudiants depuis ``credentials.csv``."""
-    cfg = load_config()
-    path = creds_path(cfg)
+    config = load_config()
+    path = creds_path(config)
 
     if not path.exists():
         console.print("[dim]Aucun fichier credentials.csv. Lancez 'apply' d'abord.[/dim]")
         return
 
-    creds = load_credentials(cfg)
+    creds = load_credentials(config)
     if not creds:
         console.print("[dim]Aucun credential stocké.[/dim]")
         return
@@ -40,10 +36,10 @@ def cmd_credentials(_) -> None:
     table.add_column("Nom", style="cyan")
     table.add_column("User Proxmox")
     table.add_column("Password")
-    table.add_column("WAN IP")
+    table.add_column("IP WAN")
 
     for row in sorted(creds.values(), key=lambda r: r["nom"]):
-        table.add_row(row["nom"], row["userid"], row["password"], row["wan_ip"])
+        table.add_row(row["nom"], row["userid"], row["password"], row.get("wan_ip", "—"))
 
     console.print(table)
     console.print(f"\n  {len(creds)} étudiant(s) — {path}\n")

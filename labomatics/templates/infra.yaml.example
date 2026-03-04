@@ -1,0 +1,69 @@
+version: "v1"
+
+openwrt:
+  vmid_start: 10000          # VMID = vmid_start + student.id
+  template_vmid: 90200       # VMID de la template OpenWrt (stockage partagé requis)
+  storage: zfs-store         # Stockage partagé accessible depuis tous les nœuds
+  wan_bridge: vmbr0          # Bridge WAN sur les nœuds Proxmox
+  students_csv: students.csv # Chemin vers le CSV étudiants (relatif à ce fichier)
+  template_pool: template    # Pool Proxmox contenant les templates (accès étudiants)
+
+  network:
+    zone_name: esgilab       # Nom de la zone SDN VXLAN (doit exister dans Proxmox)
+
+    wan_pool:
+      network: 172.16.0.0/24
+      gateway: 172.16.0.254
+      exclude:
+        - "172.16.0.1-172.16.0.10"   # IPs réservées infrastructure
+
+    vxlan_pool:
+      network: 10.100.0.0/12         # Pool de subnets /24 — un par étudiant
+      exclude: []
+
+# Profils de ressources (flavors)
+# cpu: vCPU max running, ram: MB max running, disk: GB max total
+# Valeur 0 = illimité
+flavors:
+  CO1:
+    cpu: 4
+    ram: 8192     # 8 GB
+    disk: 40      # 40 GB
+  CO2:
+    cpu: 8
+    ram: 16384    # 16 GB
+    disk: 80      # 80 GB
+  unlimited:
+    cpu: 0
+    ram: 0
+    disk: 0
+
+# Daemon de surveillance des quotas
+quotad:
+  interval: 30    # secondes entre chaque vérification
+  action: stop    # "stop" (arrêt auto) ou "alert-only" (logs seulement)
+
+# Templates personnalisées (optionnel)
+# Construites avec : labomatics build-template
+templates:
+  - name: ubuntu-24.04
+    vmid: 9100
+    packer: ubuntu         # Sous-répertoire dans packer/
+    provisioning:
+      method: ssh
+      user: ubuntu
+      commands:
+        - "sudo apt-get update -y"
+        - "sudo apt-get install -y qemu-guest-agent cloud-init"
+        - "sudo systemctl enable qemu-guest-agent"
+        - "sudo cloud-init clean --logs"
+
+  - name: debian-12
+    vmid: 9101
+    packer: debian
+    provisioning:
+      method: guest-agent
+      user: root
+      commands:
+        - "apt-get update -y"
+        - "apt-get install -y qemu-guest-agent"

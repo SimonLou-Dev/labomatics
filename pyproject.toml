@@ -1,0 +1,104 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "labomatics"
+version = "0.1.0"
+description = "CLI Proxmox pour la gestion de labs étudiants"
+readme = "readme.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+
+dependencies = [
+    "proxmoxer>=2.0",
+    "requests>=2.31",
+    "pydantic>=2.0",
+    "pydantic-settings>=2.0",
+    "python-dotenv>=1.0",
+    "pyyaml>=6.0",
+    "rich>=13.0",
+    "paramiko>=3.0",    # SSH provisioning (build-template)
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov",
+    "ruff>=0.4",
+    "mypy>=1.10",
+    "types-PyYAML",
+    "types-paramiko",
+    "python-semantic-release>=9.0",
+]
+
+[project.scripts]
+labomatics = "labomatics.__main__:main"
+labomatics-quotad = "labomatics.daemon.quotad:run_daemon"
+
+[tool.hatch.build.targets.wheel]
+packages = ["labomatics"]
+include = [
+    "labomatics/**/*.py",
+    "labomatics/templates/**",
+]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "labomatics/",
+    "readme.md",
+    "pyproject.toml",
+]
+
+# ── Semantic Release ───────────────────────────────────────────────────────────
+[tool.semantic_release]
+# Fichiers à mettre à jour lors d'un bump de version
+version_toml = ["pyproject.toml:project.version"]
+version_variables = ["labomatics/__init__.py:__version__"]
+
+# Branche de production
+branch = "main"
+
+# Format du tag git (ex. v0.2.0)
+tag_format = "v{version}"
+
+# Commit de version bump — [skip ci] évite une boucle de CI
+commit_message = "chore(release): v{version} [skip ci]"
+
+# Pas de v1.0.0 automatique depuis v0.x
+major_on_zero = false
+
+# Commande de build utilisée avant le publish
+build_command = "pip install hatch && hatch build"
+
+[tool.semantic_release.publish]
+# Attacher le wheel au GitHub release
+upload_to_vcs_release = true
+dist_glob_patterns = ["dist/*"]
+
+[tool.semantic_release.changelog]
+# Exclure les commits de release et merges du changelog
+exclude_commit_patterns = [
+    "^chore\\(release\\):",
+    "^Merge (pull request|branch)",
+]
+
+# ── Ruff ──────────────────────────────────────────────────────────────────────
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP"]
+ignore = ["E501"]
+
+# ── Mypy ──────────────────────────────────────────────────────────────────────
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+
+# ── Pytest ────────────────────────────────────────────────────────────────────
+[tool.pytest.ini_options]
+testpaths = ["tests"]

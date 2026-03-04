@@ -22,9 +22,24 @@ if TYPE_CHECKING:
     from .students import Student
 
 
+def _find_students_csv(config: "InfraConfig") -> Path:
+    """Résout le chemin du CSV étudiants."""
+    csv_str = config.openwrt.students_csv
+    csv_path = Path(csv_str)
+    if csv_path.is_absolute():
+        return csv_path
+    for candidate in [
+        Path("/etc/labomatics") / csv_str,
+        Path.cwd() / csv_str,
+        Path(__file__).parent.parent / csv_str,
+    ]:
+        if candidate.exists():
+            return candidate
+    return Path.cwd() / csv_str
+
+
 def creds_path(config: "InfraConfig") -> Path:
     """Retourne le chemin absolu vers ``credentials.csv`` (à côté de students.csv)."""
-    from .commands._helpers import _find_students_csv
     students_csv = _find_students_csv(config)
     return students_csv.parent / "credentials.csv"
 
