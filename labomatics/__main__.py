@@ -18,8 +18,8 @@ Commandes disponibles :
   init           Initialise /etc/labomatics/ avec les configs par défaut
 """
 
-import sys
 import argparse
+import sys
 
 from rich.console import Console
 
@@ -34,8 +34,8 @@ from .commands import (
     cmd_pools,
     cmd_recreate,
     cmd_status,
-    cmd_vnets,
     cmd_vms,
+    cmd_vnets,
     cmd_zones,
 )
 

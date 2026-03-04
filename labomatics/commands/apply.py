@@ -65,8 +65,6 @@ def apply_removes(proxmox, config, to_remove: list[dict]) -> None:
     if not to_remove:
         return
     console.print("\n[bold red]Suppression...[/bold red]")
-    zone = config.openwrt.network.zone_name
-    all_vnets = list_vnets_in_zone(proxmox, zone)
 
     for pool in to_remove:
         pool_name = pool["poolid"]
@@ -120,7 +118,7 @@ def apply_adds(proxmox, config, to_add: list, creds: dict) -> dict:
         Dict des credentials mis à jour (y compris les nouveaux).
     """
     from ..deploy import deploy_student
-    from ..ip_pool import allocate_vxlan_subnet, allocate_wan_ip
+    from ..ip_pool import allocate_vxlan_subnet
 
     if not to_add:
         return creds

@@ -7,8 +7,8 @@ from rich.console import Console
 from rich.table import Table
 
 from ..config import load_config
-from ..proxmox import get_pool_lxcs, get_pool_vms, list_managed_pools
 from ..ip_pool import get_vm_wan_ip
+from ..proxmox import get_pool_lxcs, get_pool_vms, list_managed_pools
 from ._helpers import load_students_from_config, make_connection
 
 console = Console()
@@ -63,7 +63,6 @@ def cmd_status(args) -> None:
         all_members = vms + lxcs
 
         # CPU et RAM : seulement pour les VMs running
-        cpu_used = sum(m.get("cpu", 0) for m in all_members if m.get("status") == "running")
         cpu_used_cores = sum(m.get("cpus", 0) for m in all_members if m.get("status") == "running")
         ram_used_mb = sum(m.get("maxmem", 0) for m in all_members if m.get("status") == "running") // (1024 * 1024)
 
