@@ -47,23 +47,17 @@ quotad:
 # Construites avec : labomatics build-template
 templates:
   - name: ubuntu-24.04
+    node: pve-a-2
+    storage_pool: "zfs-pool"
+    iso_storage_pool: "zfs-pool"
+    iso_file: "ubuntu-22.04.3-live-server-amd64.iso"
+    bridge: "vmbr0"
     vmid: 9100
     packer: ubuntu         # Sous-répertoire dans packer/
     provisioning:
       method: ssh
-      user: ubuntu
       commands:
         - "sudo apt-get update -y"
         - "sudo apt-get install -y qemu-guest-agent cloud-init"
         - "sudo systemctl enable qemu-guest-agent"
         - "sudo cloud-init clean --logs"
-
-  - name: debian-12
-    vmid: 9101
-    packer: debian
-    provisioning:
-      method: guest-agent
-      user: root
-      commands:
-        - "apt-get update -y"
-        - "apt-get install -y qemu-guest-agent"

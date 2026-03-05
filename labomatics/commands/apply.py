@@ -15,7 +15,7 @@ from ..credentials import (
     make_credential,
     save_credentials,
 )
-from ..deploy import apply_pool_flavor, destroy_all_pool_members
+from ..deploy import destroy_all_pool_members
 from ..diff import compute_diff, print_diff
 from ..proxmox import (
     apply_sdn,
@@ -27,35 +27,14 @@ from ..proxmox import (
     delete_proxmox_user,
     delete_student_acls,
     delete_vnet,
+    get_pool_vnet_name,
     list_managed_pools,
-    list_vnets_in_zone,
     set_student_acls,
     user_exists,
 )
 from ._helpers import ask_confirm, load_students_from_config, make_connection
 
 console = Console()
-
-
-def _resolve_vnet_for_pool(proxmox, config, pool_name: str) -> str | None:
-    """Trouve le nom du VNet SDN d'un pool (depuis les VMs du pool ou les VNets)."""
-    from ..proxmox import get_pool_vms
-
-    vmid_start = config.openwrt.vmid_start
-    for vm in get_pool_vms(proxmox, pool_name):
-        vmid = vm.get("vmid")
-        if vmid:
-            student_id = vmid - vmid_start
-            vnet_candidate = f"vn{student_id:05d}"
-            return vnet_candidate
-    # Fallback : chercher par alias dans la zone
-    zone = config.openwrt.network.zone_name
-    all_vnets = list_vnets_in_zone(proxmox, zone)
-    vnet = next(
-        (v["vnet"] for v in all_vnets if v.get("alias") == pool_name),
-        None,
-    )
-    return vnet
 
 
 def apply_removes(proxmox, config, to_remove: list[dict]) -> None:
@@ -74,8 +53,8 @@ def apply_removes(proxmox, config, to_remove: list[dict]) -> None:
         # 1. Supprimer toutes les VMs QEMU et LXC du pool
         destroy_all_pool_members(proxmox, pool_name)
 
-        # 2. Trouver et supprimer le VNet associé
-        vnet_name = _resolve_vnet_for_pool(proxmox, config, pool_name)
+        # 2. Récupérer le VNet depuis le commentaire du pool
+        vnet_name = get_pool_vnet_name(pool)
 
         # 3. Supprimer les ACL
         delete_student_acls(proxmox, config, pool_name, vnet_name)
@@ -134,16 +113,28 @@ def apply_adds(proxmox, config, to_add: list, creds: dict) -> dict:
         return creds
 
     # Étape 1 : pools + VNets
+    from ipaddress import IPv4Network
+
+    reserved_vxlan: set[IPv4Network] = set()
+
     for student in to_add:
         console.print(f"\n  [dim]Étudiant : {student.nom}[/dim]")
         try:
-            create_pool(proxmox, student.pool_name())
+            vxlan_gw, vxlan_subnet = allocate_vxlan_subnet(proxmox, config, reserved=reserved_vxlan)
+            reserved_vxlan.add(IPv4Network(vxlan_subnet, strict=False))
+        except Exception as e:
+            console.print(f"  [yellow]⚠  vxlan alloc {student.vnet_name()} : {e}[/yellow]")
+            vxlan_gw, vxlan_subnet = "", ""
+
+        try:
+            create_pool(proxmox, student.pool_name(), vnet_name=student.vnet_name())
             console.print(f"  [green]✓ pool {student.pool_name()}[/green]")
         except Exception as e:
             console.print(f"  [yellow]⚠  pool {student.pool_name()} : {e}[/yellow]")
 
         try:
-            vxlan_gw, vxlan_subnet = allocate_vxlan_subnet(proxmox, config)
+            if not vxlan_gw:
+                raise ValueError("VXLAN non alloué")
             create_vnet(
                 proxmox,
                 vnet_name=student.vnet_name(),
@@ -174,11 +165,6 @@ def apply_adds(proxmox, config, to_add: list, creds: dict) -> dict:
             set_student_acls(proxmox, config, student)
         except Exception as e:
             console.print(f"  [yellow]⚠  user/acl {student.nom} : {e}[/yellow]")
-
-        try:
-            apply_pool_flavor(proxmox, config, student)
-        except Exception as e:
-            console.print(f"  [yellow]⚠  flavor {student.nom} : {e}[/yellow]")
 
         # Pré-enregistrer les credentials avec WAN IP = "pending"
         creds[student.login()] = make_credential(student, password, "pending")

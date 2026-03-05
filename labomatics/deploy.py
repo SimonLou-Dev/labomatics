@@ -32,7 +32,6 @@ from .proxmox import (
     get_pool_lxcs,
     get_pool_vms,
     pick_node,
-    set_pool_limits,
     vm_exists,
     wait_for_task,
 )
@@ -85,19 +84,22 @@ def deploy_student(
         raise RuntimeError(f"Template VMID {template_id} introuvable sur le cluster")
     target_node = pick_node(proxmox)
 
-    # Clone complet depuis la template (stockage partagé requis)
-    task = (
-        proxmox.nodes(source_node)
-        .qemu(template_id)
-        .clone.post(
-            newid=vmid,
-            name=name,
-            full=1,
-            storage=storage,
-            target=target_node,
-            pool=student.pool_name(),
-        )
+    # Clone complet — si la template est sur stockage local, clone sur le nœud source
+    clone_kwargs: dict = dict(
+        newid=vmid, name=name, full=1, storage=storage, pool=student.pool_name()
     )
+    if target_node != source_node:
+        clone_kwargs["target"] = target_node
+    try:
+        task = proxmox.nodes(source_node).qemu(template_id).clone.post(**clone_kwargs)
+    except Exception as e:
+        if "local storage" in str(e) and "target" in clone_kwargs:
+            # Stockage local : cloner sur le nœud source
+            target_node = source_node
+            clone_kwargs.pop("target")
+            task = proxmox.nodes(source_node).qemu(template_id).clone.post(**clone_kwargs)
+        else:
+            raise
     wait_for_task(proxmox, source_node, task)
 
     # Configuration cloud-init NoCloud
@@ -123,31 +125,6 @@ def deploy_student(
         f"  [green]✓ {name:25} vmid={vmid}  node={target_node}  "
         f"WAN {wan_ip}  VXLAN {vxlan_subnet}[/green]"
     )
-
-
-def apply_pool_flavor(
-    proxmox: ProxmoxAPI,
-    config: "InfraConfig",
-    student: "Student",
-) -> None:
-    """Applique les limites de ressources du flavor sur le pool Proxmox natif.
-
-    Args:
-        proxmox: Client API Proxmox authentifié.
-        config: Configuration de l'infrastructure.
-        student: Étudiant dont le flavor est à appliquer.
-    """
-    flavor = config.get_flavor(student.flavor)
-    try:
-        set_pool_limits(
-            proxmox,
-            student.pool_name(),
-            max_cpu=flavor.cpu,
-            max_ram_mb=flavor.ram,
-            max_disk_gb=flavor.disk,
-        )
-    except Exception as e:
-        console.print(f"  [yellow]⚠  Quotas pool {student.pool_name()} : {e}[/yellow]")
 
 
 def destroy_student(
@@ -222,7 +199,7 @@ def destroy_all_pool_members(proxmox: ProxmoxAPI, pool_name: str) -> None:
         pool_name: Nom du pool à vider.
     """
     try:
-        for member in get_pool_vms(proxmox, pool_name):
+        for member in list(get_pool_vms(proxmox, pool_name)):
             vmid = member.get("vmid")
             node = member.get("node")
             if vmid and node:
@@ -231,7 +208,7 @@ def destroy_all_pool_members(proxmox: ProxmoxAPI, pool_name: str) -> None:
         pass
 
     try:
-        for member in get_pool_lxcs(proxmox, pool_name):
+        for member in list(get_pool_lxcs(proxmox, pool_name)):
             vmid = member.get("vmid")
             node = member.get("node")
             if vmid and node:

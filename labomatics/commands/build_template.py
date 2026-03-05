@@ -29,13 +29,13 @@ from pathlib import Path
 
 from rich.console import Console
 
-from ..config import load_config
+from ..config import ProxmoxSettings, TemplateConfig, load_config
 from ..proxmox import find_vm_node, vm_exists, wait_for_task
 from ._helpers import ask_confirm, make_connection
 
 console = Console()
 
-PACKER_DIR = Path(__file__).parent.parent.parent / "packer"
+PACKER_DIR = Path(__file__).parent.parent / "packer"
 
 
 def _delete_existing_template(proxmox, vmid: int) -> None:
@@ -63,22 +63,62 @@ def _delete_existing_template(proxmox, vmid: int) -> None:
         console.print(f"  [yellow]⚠  Suppression template vmid={vmid} : {e}[/yellow]")
 
 
-def _run_packer(template_name: str, proxmox_host: str) -> bool:
+def _run_packer(template: TemplateConfig, proxmox: ProxmoxSettings) -> bool:
     """Exécute Packer pour construire une template.
 
     Returns:
         True si Packer a réussi.
     """
-    packer_dir = PACKER_DIR / template_name
+    packer_dir = PACKER_DIR / template.packer
     if not packer_dir.exists():
         console.print(f"[red]❌ Répertoire Packer introuvable : {packer_dir}[/red]")
         return False
 
+    console.print(f"  [cyan]Packer init : {packer_dir}[/cyan]")
+    result = subprocess.run(
+        ["packer", "init", "."],
+        cwd=packer_dir,
+    )
+    if result.returncode != 0:
+        console.print(f"[red]❌ Packer init a échoué (code {result.returncode})[/red]")
+        return False
+
     console.print(f"  [cyan]Packer build : {packer_dir}[/cyan]")
     result = subprocess.run(
-        ["packer", "build", "."],
+        [
+            "packer",
+            "build",
+            # Connexion Proxmox
+            "-var",
+            f"proxmox_api_token_id={proxmox.token_id}",
+            "-var",
+            f"proxmox_api_token_secret={proxmox.token_secret}",
+            "-var",
+            f"proxmox_api_url=https://{proxmox.host}:8006/api2/json",
+            # Cible proxmox
+            "-var",
+            f"proxmox_node={template.node}",
+            "-var",
+            f"vm_id={template.vmid}",
+            "-var",
+            f"vm_name={template.name}",
+            "-var",
+            f"storage_pool={template.storage_pool}",
+            "-var",
+            f"iso_storage_pool={template.iso_storage_pool}",
+            "-var",
+            f"iso_file={template.iso_storage_pool}:iso/{template.iso_file}",
+            "-var",
+            f"bridge={template.bridge}",
+            # Identifiants
+            "-var",
+            f"custom_user={template.provisioning.user}",
+            "-var",
+            f"custom_password={template.provisioning.password}",
+            ".",
+        ],
         cwd=packer_dir,
-        env={**__import__("os").environ, "PROXMOX_HOST": proxmox_host},
+        env={**__import__("os").environ, "PROXMOX_HOST": proxmox.host},
     )
     if result.returncode != 0:
         console.print(f"[red]❌ Packer a échoué (code {result.returncode})[/red]")
@@ -192,7 +232,7 @@ def cmd_build_template(args) -> None:
 
         # Étape 2 : Packer build (si configuré)
         if tmpl.packer:
-            if not _run_packer(tmpl.packer, settings.host):
+            if not _run_packer(tmpl, settings):
                 console.print(f"[red]❌ Build Packer échoué pour '{tmpl.name}'[/red]")
                 continue
 

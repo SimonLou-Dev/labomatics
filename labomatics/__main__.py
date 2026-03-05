@@ -102,26 +102,35 @@ def main() -> None:
         help="Crée la template OpenWrt sur le nœud Proxmox local (root requis)",
     )
     p.add_argument(
-        "--version", default="23.05.5", metavar="VERSION", help="Version OpenWrt (défaut: 23.05.5)"
+        "--version",
+        default=None,
+        metavar="VERSION",
+        help="Version OpenWrt (défaut: dernière stable)",
     )
     p.add_argument(
         "--vmid",
         type=int,
-        default=90200,
+        default=None,
         metavar="VMID",
-        help="VMID de la template (défaut: 90200)",
+        help="VMID de la template (défaut: infra.yaml → openwrt.template_vmid)",
     )
     p.add_argument(
         "--storage",
-        default="local-lvm",
+        default=None,
         metavar="STORAGE",
-        help="Stockage cible (défaut: local-lvm)",
+        help="Stockage cible (défaut: infra.yaml → openwrt.storage)",
     )
     p.add_argument(
         "--password",
         default="openwrt",
         metavar="PASSWORD",
         help="Mot de passe root OpenWrt (défaut: openwrt)",
+    )
+    p.add_argument(
+        "--template-pool",
+        default="template",
+        metavar="POOL",
+        help="Pool Proxmox où ajouter la template (défaut: template)",
     )
     p.add_argument("--yes", "-y", action="store_true", help="Pas de confirmation interactive")
 

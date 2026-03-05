@@ -57,7 +57,13 @@ def load_credentials(config: "InfraConfig") -> dict[str, dict]:
     creds: dict[str, dict] = {}
     with open(path, newline="", encoding="utf-8") as f:
         for row in csv.DictReader(f):
-            creds[row["login"]] = dict(row)
+            # Rétrocompatibilité : ancien format utilisait "nom" comme clé login
+            d = dict(row)
+            if "login" not in d:
+                d["login"] = d.get("nom", "")
+            key = d["login"]
+            if key:
+                creds[key] = d
     return creds
 
 
