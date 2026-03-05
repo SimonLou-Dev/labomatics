@@ -33,6 +33,21 @@ from ._helpers import ask_confirm
 console = Console()
 
 _OPENWRT_INIT = Path(__file__).parent.parent / "templates" / "OPENWRT_INIT"
+_OPENWRT_RELEASES_URL = "https://downloads.openwrt.org/releases/"
+
+
+def _get_latest_openwrt_version() -> str:
+    """Récupère la dernière version stable d'OpenWrt depuis downloads.openwrt.org."""
+    import re
+
+    with urllib.request.urlopen(_OPENWRT_RELEASES_URL, timeout=10) as resp:
+        html = resp.read().decode()
+    # Cherche les dossiers de version stables (ex: 23.05.5/, 24.10.0/) — exclut snapshots/rc
+    versions = re.findall(r'href="(\d+\.\d+\.\d+)/"', html)
+    if not versions:
+        raise RuntimeError("Impossible de récupérer la liste des versions OpenWrt")
+    # Trier par tuple numérique et retourner la plus récente
+    return str(sorted(versions, key=lambda v: tuple(int(x) for x in v.split(".")))[-1])
 
 
 def _run(cmd: list[str], check: bool = True) -> subprocess.CompletedProcess:
@@ -68,7 +83,18 @@ def cmd_build_openwrt(args) -> None:
         _storage_default = "local-lvm"
         _vmid_default = 90200
 
-    version: str = args.version
+    if args.version:
+        version: str = args.version
+    else:
+        console.print("[dim]Récupération de la dernière version OpenWrt...[/dim]")
+        try:
+            version = _get_latest_openwrt_version()
+            console.print(f"  Dernière version stable : [bold]{version}[/bold]")
+        except Exception as e:
+            console.print(
+                f"[yellow]⚠  Impossible de récupérer la version : {e} — fallback 23.05.5[/yellow]"
+            )
+            version = "23.05.5"
     vmid: int = args.vmid if args.vmid is not None else _vmid_default
     storage: str = args.storage if args.storage is not None else _storage_default
     password: str = args.password

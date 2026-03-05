@@ -102,7 +102,10 @@ def main() -> None:
         help="Crée la template OpenWrt sur le nœud Proxmox local (root requis)",
     )
     p.add_argument(
-        "--version", default="23.05.5", metavar="VERSION", help="Version OpenWrt (défaut: 23.05.5)"
+        "--version",
+        default=None,
+        metavar="VERSION",
+        help="Version OpenWrt (défaut: dernière stable)",
     )
     p.add_argument(
         "--vmid",
