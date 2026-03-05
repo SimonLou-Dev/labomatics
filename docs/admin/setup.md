@@ -22,8 +22,10 @@ Peers      : IPs de tous les nœuds du cluster
 ### 2. Pool template
 
 Un pool Proxmox nommé `template` (ou le nom défini dans `template_pool`) doit exister
-et contenir la template OpenWrt. Le script **ne crée pas ce pool** — il est créé
-manuellement et la template y est ajoutée après le build.
+pour accueillir la template OpenWrt. `labomatics build-openwrt` **crée ce pool
+automatiquement** s'il n'existe pas et y ajoute la template.
+
+Pour le créer manuellement si nécessaire :
 
 ```
 Datacenter → Pools → Create → Pool ID: template
@@ -64,9 +66,13 @@ Permissions minimales requises sur `/` (ou par chemin) :
 ## Installation Python
 
 Proxmox tourne sur Debian — l'environnement Python système est géré par APT et
-refuse les `pip install` directs. Utiliser un **virtualenv** :
+refuse les `pip install` directs. Installer d'abord le paquet `venv` puis créer
+un virtualenv :
 
 ```bash
+# Installer le module venv (Debian/Proxmox)
+apt install python3.13-venv
+
 # Créer le venv (une seule fois)
 python3 -m venv /opt/labomatics
 
@@ -151,12 +157,15 @@ pour le détail complet.
 À exécuter **en root sur un nœud Proxmox** ayant accès au stockage partagé :
 
 ```bash
-# Via labomatics (recommandé)
-labomatics build-openwrt --version 23.05.5 --vmid 90200 --storage zfs-store --password openwrt
+# Télécharge la dernière version stable d'OpenWrt, crée et configure la template
+# (vmid et storage lus depuis infra.yaml si déjà configuré)
+labomatics build-openwrt
 
-# Ajouter la template au pool template (pour les ACL étudiants)
-pvesh set /pools/template -vms 90200
+# Forcer une version ou un stockage spécifique
+labomatics build-openwrt --version 24.10.0 --vmid 90200 --storage zfs-store
 ```
+
+La commande ajoute automatiquement la template au pool `template` à la fin.
 
 ### Étape 2 — Zone SDN VXLAN
 
