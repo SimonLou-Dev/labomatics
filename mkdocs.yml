@@ -1,9 +1,9 @@
 site_name: labomatics
-site_url: https://simonlou-dev.github.io/labomatrics/
+site_url: https://simonlou-dev.github.io/labomatics/
 site_description: CLI Proxmox pour la gestion de labs réseau étudiants
 site_author: SimonLou-Dev
-repo_url: https://github.com/SimonLou-Dev/labomatrics
-repo_name: SimonLou-Dev/labomatrics
+repo_url: https://github.com/SimonLou-Dev/labomatics
+repo_name: SimonLou-Dev/labomatics
 edit_uri: edit/main/docs/
 
 theme:
