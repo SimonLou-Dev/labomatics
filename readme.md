@@ -2,8 +2,8 @@
 
 [![PyPI](https://img.shields.io/pypi/v/labomatics)](https://pypi.org/project/labomatics)
 [![Python](https://img.shields.io/pypi/pyversions/labomatics)](https://pypi.org/project/labomatics)
-[![Licence: MIT](https://img.shields.io/badge/licence-MIT-blue.svg)](https://github.com/SimonLou-Dev/labomatrics/blob/main/LICENSE)
-[![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://simonlou-dev.github.io/labomatrics/)
+[![Licence: MIT](https://img.shields.io/badge/licence-MIT-blue.svg)](https://github.com/SimonLou-Dev/labomatics/blob/main/LICENSE)
+[![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://simonlou-dev.github.io/labomatics/)
 
 CLI Python pour déployer automatiquement des environnements de lab réseau
 sur un cluster Proxmox à partir d'un CSV d'étudiants.
@@ -40,7 +40,7 @@ pip install labomatics
 Ou depuis les sources :
 
 ```bash
-git clone https://github.com/SimonLou-Dev/labomatrics
+git clone https://github.com/SimonLou-Dev/labomatics
 cd labomatics-cli
 pip install -e ".[dev]"
 ```
