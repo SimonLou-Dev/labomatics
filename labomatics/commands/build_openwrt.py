@@ -136,9 +136,19 @@ def _check_deps() -> None:
 
 def cmd_build_openwrt(args) -> None:
     """Crée la template VM OpenWrt sur le nœud Proxmox local (root requis)."""
+    from ..config import load_config
+
+    try:
+        config = load_config()
+        _storage_default = config.openwrt.storage
+        _vmid_default = config.openwrt.template_vmid
+    except Exception:
+        _storage_default = "local-lvm"
+        _vmid_default = 90200
+
     version: str = args.version
-    vmid: int = args.vmid
-    storage: str = args.storage
+    vmid: int = args.vmid if args.vmid is not None else _vmid_default
+    storage: str = args.storage if args.storage is not None else _storage_default
     password: str = args.password
 
     _check_root()

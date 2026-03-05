@@ -107,15 +107,15 @@ def main() -> None:
     p.add_argument(
         "--vmid",
         type=int,
-        default=90200,
+        default=None,
         metavar="VMID",
-        help="VMID de la template (défaut: 90200)",
+        help="VMID de la template (défaut: infra.yaml → openwrt.template_vmid)",
     )
     p.add_argument(
         "--storage",
-        default="local-lvm",
+        default=None,
         metavar="STORAGE",
-        help="Stockage cible (défaut: local-lvm)",
+        help="Stockage cible (défaut: infra.yaml → openwrt.storage)",
     )
     p.add_argument(
         "--password",
