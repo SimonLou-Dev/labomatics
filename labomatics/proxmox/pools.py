@@ -13,12 +13,24 @@ from .client import POOL_MARKER
 
 def list_managed_pools(proxmox: ProxmoxAPI) -> list[dict]:
     """Liste uniquement les pools créés et gérés par labomatics."""
-    return [p for p in proxmox.pools.get() if p.get("comment") == POOL_MARKER]
+    return [p for p in proxmox.pools.get() if (p.get("comment") or "").startswith(POOL_MARKER)]
 
 
-def create_pool(proxmox: ProxmoxAPI, pool_name: str) -> None:
-    """Crée un pool Proxmox marqué comme géré par labomatics."""
-    proxmox.pools.post(poolid=pool_name, comment=POOL_MARKER)
+def get_pool_vnet_name(pool: dict) -> str | None:
+    """Extrait le nom du VNet stocké dans le commentaire du pool (``POOL_MARKER:vnet_name``)."""
+    comment = pool.get("comment") or ""
+    if ":" in comment:
+        return comment.split(":", 1)[1] or None
+    return None
+
+
+def create_pool(proxmox: ProxmoxAPI, pool_name: str, vnet_name: str = "") -> None:
+    """Crée un pool Proxmox marqué comme géré par labomatics.
+
+    Le nom du VNet associé est stocké dans le commentaire pour permettre sa suppression ultérieure.
+    """
+    comment = f"{POOL_MARKER}:{vnet_name}" if vnet_name else POOL_MARKER
+    proxmox.pools.post(poolid=pool_name, comment=comment)
 
 
 def delete_pool(proxmox: ProxmoxAPI, pool_name: str) -> None:

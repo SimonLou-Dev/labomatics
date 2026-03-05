@@ -23,6 +23,7 @@ from .pools import (
     delete_pool,
     get_pool_lxcs,
     get_pool_vms,
+    get_pool_vnet_name,
     list_managed_pools,
 )
 from .sdn import (
@@ -62,6 +63,7 @@ __all__ = [
     "add_vm_to_pool",
     "get_pool_vms",
     "get_pool_lxcs",
+    "get_pool_vnet_name",
     # sdn
     "check_sdn_zone_exists",
     "list_vnets_in_zone",

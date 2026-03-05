@@ -196,7 +196,7 @@ def destroy_all_pool_members(proxmox: ProxmoxAPI, pool_name: str) -> None:
         pool_name: Nom du pool à vider.
     """
     try:
-        for member in get_pool_vms(proxmox, pool_name):
+        for member in list(get_pool_vms(proxmox, pool_name)):
             vmid = member.get("vmid")
             node = member.get("node")
             if vmid and node:
@@ -205,7 +205,7 @@ def destroy_all_pool_members(proxmox: ProxmoxAPI, pool_name: str) -> None:
         pass
 
     try:
-        for member in get_pool_lxcs(proxmox, pool_name):
+        for member in list(get_pool_lxcs(proxmox, pool_name)):
             vmid = member.get("vmid")
             node = member.get("node")
             if vmid and node:
