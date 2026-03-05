@@ -19,7 +19,6 @@ au stockage partagé.
  10. Création VM Proxmox + import disque + conversion en template
 """
 
-import gzip
 import shutil
 import subprocess
 import sys
@@ -28,7 +27,6 @@ import urllib.request
 from pathlib import Path
 
 from rich.console import Console
-from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from ._helpers import ask_confirm
 
@@ -130,7 +128,7 @@ def _check_root() -> None:
 
 
 def _check_deps() -> None:
-    for dep in ("losetup", "mount", "umount", "openssl", "qm", "wget"):
+    for dep in ("losetup", "mount", "umount", "openssl", "qm", "wget", "gunzip"):
         if not shutil.which(dep):
             console.print(f"[red]❌ Commande introuvable : {dep}[/red]")
             sys.exit(1)
@@ -168,17 +166,35 @@ def cmd_build_openwrt(args) -> None:
         mnt = tmp / "mnt"
         mnt.mkdir()
 
-        # Téléchargement
+        # Téléchargement via wget (sortie visible pour diagnostic)
         console.print(f"\n[bold]==> Téléchargement OpenWrt {version}...[/bold]")
-        with Progress(SpinnerColumn(), TextColumn("{task.description}"), console=console) as p:
-            task = p.add_task(img_url)
-            urllib.request.urlretrieve(img_url, img_gz)
-            p.update(task, description=f"[green]✓ {img_gz.name}[/green]")
+        console.print(f"  [dim]{img_url}[/dim]")
+        ret = subprocess.run(
+            ["wget", "-O", str(img_gz), img_url],
+            check=False,
+        )
+        if ret.returncode != 0:
+            raise RuntimeError(f"wget a échoué (exit {ret.returncode})\nURL : {img_url}")
+        if not img_gz.exists() or img_gz.stat().st_size < 1024:
+            raise RuntimeError(f"Fichier téléchargé vide ou absent : {img_gz}")
+        with open(img_gz, "rb") as f:
+            magic = f.read(4)
+        if magic[:2] != b"\x1f\x8b":
+            raise RuntimeError(
+                f"Fichier téléchargé invalide — premiers bytes : {magic!r}\n"
+                f"Taille : {img_gz.stat().st_size} bytes\n"
+                f"URL : {img_url}\n"
+                f"Vérifiez la connectivité réseau du nœud (proxy ? firewall ?)."
+            )
+        console.print(f"  [green]✓ {img_gz.name} ({img_gz.stat().st_size // 1024 // 1024} MB)[/green]")
 
-        # Extraction gzip
+        # Extraction gzip (exit 2 = trailing garbage sur image OpenWrt, non fatal)
         console.print("[bold]==> Extraction...[/bold]")
-        with gzip.open(img_gz, "rb") as f_in, open(img, "wb") as f_out:
-            shutil.copyfileobj(f_in, f_out)
+        r = _run(["gzip", "-d", str(img_gz)], check=False)
+        if r.returncode not in (0, 2):
+            raise RuntimeError(f"gzip -d a échoué (exit {r.returncode}) : {r.stderr.strip()}")
+        if not img.exists():
+            raise RuntimeError(f"Fichier extrait introuvable : {img}")
 
         # Montage (losetup -P pour partitions)
         console.print("[bold]==> Montage partition root (p2)...[/bold]")
@@ -242,6 +258,7 @@ def cmd_build_openwrt(args) -> None:
             console.print("[bold]==> Installation qemu-guest-agent...[/bold]")
             try:
                 with urllib.request.urlopen(f"{pkg_base}/Packages.gz", timeout=30) as resp:
+                    import gzip
                     import io
 
                     with gzip.open(io.BytesIO(resp.read())) as gz:
@@ -337,7 +354,3 @@ def cmd_build_openwrt(args) -> None:
         _run(["qm", "template", str(vmid)])
 
     console.print(f"\n[bold green]✓ Template prête : VM {vmid} (openwrt-{version})[/bold green]")
-    console.print(f"  Dans infra.yaml : [bold]template_vmid: {vmid}[/bold]")
-    console.print(
-        f"  Ajouter au pool template : [bold]pvesh set /pools/template -vms {vmid}[/bold]\n"
-    )

@@ -123,6 +123,12 @@ def main() -> None:
         metavar="PASSWORD",
         help="Mot de passe root OpenWrt (défaut: openwrt)",
     )
+    p.add_argument(
+        "--template-pool",
+        default="template",
+        metavar="POOL",
+        help="Pool Proxmox où ajouter la template (défaut: template)",
+    )
     p.add_argument("--yes", "-y", action="store_true", help="Pas de confirmation interactive")
 
     # destroy-all
