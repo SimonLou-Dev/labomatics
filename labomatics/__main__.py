@@ -15,6 +15,8 @@ Commandes disponibles :
   status         Ressources CPU/RAM/disk par étudiant vs flavor
   recreate       Recrée la VM OpenWrt d'un étudiant (--yes pour sans confirmation)
   build-template Construit une template via Packer + provisioning
+  build-openwrt  Crée la template OpenWrt sur le nœud Proxmox local (root)
+  destroy-all    Supprime toutes les ressources étudiants gérées
   init           Initialise /etc/labomatics/ avec les configs par défaut
 """
 
@@ -25,8 +27,10 @@ from rich.console import Console
 
 from .commands import (
     cmd_apply,
+    cmd_build_openwrt,
     cmd_build_template,
     cmd_credentials,
+    cmd_destroy_all,
     cmd_diff,
     cmd_find,
     cmd_init,
@@ -92,6 +96,21 @@ def main() -> None:
     p.add_argument("name", metavar="NOM", nargs="?", help="Nom de la template (défaut: toutes)")
     p.add_argument("--yes", "-y", action="store_true", help="Pas de confirmation interactive")
 
+    # build-openwrt
+    p = sub.add_parser(
+        "build-openwrt",
+        help="Crée la template OpenWrt sur le nœud Proxmox local (root requis)",
+    )
+    p.add_argument("--version", default="23.05.5", metavar="VERSION", help="Version OpenWrt (défaut: 23.05.5)")
+    p.add_argument("--vmid", type=int, default=90200, metavar="VMID", help="VMID de la template (défaut: 90200)")
+    p.add_argument("--storage", default="local-lvm", metavar="STORAGE", help="Stockage cible (défaut: local-lvm)")
+    p.add_argument("--password", default="openwrt", metavar="PASSWORD", help="Mot de passe root OpenWrt (défaut: openwrt)")
+    p.add_argument("--yes", "-y", action="store_true", help="Pas de confirmation interactive")
+
+    # destroy-all
+    p = sub.add_parser("destroy-all", help="Supprime toutes les ressources étudiants gérées")
+    p.add_argument("--yes", "-y", action="store_true", help="Pas de confirmation interactive")
+
     # init
     p = sub.add_parser("init", help="Initialise /etc/labomatics/ avec les configs par défaut")
     p.add_argument("--dir", metavar="DIR", help="Répertoire cible (défaut: /etc/labomatics)")
@@ -111,6 +130,8 @@ def main() -> None:
         "status": cmd_status,
         "recreate": cmd_recreate,
         "build-template": cmd_build_template,
+        "build-openwrt": cmd_build_openwrt,
+        "destroy-all": cmd_destroy_all,
         "init": cmd_init,
     }
 
