@@ -350,13 +350,23 @@ def cmd_build_openwrt(args) -> None:
 
         console.print("[bold]==> Import du disque...[/bold]")
         _run(["qm", "importdisk", str(vmid), str(img), storage])
+        # Lire le volume ID réel depuis qm config (ligne "unusedN: <volume>")
+        cfg_out = _run(["qm", "config", str(vmid)]).stdout
+        disk_id: str | None = None
+        for line in cfg_out.splitlines():
+            if line.startswith("unused"):
+                disk_id = line.split(":", 1)[1].strip()
+                break
+        if not disk_id:
+            disk_id = f"{storage}:vm-{vmid}-disk-0"
+            console.print(f"  [yellow]⚠ volume ID non trouvé, fallback : {disk_id}[/yellow]")
         _run(
             [
                 "qm",
                 "set",
                 str(vmid),
                 "--virtio0",
-                f"{storage}:vm-{vmid}-disk-0,discard=on,iothread=1",
+                f"{disk_id},discard=on,iothread=1",
                 "--boot",
                 "order=virtio0",
             ]
