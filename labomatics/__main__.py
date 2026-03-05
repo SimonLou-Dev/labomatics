@@ -101,10 +101,28 @@ def main() -> None:
         "build-openwrt",
         help="Crée la template OpenWrt sur le nœud Proxmox local (root requis)",
     )
-    p.add_argument("--version", default="23.05.5", metavar="VERSION", help="Version OpenWrt (défaut: 23.05.5)")
-    p.add_argument("--vmid", type=int, default=90200, metavar="VMID", help="VMID de la template (défaut: 90200)")
-    p.add_argument("--storage", default="local-lvm", metavar="STORAGE", help="Stockage cible (défaut: local-lvm)")
-    p.add_argument("--password", default="openwrt", metavar="PASSWORD", help="Mot de passe root OpenWrt (défaut: openwrt)")
+    p.add_argument(
+        "--version", default="23.05.5", metavar="VERSION", help="Version OpenWrt (défaut: 23.05.5)"
+    )
+    p.add_argument(
+        "--vmid",
+        type=int,
+        default=90200,
+        metavar="VMID",
+        help="VMID de la template (défaut: 90200)",
+    )
+    p.add_argument(
+        "--storage",
+        default="local-lvm",
+        metavar="STORAGE",
+        help="Stockage cible (défaut: local-lvm)",
+    )
+    p.add_argument(
+        "--password",
+        default="openwrt",
+        metavar="PASSWORD",
+        help="Mot de passe root OpenWrt (défaut: openwrt)",
+    )
     p.add_argument("--yes", "-y", action="store_true", help="Pas de confirmation interactive")
 
     # destroy-all

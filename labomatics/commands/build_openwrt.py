@@ -123,7 +123,9 @@ def _check_root() -> None:
     import os
 
     if os.geteuid() != 0:
-        console.print("[red]❌ Cette commande doit être exécutée en root sur le nœud Proxmox.[/red]")
+        console.print(
+            "[red]❌ Cette commande doit être exécutée en root sur le nœud Proxmox.[/red]"
+        )
         sys.exit(1)
 
 
@@ -145,10 +147,7 @@ def cmd_build_openwrt(args) -> None:
     _check_deps()
 
     img_base = f"openwrt-{version}-x86-64-generic-ext4-combined"
-    img_url = (
-        f"https://downloads.openwrt.org/releases/{version}"
-        f"/targets/x86/64/{img_base}.img.gz"
-    )
+    img_url = f"https://downloads.openwrt.org/releases/{version}/targets/x86/64/{img_base}.img.gz"
     pkg_base = f"https://downloads.openwrt.org/releases/{version}/targets/x86/64/packages"
 
     # Vérification VM existante
@@ -200,6 +199,7 @@ def cmd_build_openwrt(args) -> None:
                 if f.exists():
                     content = f.read_text()
                     import re
+
                     content = re.sub(r"^(root):[^:]*:", f"root:{pwd_hash}:", content, flags=re.M)
                     f.write_text(content)
                     break
@@ -218,13 +218,24 @@ def cmd_build_openwrt(args) -> None:
 
             # Certificat HTTPS
             console.print("[bold]==> Génération certificat HTTPS...[/bold]")
-            _run([
-                "openssl", "req", "-x509", "-newkey", "rsa:2048",
-                "-keyout", str(mnt / "etc" / "uhttpd.key"),
-                "-out", str(mnt / "etc" / "uhttpd.crt"),
-                "-days", "3650", "-nodes",
-                "-subj", "/C=FR/O=OpenWrt/CN=openwrt",
-            ])
+            _run(
+                [
+                    "openssl",
+                    "req",
+                    "-x509",
+                    "-newkey",
+                    "rsa:2048",
+                    "-keyout",
+                    str(mnt / "etc" / "uhttpd.key"),
+                    "-out",
+                    str(mnt / "etc" / "uhttpd.crt"),
+                    "-days",
+                    "3650",
+                    "-nodes",
+                    "-subj",
+                    "/C=FR/O=OpenWrt/CN=openwrt",
+                ]
+            )
             (mnt / "etc" / "uhttpd.key").chmod(0o600)
 
             # qemu-guest-agent
@@ -232,6 +243,7 @@ def cmd_build_openwrt(args) -> None:
             try:
                 with urllib.request.urlopen(f"{pkg_base}/Packages.gz", timeout=30) as resp:
                     import io
+
                     with gzip.open(io.BytesIO(resp.read())) as gz:
                         pkg_list = gz.read().decode("utf-8", errors="replace")
 
@@ -259,7 +271,9 @@ def cmd_build_openwrt(args) -> None:
                             break
                     console.print("  [green]✓ qemu-guest-agent installé[/green]")
                 else:
-                    console.print(f"  [yellow]⚠  qemu-ga introuvable dans les repos {version}[/yellow]")
+                    console.print(
+                        f"  [yellow]⚠  qemu-ga introuvable dans les repos {version}[/yellow]"
+                    )
             except Exception as e:
                 console.print(f"  [yellow]⚠  qemu-ga : {e}[/yellow]")
 
@@ -281,29 +295,49 @@ def cmd_build_openwrt(args) -> None:
 
         built_date = datetime.date.today().isoformat()
         console.print(f"\n[bold]==> Création VM template (VMID {vmid})...[/bold]")
-        _run([
-            "qm", "create", str(vmid),
-            "--name", f"openwrt-{version}",
-            "--memory", "256",
-            "--cores", "1",
-            "--net0", "virtio,bridge=vmbr0",
-            "--serial0", "socket",
-            "--vga", "serial0",
-            "--ostype", "l26",
-            "--description", f"OpenWrt {version} x86_64 - built {built_date}",
-        ])
+        _run(
+            [
+                "qm",
+                "create",
+                str(vmid),
+                "--name",
+                f"openwrt-{version}",
+                "--memory",
+                "256",
+                "--cores",
+                "1",
+                "--net0",
+                "virtio,bridge=vmbr0",
+                "--serial0",
+                "socket",
+                "--vga",
+                "serial0",
+                "--ostype",
+                "l26",
+                "--description",
+                f"OpenWrt {version} x86_64 - built {built_date}",
+            ]
+        )
 
         console.print("[bold]==> Import du disque...[/bold]")
         _run(["qm", "importdisk", str(vmid), str(img), storage])
-        _run([
-            "qm", "set", str(vmid),
-            "--virtio0", f"{storage}:vm-{vmid}-disk-0,discard=on,iothread=1",
-            "--boot", "order=virtio0",
-        ])
+        _run(
+            [
+                "qm",
+                "set",
+                str(vmid),
+                "--virtio0",
+                f"{storage}:vm-{vmid}-disk-0,discard=on,iothread=1",
+                "--boot",
+                "order=virtio0",
+            ]
+        )
 
         console.print("[bold]==> Conversion en template...[/bold]")
         _run(["qm", "template", str(vmid)])
 
     console.print(f"\n[bold green]✓ Template prête : VM {vmid} (openwrt-{version})[/bold green]")
     console.print(f"  Dans infra.yaml : [bold]template_vmid: {vmid}[/bold]")
-    console.print(f"  Ajouter au pool template : [bold]pvesh set /pools/template -vms {vmid}[/bold]\n")
+    console.print(
+        f"  Ajouter au pool template : [bold]pvesh set /pools/template -vms {vmid}[/bold]\n"
+    )
