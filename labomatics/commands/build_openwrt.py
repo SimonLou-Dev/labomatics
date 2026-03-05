@@ -32,85 +32,7 @@ from ._helpers import ask_confirm
 
 console = Console()
 
-_UCI_DEFAULTS_SCRIPT = """\
-#!/bin/sh
-# Lecteur cloud-init NoCloud pour OpenWrt (format Proxmox v1)
-# Applique hostname + réseau depuis le drive injecté par Proxmox
-
-CIDEV="/dev/sr0"
-
-mkdir -p /tmp/cidata
-mount -o ro "$CIDEV" /tmp/cidata 2>/dev/null || CIDEV=""
-
-if [ -n "$CIDEV" ]; then
-  if [ -f /tmp/cidata/user-data ]; then
-    HN=$(grep '^hostname:' /tmp/cidata/user-data | awk '{print $2}')
-    [ -n "$HN" ] && uci set system.@system[0].hostname="$HN"
-  fi
-
-  if [ -f /tmp/cidata/network-config ]; then
-    uci delete network.lan  2>/dev/null
-    uci delete network.wan  2>/dev/null
-    uci delete network.wan6 2>/dev/null
-
-    awk '
-      /- type: physical/ {
-        if (iface) print iface, addr, mask, gw
-        iface=""; addr=""; mask=""; gw=""; skip=0
-      }
-      /- type: nameserver/ {
-        if (iface) { print iface, addr, mask, gw; iface="" }
-        skip=1
-      }
-      skip       { next }
-      $1=="name:"    { iface=$2; gsub(/[\\047"]/, "", iface) }
-      $1=="address:" { addr=$2;  gsub(/[\\047"]/, "", addr)  }
-      $1=="netmask:" { mask=$2;  gsub(/[\\047"]/, "", mask)  }
-      $1=="gateway:" { gw=$2;    gsub(/[\\047"]/, "", gw)    }
-      END { if (iface) print iface, addr, mask, gw }
-    ' /tmp/cidata/network-config | while read IFACE ADDR MASK GW; do
-      if [ -n "$GW" ]; then NAME="wan"
-      else NAME="lan"
-      fi
-      uci set network.$NAME=interface
-      uci set network.$NAME.proto='static'
-      uci set network.$NAME.ipaddr="$ADDR"
-      uci set network.$NAME.netmask="$MASK"
-      uci set network.$NAME.device="$IFACE"
-      [ -n "$GW" ] && uci set network.$NAME.gateway="$GW"
-    done
-
-    uci commit network
-    /etc/init.d/network restart
-  fi
-
-  uci commit system
-  umount /tmp/cidata 2>/dev/null || true
-fi
-
-uci set uhttpd.main.listen_http='0.0.0.0:80'
-uci set uhttpd.main.listen_https='0.0.0.0:443'
-if [ -f /etc/uhttpd.crt ] && [ -f /etc/uhttpd.key ]; then
-  uci set uhttpd.main.cert='/etc/uhttpd.crt'
-  uci set uhttpd.main.key='/etc/uhttpd.key'
-  uci set uhttpd.main.redirect_https=1
-fi
-uci commit uhttpd
-/etc/init.d/uhttpd enable 2>/dev/null || true
-/etc/init.d/uhttpd restart 2>/dev/null || true
-
-uci add firewall rule
-uci set firewall.@rule[-1].name='Allow-Web-WAN'
-uci set firewall.@rule[-1].src='wan'
-uci set firewall.@rule[-1].dest_port='80 443'
-uci set firewall.@rule[-1].proto='tcp'
-uci set firewall.@rule[-1].target='ACCEPT'
-uci commit firewall
-/etc/init.d/firewall reload 2>/dev/null || true
-
-cp "$0" /etc/proxmox-init.sh 2>/dev/null || true
-exit 0
-"""
+_OPENWRT_INIT = Path(__file__).parent.parent / "templates" / "OPENWRT_INIT"
 
 
 def _run(cmd: list[str], check: bool = True) -> subprocess.CompletedProcess:
@@ -311,7 +233,7 @@ def cmd_build_openwrt(args) -> None:
             uci_dir = mnt / "etc" / "uci-defaults"
             uci_dir.mkdir(parents=True, exist_ok=True)
             uci_script = uci_dir / "99-proxmox-init"
-            uci_script.write_text(_UCI_DEFAULTS_SCRIPT)
+            uci_script.write_text(_OPENWRT_INIT.read_text())
             uci_script.chmod(0o755)
 
             console.print("[bold]==> Démontage...[/bold]")
