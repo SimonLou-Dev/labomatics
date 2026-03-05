@@ -134,6 +134,10 @@ def apply_adds(proxmox, config, to_add: list, creds: dict) -> dict:
         return creds
 
     # Étape 1 : pools + VNets
+    from ipaddress import IPv4Network
+
+    reserved_vxlan: set[IPv4Network] = set()
+
     for student in to_add:
         console.print(f"\n  [dim]Étudiant : {student.nom}[/dim]")
         try:
@@ -143,7 +147,8 @@ def apply_adds(proxmox, config, to_add: list, creds: dict) -> dict:
             console.print(f"  [yellow]⚠  pool {student.pool_name()} : {e}[/yellow]")
 
         try:
-            vxlan_gw, vxlan_subnet = allocate_vxlan_subnet(proxmox, config)
+            vxlan_gw, vxlan_subnet = allocate_vxlan_subnet(proxmox, config, reserved=reserved_vxlan)
+            reserved_vxlan.add(IPv4Network(vxlan_subnet, strict=False))
             create_vnet(
                 proxmox,
                 vnet_name=student.vnet_name(),

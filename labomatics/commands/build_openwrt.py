@@ -186,7 +186,9 @@ def cmd_build_openwrt(args) -> None:
                 f"URL : {img_url}\n"
                 f"Vérifiez la connectivité réseau du nœud (proxy ? firewall ?)."
             )
-        console.print(f"  [green]✓ {img_gz.name} ({img_gz.stat().st_size // 1024 // 1024} MB)[/green]")
+        console.print(
+            f"  [green]✓ {img_gz.name} ({img_gz.stat().st_size // 1024 // 1024} MB)[/green]"
+        )
 
         # Extraction gzip (exit 2 = trailing garbage sur image OpenWrt, non fatal)
         console.print("[bold]==> Extraction...[/bold]")
@@ -211,13 +213,13 @@ def cmd_build_openwrt(args) -> None:
             pwd_hash = pwd_result.stdout.strip()
             shadow = mnt / "etc" / "shadow"
             passwd_f = mnt / "etc" / "passwd"
-            for f in (shadow, passwd_f):
-                if f.exists():
-                    content = f.read_text()
-                    import re
+            import re
 
+            for pfile in (shadow, passwd_f):
+                if pfile.exists():
+                    content = pfile.read_text()
                     content = re.sub(r"^(root):[^:]*:", f"root:{pwd_hash}:", content, flags=re.M)
-                    f.write_text(content)
+                    pfile.write_text(content)
                     break
 
             # SSH Dropbear
