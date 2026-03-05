@@ -32,7 +32,6 @@ from .proxmox import (
     get_pool_lxcs,
     get_pool_vms,
     pick_node,
-    set_pool_limits,
     vm_exists,
     wait_for_task,
 )
@@ -123,31 +122,6 @@ def deploy_student(
         f"  [green]✓ {name:25} vmid={vmid}  node={target_node}  "
         f"WAN {wan_ip}  VXLAN {vxlan_subnet}[/green]"
     )
-
-
-def apply_pool_flavor(
-    proxmox: ProxmoxAPI,
-    config: "InfraConfig",
-    student: "Student",
-) -> None:
-    """Applique les limites de ressources du flavor sur le pool Proxmox natif.
-
-    Args:
-        proxmox: Client API Proxmox authentifié.
-        config: Configuration de l'infrastructure.
-        student: Étudiant dont le flavor est à appliquer.
-    """
-    flavor = config.get_flavor(student.flavor)
-    try:
-        set_pool_limits(
-            proxmox,
-            student.pool_name(),
-            max_cpu=flavor.cpu,
-            max_ram_mb=flavor.ram,
-            max_disk_gb=flavor.disk,
-        )
-    except Exception as e:
-        console.print(f"  [yellow]⚠  Quotas pool {student.pool_name()} : {e}[/yellow]")
 
 
 def destroy_student(

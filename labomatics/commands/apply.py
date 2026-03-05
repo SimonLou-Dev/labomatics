@@ -15,7 +15,7 @@ from ..credentials import (
     make_credential,
     save_credentials,
 )
-from ..deploy import apply_pool_flavor, destroy_all_pool_members
+from ..deploy import destroy_all_pool_members
 from ..diff import compute_diff, print_diff
 from ..proxmox import (
     apply_sdn,
@@ -179,11 +179,6 @@ def apply_adds(proxmox, config, to_add: list, creds: dict) -> dict:
             set_student_acls(proxmox, config, student)
         except Exception as e:
             console.print(f"  [yellow]⚠  user/acl {student.nom} : {e}[/yellow]")
-
-        try:
-            apply_pool_flavor(proxmox, config, student)
-        except Exception as e:
-            console.print(f"  [yellow]⚠  flavor {student.nom} : {e}[/yellow]")
 
         # Pré-enregistrer les credentials avec WAN IP = "pending"
         creds[student.login()] = make_credential(student, password, "pending")
