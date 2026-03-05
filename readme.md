@@ -189,11 +189,11 @@ labomatics-cli/
 
 ## Documentation
 
-- **[Admin](https://simonlou-dev.github.io/labomatrics/admin/overview/)** — installation, configuration, CLI (administrateurs Proxmox)
-- **[Utilisateur OpenWrt](https://simonlou-dev.github.io/labomatrics/openwrt/base/)** — réseau, DHCP, NAT, firewall (étudiants)
+- **[Admin](https://simonlou-dev.github.io/labomatics/admin/overview/)** — installation, configuration, CLI (administrateurs Proxmox)
+- **[Utilisateur OpenWrt](https://simonlou-dev.github.io/labomatics/openwrt/base/)** — réseau, DHCP, NAT, firewall (étudiants)
 
 ---
 
 ## Licence
 
-MIT — voir [LICENSE](https://github.com/SimonLou-Dev/labomatrics/blob/main/LICENSE).
+MIT — voir [LICENSE](https://github.com/SimonLou-Dev/labomatics/blob/main/LICENSE).
