@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "labomatics"
-version = "0.1.0"
+version = "0.1.1"
 description = "CLI Proxmox pour la gestion de labs étudiants"
 readme = "readme.md"
 requires-python = ">=3.11"
