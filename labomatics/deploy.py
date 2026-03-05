@@ -85,7 +85,9 @@ def deploy_student(
     target_node = pick_node(proxmox)
 
     # Clone complet — si la template est sur stockage local, clone sur le nœud source
-    clone_kwargs: dict = dict(newid=vmid, name=name, full=1, storage=storage, pool=student.pool_name())
+    clone_kwargs: dict = dict(
+        newid=vmid, name=name, full=1, storage=storage, pool=student.pool_name()
+    )
     if target_node != source_node:
         clone_kwargs["target"] = target_node
     try:

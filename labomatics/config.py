@@ -91,15 +91,21 @@ class QuotadConfig(BaseModel):
 
 class TemplateProvisioningConfig(BaseModel):
     method: str = "ssh"  # "ssh" | "guest-agent"
-    user: str = "root"
+    user: str = "etudiant"
+    password: str = "etudiant"
     commands: list[str] = []
 
 
 class TemplateConfig(BaseModel):
     name: str
     vmid: int
-    packer: str | None = None
+    node: str
+    packer: str
     provisioning: TemplateProvisioningConfig = Field(default_factory=TemplateProvisioningConfig)
+    storage_pool: str
+    iso_storage_pool: str
+    iso_file: str
+    bridge: str
 
 
 # ── Config principale ─────────────────────────────────────────────────────────
