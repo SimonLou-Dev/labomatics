@@ -1,6 +1,19 @@
 # CHANGELOG
 
 
+## v0.1.1 (2026-03-05)
+
+### Bug Fixes
+
+- **urls**: Corriger les URLs vers labomatics (sans r)
+  ([`e0216b6`](https://github.com/SimonLou-Dev/labomatics/commit/e0216b6d4a7ebaae2aa47922c27d84ce2bf5dff5))
+
+### Documentation
+
+- **links**: Correction des liens vers la documentation
+  ([`2cf32d0`](https://github.com/SimonLou-Dev/labomatics/commit/2cf32d0d64fc4782585c31558542ea13e1660620))
+
+
 ## v0.1.0 (2026-03-05)
 
 ### Bug Fixes
