@@ -84,19 +84,20 @@ def deploy_student(
         raise RuntimeError(f"Template VMID {template_id} introuvable sur le cluster")
     target_node = pick_node(proxmox)
 
-    # Clone complet depuis la template (stockage partagé requis)
-    task = (
-        proxmox.nodes(source_node)
-        .qemu(template_id)
-        .clone.post(
-            newid=vmid,
-            name=name,
-            full=1,
-            storage=storage,
-            target=target_node,
-            pool=student.pool_name(),
-        )
-    )
+    # Clone complet — si la template est sur stockage local, clone sur le nœud source
+    clone_kwargs: dict = dict(newid=vmid, name=name, full=1, storage=storage, pool=student.pool_name())
+    if target_node != source_node:
+        clone_kwargs["target"] = target_node
+    try:
+        task = proxmox.nodes(source_node).qemu(template_id).clone.post(**clone_kwargs)
+    except Exception as e:
+        if "local storage" in str(e) and "target" in clone_kwargs:
+            # Stockage local : cloner sur le nœud source
+            target_node = source_node
+            clone_kwargs.pop("target")
+            task = proxmox.nodes(source_node).qemu(template_id).clone.post(**clone_kwargs)
+        else:
+            raise
     wait_for_task(proxmox, source_node, task)
 
     # Configuration cloud-init NoCloud
