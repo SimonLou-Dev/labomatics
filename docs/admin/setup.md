@@ -63,20 +63,25 @@ Permissions minimales requises sur `/` (ou par chemin) :
 
 ## Installation Python
 
+Proxmox tourne sur Debian — l'environnement Python système est géré par APT et
+refuse les `pip install` directs. Utiliser un **virtualenv** :
+
 ```bash
-# Python 3.11+ requis
-pip install -r requirements.txt
+# Créer le venv (une seule fois)
+python3 -m venv /opt/labomatics
+
+# Installer labomatics
+/opt/labomatics/bin/pip install labomatics
+
+# Optionnel : ajouter au PATH pour éviter le chemin complet
+echo 'export PATH="/opt/labomatics/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
 ```
 
-**`requirements.txt`** :
-```
-proxmoxer
-requests
-pydantic
-pydantic-settings
-python-dotenv
-rich
-pyyaml
+Vérification :
+
+```bash
+labomatics --help
 ```
 
 ---
@@ -115,14 +120,19 @@ PROXMOX_TOKEN_SECRET=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 ### `students.csv` — Liste des étudiants
 
 ```csv
-id,nom
-18,jdupont
-240,mkorniev
-42,asmith
+id,nom,prenom,flavor
+18,Dupont,Jean,CO1
+240,Korniev,Mikhail,CO2
+42,Smith,Alice,CO1
 ```
 
 - `id` : entier unique et stable (clé de toutes les allocations réseau)
-- `nom` : identifiant alphanumérique (devient le nom de pool et `nom@pve`)
+- `nom` : nom de famille
+- `prenom` : prénom (première lettre + nom → login, ex. `jdupont`)
+- `flavor` : profil ressources défini dans `infra.yaml`
+
+Le **login Proxmox** est calculé automatiquement : `première_lettre_prénom + nom` en minuscule.
+Exemple : Jean Dupont → `jdupont@pve`, pool `jdupont`.
 
 > **Important** : ne jamais réutiliser un `id` après suppression d'un étudiant —
 > cela réattribuerait son subnet VXLAN et son IP WAN à quelqu'un d'autre.
@@ -138,9 +148,11 @@ id,nom
 La template OpenWrt doit être créée avant tout déploiement. Voir [template.md](template.md)
 pour le détail complet.
 
+À exécuter **en root sur un nœud Proxmox** ayant accès au stockage partagé :
+
 ```bash
-# Sur n'importe quel nœud Proxmox ayant accès au stockage partagé, en root
-bash scripts/build-openwrt-vm-template.sh 23.05.5 90200 zfs-store openwrt
+# Via labomatics (recommandé)
+labomatics build-openwrt --version 23.05.5 --vmid 90200 --storage zfs-store --password openwrt
 
 # Ajouter la template au pool template (pour les ACL étudiants)
 pvesh set /pools/template -vms 90200
@@ -164,17 +176,29 @@ Créer le pool template dans `Datacenter → Pools → Create` (si non existant)
 Pool ID : template
 ```
 
-### Étape 4 — Premier `apply`
+### Étape 4 — Initialisation de la configuration
+
+```bash
+# Initialise /etc/labomatics/ avec les fichiers de config par défaut
+labomatics init
+
+# Éditer les fichiers générés
+nano /etc/labomatics/.env
+nano /etc/labomatics/infra.yaml
+nano /etc/labomatics/students.csv
+```
+
+### Étape 5 — Premier `apply`
 
 ```bash
 # Vérifier le diff avant d'appliquer
-python -m esgilabs diff
+labomatics diff
 
 # Appliquer (avec confirmation interactive)
-python -m esgilabs apply
+labomatics apply
 
 # Appliquer sans confirmation (CI/CD)
-python -m esgilabs apply --yes
+labomatics apply --yes
 ```
 
 Après `apply`, le fichier `credentials.csv` est généré dans le même répertoire
@@ -182,7 +206,7 @@ que `students.csv`. Il contient les mots de passe Proxmox générés. **Ne pas l
 versionner.**
 
 ```csv
-nom,userid,password,wan_ip
-jdupont,jdupont@pve,Abc123XyzDef,172.16.0.18
-mkorniev,mkorniev@pve,DefGhi456Jkl,172.16.0.240
+login,nom,userid,password,wan_ip
+jdupont,Jean Dupont,jdupont@pve,Abc123XyzDef,172.16.0.18
+mkorniev,Mikhail Korniev,mkorniev@pve,DefGhi456Jkl,172.16.0.240
 ```
