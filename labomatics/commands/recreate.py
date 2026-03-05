@@ -23,7 +23,7 @@ def cmd_recreate(args) -> None:
 
     # Trouver l'étudiant
     students = load_students_from_config(config)
-    student = next((s for s in students if s.nom == nom), None)
+    student = next((s for s in students if s.login() == nom), None)
     if not student:
         console.print(f"[red]❌ Étudiant '{nom}' introuvable dans le CSV.[/red]")
         return

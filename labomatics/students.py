@@ -25,13 +25,21 @@ class Student:
 
     # ── identifiants Proxmox ──────────────────────────────────────────────────
 
+    def login(self) -> str:
+        """Login étudiant : première lettre du prénom + nom en minuscule.
+
+        Exemple : prenom="Jean", nom="Dupont" → "jdupont"
+        """
+        prefix = self.prenom[0].lower() if self.prenom else ""
+        return (prefix + self.nom).lower()
+
     def vmid(self, vmid_start: int) -> int:
         """VMID Proxmox = vmid_start + id (stable)."""
         return vmid_start + self.id
 
     def vm_name(self) -> str:
         """Nom de la VM OpenWrt dans Proxmox."""
-        return f"openwrt-{self.nom}"
+        return f"openwrt-{self.login()}"
 
     def vnet_name(self) -> str:
         """Nom du VNet SDN Proxmox (max 8 chars, basé sur id)."""
@@ -45,11 +53,11 @@ class Student:
 
     def pool_name(self) -> str:
         """Nom du pool Proxmox (= login étudiant)."""
-        return self.nom
+        return self.login()
 
     def user_id(self) -> str:
-        """Identifiant utilisateur Proxmox (format nom@pve)."""
-        return f"{self.nom}@pve"
+        """Identifiant utilisateur Proxmox (format login@pve)."""
+        return f"{self.login()}@pve"
 
 
 def load_students(csv_path: Path) -> list[Student]:

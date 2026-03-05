@@ -57,7 +57,7 @@ def load_credentials(config: "InfraConfig") -> dict[str, dict]:
     creds: dict[str, dict] = {}
     with open(path, newline="", encoding="utf-8") as f:
         for row in csv.DictReader(f):
-            creds[row["nom"]] = dict(row)
+            creds[row["login"]] = dict(row)
     return creds
 
 
@@ -71,9 +71,9 @@ def save_credentials(config: "InfraConfig", creds: dict[str, dict]) -> Path:
     """
     path = creds_path(config)
     with open(path, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=["nom", "userid", "password", "wan_ip"])
+        writer = csv.DictWriter(f, fieldnames=["login", "nom", "userid", "password", "wan_ip"])
         writer.writeheader()
-        for row in sorted(creds.values(), key=lambda r: r["nom"]):
+        for row in sorted(creds.values(), key=lambda r: r["login"]):
             writer.writerow(row)
     return path
 
@@ -86,7 +86,8 @@ def generate_password() -> str:
 def make_credential(student: "Student", password: str, wan_ip: str) -> dict:
     """Construit un enregistrement de credential pour un étudiant."""
     return {
-        "nom": student.nom,
+        "login": student.login(),
+        "nom": f"{student.prenom} {student.nom}".strip(),
         "userid": student.user_id(),
         "password": password,
         "wan_ip": wan_ip,
