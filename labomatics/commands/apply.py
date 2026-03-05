@@ -166,7 +166,7 @@ def apply_adds(proxmox, config, to_add: list, creds: dict) -> dict:
 
     # Étape 3 : users + ACL + quotas pool
     for student in to_add:
-        password = creds.get(student.nom, {}).get("password") or generate_password()
+        password = creds.get(student.login(), {}).get("password") or generate_password()
         try:
             if not user_exists(proxmox, student.user_id()):
                 create_proxmox_user(proxmox, student.user_id(), password, comment="labomatics")
@@ -181,7 +181,7 @@ def apply_adds(proxmox, config, to_add: list, creds: dict) -> dict:
             console.print(f"  [yellow]⚠  flavor {student.nom} : {e}[/yellow]")
 
         # Pré-enregistrer les credentials avec WAN IP = "pending"
-        creds[student.nom] = make_credential(student, password, "pending")
+        creds[student.login()] = make_credential(student, password, "pending")
 
     # Étape 4 : déploiement des VMs
     for student in to_add:
@@ -193,7 +193,7 @@ def apply_adds(proxmox, config, to_add: list, creds: dict) -> dict:
             for vm in get_pool_vms(proxmox, student.pool_name()):
                 ip = get_vm_wan_ip(proxmox, vm["node"], vm["vmid"])
                 if ip:
-                    creds[student.nom]["wan_ip"] = ip
+                    creds[student.login()]["wan_ip"] = ip
                     break
         except Exception as e:
             console.print(f"  [red]❌ deploy {student.nom} : {e}[/red]")
@@ -233,8 +233,8 @@ def cmd_apply(args) -> None:
     if to_remove:
         apply_removes(proxmox, config, to_remove)
         # Nettoyer les credentials des étudiants supprimés
-        removed_names = {p["poolid"] for p in to_remove}
-        creds = {k: v for k, v in creds.items() if k not in removed_names}
+        removed_logins = {p["poolid"] for p in to_remove}
+        creds = {k: v for k, v in creds.items() if k not in removed_logins}
 
     creds = apply_adds(proxmox, config, to_add, creds)
 
