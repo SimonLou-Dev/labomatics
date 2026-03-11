@@ -99,6 +99,11 @@ class TemplateConfig(BaseModel):
     name: str
     vmid: int
     packer: str | None = None
+    # Packer — variables spécifiques à la template
+    iso_file: str | None = None  # ex: "local:iso/ubuntu-24.04-live-server-amd64.iso"
+    iso_storage_pool: str = "local"  # stockage contenant l'ISO
+    node: str | None = None  # nœud cible (None = pick_node automatique)
+    packer_vars: dict[str, str] = {}  # variables supplémentaires passées à packer -var
     provisioning: TemplateProvisioningConfig = Field(default_factory=TemplateProvisioningConfig)
 
 

@@ -3,9 +3,9 @@
 > **Audience** : administrateur Proxmox — opération à réaliser **une seule fois**
 > avant le premier déploiement.
 
-Le script `scripts/build-openwrt-vm-template.sh` télécharge une image OpenWrt officielle,
-l'enrichit hors-ligne (mot de passe, SSH, HTTPS, qemu-guest-agent, cloud-init NoCloud)
-et l'enregistre comme template Proxmox. Toutes les VMs déployées par `esgilabs` en sont
+La commande `labomatics build-openwrt` télécharge la dernière image OpenWrt officielle,
+l'enrichit hors-ligne (mot de passe, SSH, NAT, HTTPS, cloud-init NoCloud)
+et l'enregistre comme template Proxmox. Toutes les VMs déployées par labomatics en sont
 des clones complets.
 
 ---
@@ -15,58 +15,46 @@ des clones complets.
 > **La template doit impérativement résider sur un stockage partagé entre tous
 > les nœuds du cluster** (Ceph RBD, NFS, ZFS over iSCSI…).
 
-`esgilabs` sélectionne dynamiquement le nœud de déploiement (celui avec le plus
-de mémoire libre). Un clone depuis un stockage local n'est possible que depuis
-le nœud hébergeant la template — ce qui bloquerait les déploiements sur les autres
-nœuds.
+labomatics sélectionne dynamiquement le nœud de déploiement (celui avec le plus
+de mémoire libre). Si le stockage est local, le clone sera effectué sur le nœud
+source — ce qui concentre les déploiements sur un seul nœud.
 
-Après la création de la template sur un nœud, vérifier qu'elle est visible depuis
-tous les nœuds via le stockage partagé.
+Après la création de la template, vérifier qu'elle est visible depuis tous les nœuds
+via le stockage partagé.
 
 ---
 
 ## Exécution
 
 ```bash
-# Sur n'importe quel nœud Proxmox ayant accès au stockage partagé, en root
-bash scripts/build-openwrt-vm-template.sh [version] [vmid] [storage] [root_password]
+# En root sur un nœud Proxmox (vmid et storage lus depuis infra.yaml)
+labomatics build-openwrt
+
+# Paramètres explicites
+labomatics build-openwrt --version 24.10.0 --vmid 90200 --storage zfs-store --password openwrt
 ```
 
 ### Paramètres
 
-| Paramètre       | Défaut      | Description                                         |
-|-----------------|-------------|-----------------------------------------------------|
-| `version`       | `23.05.5`   | Version OpenWrt à télécharger                       |
-| `vmid`          | `90200`     | VMID Proxmox du template (doit correspondre à `template_vmid` dans `infra.yaml`) |
-| `storage`       | `local-lvm` | Pool de stockage partagé (ex. `zfs-store`, `ceph`)  |
-| `root_password` | `openwrt`   | Mot de passe root injecté dans l'image              |
+| Option       | Défaut                         | Description                                              |
+|--------------|--------------------------------|----------------------------------------------------------|
+| `--version`  | Dernière stable (auto-détecté) | Version OpenWrt à télécharger depuis downloads.openwrt.org |
+| `--vmid`     | `infra.yaml → template_vmid`   | VMID Proxmox (doit correspondre à `template_vmid` dans `infra.yaml`) |
+| `--storage`  | `infra.yaml → storage`         | Stockage partagé cible                                   |
+| `--password` | `openwrt`                      | Mot de passe root injecté dans l'image                   |
 
-```bash
-# Exemple du lab
-bash scripts/build-openwrt-vm-template.sh 23.05.5 90200 zfs-store openwrt
-```
+> Si la VM `vmid` existe déjà, la commande demande confirmation avant de la détruire.
 
-> Si la VM `vmid` existe déjà, le script demande confirmation avant de la détruire.
-
-### Ajouter la template au pool template
-
-Une fois la VM convertie en template, l'ajouter au pool `template` (pool global
-du lab) pour que les étudiants puissent la voir depuis leur interface Proxmox :
-
-```bash
-# Via pvesh sur le nœud
-pvesh set /pools/template -vms 90200
-```
-
-Ou via l'interface web : `Datacenter → Pools → template → Add → VM 90200`.
+La commande ajoute automatiquement la template au pool `template` (créé si absent).
 
 ---
 
-## Ce que le script fait
+## Ce que la commande fait
 
 ### 1. Téléchargement de l'image
 
-Image `x86-64-generic-ext4-combined` téléchargée depuis `downloads.openwrt.org`.
+Dernière version stable détectée automatiquement depuis `downloads.openwrt.org/releases/`.
+Image `x86-64-generic-ext4-combined` téléchargée via `wget`.
 Le format `ext4-combined` contient deux partitions : boot (p1) et root (p2).
 Seule **p2** est montée via loop device — l'image n'est jamais démarrée.
 
@@ -95,15 +83,7 @@ Certificat RSA 2048 bits, valable 10 ans, généré et stocké dans l'image :
 
 Utilisé par uhttpd (LuCI) pour servir HTTPS dès le premier boot.
 
-### 5. qemu-guest-agent
-
-Paquet `qemu-ga` récupéré depuis les dépôts officiels OpenWrt, extrait et copié
-dans l'image. Symlink rc.d créé pour l'activation au boot.
-
-Permet à Proxmox de : récupérer les IPs de la VM, exécuter des commandes guest,
-effectuer un shutdown propre depuis l'interface.
-
-### 6. Script uci-defaults `99-proxmox-init`
+### 5. Script uci-defaults `99-proxmox-init`
 
 Injecté dans `/etc/uci-defaults/` — s'exécute **automatiquement au premier boot**
 puis se supprime. Copie permanente conservée dans `/etc/proxmox-init.sh`.
@@ -118,23 +98,29 @@ Il effectue au premier boot :
 2. **Configuration uhttpd** : écoute sur `0.0.0.0:80` et `0.0.0.0:443`,
    utilise le certificat de l'étape 4, redirige HTTP → HTTPS.
 
-3. **Règle firewall** : autorise HTTP/HTTPS entrant depuis la zone WAN
-   (bloqué par défaut sur OpenWrt).
+3. **NAT (masquerade)** : activé sur la zone WAN — les VMs du réseau LAN/VXLAN
+   peuvent accéder à Internet via le routeur OpenWrt.
 
-### 7. Création du template Proxmox
+4. **Règles firewall** :
+   - HTTP/HTTPS (80, 443) autorisés depuis la zone WAN
+   - SSH (22) autorisé depuis la zone WAN
+
+5. **SSH depuis WAN** : Dropbear configuré pour écouter sur toutes les interfaces
+   (y compris WAN) — accès SSH direct depuis le réseau du lab.
+
+### 6. Création du template Proxmox
 
 ```bash
-qm create <vmid> \
-  --memory 256 \
-  --cores 1 \
-  --net0 virtio,bridge=vmbr0 \
-  --serial0 socket \
-  --vga serial0 \
-  --ostype l26
+qm create <vmid> --memory 256 --cores 1 --net0 virtio,bridge=vmbr0 \
+  --serial0 socket --vga serial0 --ostype l26
 
 qm importdisk <vmid> openwrt.img <storage>
-qm set <vmid> --virtio0 <storage>:vm-<vmid>-disk-0,discard=on,iothread=1
+# Le disk ID réel est lu depuis qm config (compatible tous types de stockage)
+qm set <vmid> --virtio0 <disk_id>,discard=on,iothread=1 --boot order=virtio0
 qm template <vmid>
+
+# Ajout automatique au pool template
+pvesh set /pools/template -vms <vmid>
 ```
 
 ---

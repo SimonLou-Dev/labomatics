@@ -143,8 +143,16 @@ def get_used_vxlan_subnets(proxmox, config: InfraConfig) -> set[IPv4Network]:
     return used
 
 
-def allocate_vxlan_subnet(proxmox, config: InfraConfig) -> tuple[str, str]:
+def allocate_vxlan_subnet(
+    proxmox,
+    config: InfraConfig,
+    reserved: set[IPv4Network] | None = None,
+) -> tuple[str, str]:
     """Alloue le premier subnet VXLAN /24 libre.
+
+    Args:
+        reserved: subnets déjà alloués dans le batch en cours (non encore
+                  visibles dans Proxmox) — évite les doublons intra-batch.
 
     Returns:
         Tuple ``(router_ip, subnet_cidr)`` :
@@ -156,6 +164,8 @@ def allocate_vxlan_subnet(proxmox, config: InfraConfig) -> tuple[str, str]:
     pool_net = IPv4Network(vxlan_cfg.network, strict=False)
     excluded_nets = _parse_excluded_networks(vxlan_cfg.exclude)
     used = get_used_vxlan_subnets(proxmox, config)
+    if reserved:
+        used |= reserved
 
     for subnet in pool_net.subnets(new_prefix=24):
         if subnet in used or subnet in excluded_nets:

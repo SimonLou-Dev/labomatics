@@ -3,7 +3,7 @@
 > **Audience** : administrateur du lab Proxmox.
 
 ```bash
-python -m esgilabs <commande> [options]
+labomatics <commande> [options]
 ```
 
 ---
@@ -14,8 +14,8 @@ Calcule le diff entre le CSV et l'état Proxmox, affiche un tableau de confirmat
 puis applique les changements.
 
 ```bash
-python -m esgilabs apply
-python -m esgilabs apply --yes   # Pas de confirmation interactive (CI/CD)
+labomatics apply
+labomatics apply --yes   # Pas de confirmation interactive (CI/CD)
 ```
 
 **Pour chaque ajout :**
@@ -27,7 +27,7 @@ python -m esgilabs apply --yes   # Pas de confirmation interactive (CI/CD)
 6. Met à jour `credentials.csv`
 
 **Pour chaque suppression :**
-1. Arrête et supprime les VMs QEMU du pool (attend la fin de chaque tâche)
+1. Arrête et supprime les VMs QEMU du pool (y compris les templates)
 2. Arrête et supprime les LXC du pool
 3. Révoque les ACL + supprime le compte `nom@pve`
 4. Supprime le VNet SDN + applique SDN
@@ -40,7 +40,7 @@ python -m esgilabs apply --yes   # Pas de confirmation interactive (CI/CD)
 Affiche le diff CSV ↔ Proxmox sans rien modifier.
 
 ```bash
-python -m esgilabs diff
+labomatics diff
 ```
 
 Exemple de sortie :
@@ -59,12 +59,44 @@ Exemple de sortie :
 
 ---
 
-## `pools` — Lister les pools gérés
+## `recreate` — Recréer un étudiant
 
-Affiche tous les pools Proxmox créés par ce script (marqueur `esgilabs-managed`).
+Détruit toutes les ressources d'un étudiant et les recrée (nouvelle IP allouée).
 
 ```bash
-python -m esgilabs pools
+labomatics recreate jdupont
+```
+
+Utile pour réinitialiser un environnement corrompu sans toucher aux autres.
+
+---
+
+## `status` — Consommation par tenant
+
+Affiche CPU / RAM / disk consommés par chaque étudiant, comparés à son flavor.
+
+```bash
+labomatics status
+```
+
+---
+
+## `ips` — État des pools IP
+
+Affiche le taux d'utilisation du pool WAN et VXLAN.
+
+```bash
+labomatics ips
+```
+
+---
+
+## `pools` — Lister les pools gérés
+
+Affiche tous les pools Proxmox créés par labomatics (marqueur `labomatics-managed`).
+
+```bash
+labomatics pools
 ```
 
 Colonnes : Pool, VMs (QEMU), LXC, liste des membres QEMU.
@@ -76,7 +108,7 @@ Colonnes : Pool, VMs (QEMU), LXC, liste des membres QEMU.
 Affiche toutes les zones SDN du cluster avec leur type et état.
 
 ```bash
-python -m esgilabs zones
+labomatics zones
 ```
 
 ---
@@ -87,8 +119,8 @@ Affiche les VNets dans la zone par défaut (configurée dans `infra.yaml`) ou un
 zone spécifique.
 
 ```bash
-python -m esgilabs vnets
-python -m esgilabs vnets --zone esgilab
+labomatics vnets
+labomatics vnets --zone esgilab
 ```
 
 Colonnes : VNet, Zone, Tag VXLAN, Pool associé (= alias du VNet).
@@ -100,8 +132,8 @@ Colonnes : VNet, Zone, Tag VXLAN, Pool associé (= alias du VNet).
 Affiche toutes les VMs QEMU des pools gérés, ou celles d'un pool spécifique.
 
 ```bash
-python -m esgilabs vms
-python -m esgilabs vms --pool jdupont
+labomatics vms
+labomatics vms --pool jdupont
 ```
 
 Colonnes : VM, VMID, Pool, Node, Status.
@@ -114,9 +146,9 @@ Retrouve un étudiant par son IP WAN, le nom de son VNet ou son nom d'utilisateu
 Affiche ses informations réseau et l'état live de sa VM sur Proxmox.
 
 ```bash
-python -m esgilabs find 172.16.0.18      # par IP WAN
-python -m esgilabs find vn00018          # par nom de VNet
-python -m esgilabs find jdupont          # par nom d'utilisateur
+labomatics find 172.16.0.18      # par IP WAN
+labomatics find vn00018          # par nom de VNet
+labomatics find jdupont          # par nom d'utilisateur
 ```
 
 Exemple de sortie :
@@ -145,10 +177,44 @@ Exemple de sortie :
 Affiche le contenu de `credentials.csv` sous forme de tableau.
 
 ```bash
-python -m esgilabs credentials
+labomatics credentials
 ```
 
 > Les mots de passe sont affichés en clair — ne pas utiliser dans un contexte partagé.
+
+---
+
+## `build-openwrt` — Créer la template OpenWrt
+
+Télécharge la dernière version stable d'OpenWrt, la configure et la convertit en
+template Proxmox. Doit être exécuté **en root sur un nœud Proxmox**.
+
+```bash
+# Version automatique (dernière stable), vmid et storage depuis infra.yaml
+labomatics build-openwrt
+
+# Paramètres explicites
+labomatics build-openwrt --version 24.10.0 --vmid 90200 --storage zfs-store --password openwrt
+```
+
+| Option        | Défaut                         | Description                                   |
+|---------------|--------------------------------|-----------------------------------------------|
+| `--version`   | Dernière stable (auto-détecté) | Version OpenWrt à télécharger                 |
+| `--vmid`      | `infra.yaml → template_vmid`   | VMID Proxmox de la template                   |
+| `--storage`   | `infra.yaml → storage`         | Stockage cible                                |
+| `--password`  | `openwrt`                      | Mot de passe root injecté dans l'image        |
+
+Voir [template.md](template.md) pour le détail des opérations.
+
+---
+
+## `init` — Initialiser la configuration
+
+Crée `/etc/labomatics/` avec les fichiers de configuration par défaut.
+
+```bash
+labomatics init
+```
 
 ---
 

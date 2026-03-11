@@ -43,6 +43,11 @@ Depuis l'interface Proxmox, vous pouvez :
 - **Console série** : onglet `Console` → console texte directe
 - **Voir les métriques** : CPU, RAM, réseau en temps réel
 
+La VM est pré-configurée avec :
+- **SSH ouvert** sur le port 22 depuis le WAN (réseau du lab)
+- **NAT activé** — vos VMs LAN/VXLAN accèdent au réseau via votre routeur
+- **LuCI (HTTPS)** accessible sur votre IP WAN
+
 ---
 
 ## Pool template — templates disponibles

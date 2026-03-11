@@ -88,11 +88,18 @@ Voir [proxmox.md](proxmox.md) pour utiliser Proxmox et accéder aux templates.
 
 ## Services actifs au démarrage
 
-| Service          | Port(s) | Interface  |
-|------------------|---------|------------|
-| SSH (Dropbear)   | TCP 22  | WAN + LAN  |
-| LuCI (uhttpd)    | TCP 443 | WAN + LAN  |
-| qemu-guest-agent | —       | (interne)  |
+| Service        | Port(s)  | Interface  | Remarque                         |
+|----------------|----------|------------|----------------------------------|
+| SSH (Dropbear) | TCP 22   | WAN + LAN  | Accès direct depuis le réseau lab |
+| LuCI (uhttpd)  | TCP 443  | WAN + LAN  | HTTP redirige vers HTTPS          |
+
+---
+
+## NAT activé par défaut
+
+Le routeur OpenWrt effectue du **NAT sortant (masquerade)** sur la zone WAN.
+Toutes vos VMs connectées sur votre réseau VXLAN (LAN) peuvent accéder à Internet
+ou au réseau du lab via votre routeur, sans configuration supplémentaire.
 
 ---
 
@@ -105,5 +112,5 @@ peut être relancé sans rebuild du template :
 sh /etc/proxmox-init.sh
 ```
 
-Cela réapplique : hostname, réseau depuis le drive cloud-init, uhttpd, et la règle
-firewall WAN.
+Cela réapplique : hostname, réseau depuis le drive cloud-init, uhttpd, NAT,
+et les règles firewall WAN (HTTP/HTTPS + SSH).
