@@ -29,7 +29,7 @@ from pathlib import Path
 
 from rich.console import Console
 
-from ..config import ProxmoxSettings, TemplateConfig, load_config
+from ..config import load_config
 from ..proxmox import find_vm_node, vm_exists, wait_for_task
 from ._helpers import ask_confirm, make_connection
 
@@ -63,63 +63,46 @@ def _delete_existing_template(proxmox, vmid: int) -> None:
         console.print(f"  [yellow]⚠  Suppression template vmid={vmid} : {e}[/yellow]")
 
 
-def _run_packer(template: TemplateConfig, proxmox: ProxmoxSettings) -> bool:
+def _run_packer(tmpl, settings, config, target_node: str) -> bool:
     """Exécute Packer pour construire une template.
+
+    Passe toutes les variables requises via des flags ``-var``.
 
     Returns:
         True si Packer a réussi.
     """
-    packer_dir = PACKER_DIR / template.packer
+    packer_dir = PACKER_DIR / tmpl.packer
     if not packer_dir.exists():
         console.print(f"[red]❌ Répertoire Packer introuvable : {packer_dir}[/red]")
         return False
 
-    console.print(f"  [cyan]Packer init : {packer_dir}[/cyan]")
-    result = subprocess.run(
-        ["packer", "init", "."],
-        cwd=packer_dir,
-    )
-    if result.returncode != 0:
-        console.print(f"[red]❌ Packer init a échoué (code {result.returncode})[/red]")
-        return False
+    # Variables Proxmox/infra injectées automatiquement
+    packer_vars: dict[str, str] = {
+        "proxmox_api_url": f"https://{settings.host}:8006/api2/json",
+        "proxmox_api_token_id": settings.token_id,
+        "proxmox_api_token_secret": settings.token_secret,
+        "proxmox_node": target_node,
+        "vm_id": str(tmpl.vmid),
+        "vm_name": tmpl.name,
+        "storage_pool": config.openwrt.storage,
+        "bridge": config.openwrt.wan_bridge,
+        "iso_storage_pool": tmpl.iso_storage_pool,
+        "custom_user": tmpl.provisioning.user,
+    }
+
+    if tmpl.iso_file:
+        packer_vars["iso_file"] = tmpl.iso_file
+
+    # Variables supplémentaires définies dans infra.yaml (surcharge)
+    packer_vars.update(tmpl.packer_vars)
+
+    cmd = ["packer", "build"]
+    for key, value in packer_vars.items():
+        cmd += ["-var", f"{key}={value}"]
+    cmd.append(".")
 
     console.print(f"  [cyan]Packer build : {packer_dir}[/cyan]")
-    result = subprocess.run(
-        [
-            "packer",
-            "build",
-            # Connexion Proxmox
-            "-var",
-            f"proxmox_api_token_id={proxmox.token_id}",
-            "-var",
-            f"proxmox_api_token_secret={proxmox.token_secret}",
-            "-var",
-            f"proxmox_api_url=https://{proxmox.host}:8006/api2/json",
-            # Cible proxmox
-            "-var",
-            f"proxmox_node={template.node}",
-            "-var",
-            f"vm_id={template.vmid}",
-            "-var",
-            f"vm_name={template.name}",
-            "-var",
-            f"storage_pool={template.storage_pool}",
-            "-var",
-            f"iso_storage_pool={template.iso_storage_pool}",
-            "-var",
-            f"iso_file={template.iso_storage_pool}:iso/{template.iso_file}",
-            "-var",
-            f"bridge={template.bridge}",
-            # Identifiants
-            "-var",
-            f"custom_user={template.provisioning.user}",
-            "-var",
-            f"custom_password={template.provisioning.password}",
-            ".",
-        ],
-        cwd=packer_dir,
-        env={**__import__("os").environ, "PROXMOX_HOST": proxmox.host},
-    )
+    result = subprocess.run(cmd, cwd=packer_dir)
     if result.returncode != 0:
         console.print(f"[red]❌ Packer a échoué (code {result.returncode})[/red]")
         return False
@@ -216,6 +199,7 @@ def cmd_build_template(args) -> None:
             return
 
     from ..config import load_proxmox_settings
+    from ..proxmox import pick_node
 
     settings = load_proxmox_settings()
 
@@ -227,12 +211,15 @@ def cmd_build_template(args) -> None:
                 console.print("[dim]Ignoré.[/dim]")
                 continue
 
+        # Nœud cible : explicite dans infra.yaml ou le moins chargé
+        target_node = tmpl.node or pick_node(proxmox)
+
         # Étape 1 : supprimer la template existante
         _delete_existing_template(proxmox, tmpl.vmid)
 
         # Étape 2 : Packer build (si configuré)
         if tmpl.packer:
-            if not _run_packer(tmpl, settings):
+            if not _run_packer(tmpl, settings, config, target_node):
                 console.print(f"[red]❌ Build Packer échoué pour '{tmpl.name}'[/red]")
                 continue
 
