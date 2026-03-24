@@ -57,6 +57,51 @@ def delete_proxmox_user(proxmox: ProxmoxAPI, userid: str) -> None:
     proxmox.access.users(userid).delete()
 
 
+# ── Gestion des tokens API ─────────────────────────────────────────────────────
+
+
+def token_exists(proxmox: ProxmoxAPI, userid: str, token_name: str = "labomatics") -> bool:
+    """Vérifie si un token API existe pour un utilisateur."""
+    try:
+        proxmox.access.users(userid).token(token_name).get()
+        return True
+    except Exception:
+        return False
+
+
+def create_student_token(
+    proxmox: ProxmoxAPI,
+    userid: str,
+    token_name: str = "labomatics",
+) -> tuple[str, str]:
+    """Crée un token API sans séparation de privilèges (mêmes droits que l'user).
+
+    Returns:
+        (full_token_id, secret) — ex: ("jdupont@pve!labomatics", "xxxxxxxx-...")
+    """
+    result = (
+        proxmox.access.users(userid)
+        .token(token_name)
+        .post(
+            privsep=0,
+            comment="labomatics",
+        )
+    )
+    return result["full-tokenid"], result["value"]
+
+
+def delete_student_token(
+    proxmox: ProxmoxAPI,
+    userid: str,
+    token_name: str = "labomatics",
+) -> None:
+    """Supprime le token API d'un utilisateur (silencieux si absent)."""
+    try:
+        proxmox.access.users(userid).token(token_name).delete()
+    except Exception:
+        pass
+
+
 # ── Gestion des ACL ───────────────────────────────────────────────────────────
 
 

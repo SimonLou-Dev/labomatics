@@ -9,11 +9,14 @@ directs depuis ``labomatics.proxmox`` :
 
 from .acl import (
     create_proxmox_user,
+    create_student_token,
     delete_acl,
     delete_proxmox_user,
     delete_student_acls,
+    delete_student_token,
     set_acl,
     set_student_acls,
+    token_exists,
     user_exists,
 )
 from .client import POOL_MARKER, connect
@@ -78,4 +81,7 @@ __all__ = [
     "delete_acl",
     "set_student_acls",
     "delete_student_acls",
+    "token_exists",
+    "create_student_token",
+    "delete_student_token",
 ]

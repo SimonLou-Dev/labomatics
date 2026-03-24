@@ -68,7 +68,7 @@ def load_credentials(config: "InfraConfig") -> dict[str, dict]:
 
 
 def save_credentials(config: "InfraConfig", creds: dict[str, dict]) -> Path:
-    """Écrit le CSV credentials (nom, userid, password, wan_ip).
+    """Écrit le CSV credentials.
 
     Les lignes sont triées par nom alphabétiquement.
 
@@ -76,8 +76,9 @@ def save_credentials(config: "InfraConfig", creds: dict[str, dict]) -> Path:
         Chemin du fichier écrit.
     """
     path = creds_path(config)
+    fieldnames = ["login", "nom", "userid", "password", "token_id", "token_secret", "wan_ip"]
     with open(path, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=["login", "nom", "userid", "password", "wan_ip"])
+        writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction="ignore")
         writer.writeheader()
         for row in sorted(creds.values(), key=lambda r: r["login"]):
             writer.writerow(row)
@@ -89,12 +90,20 @@ def generate_password() -> str:
     return secrets.token_urlsafe(12)
 
 
-def make_credential(student: "Student", password: str, wan_ip: str) -> dict:
+def make_credential(
+    student: "Student",
+    password: str,
+    wan_ip: str,
+    token_id: str = "",
+    token_secret: str = "",
+) -> dict:
     """Construit un enregistrement de credential pour un étudiant."""
     return {
         "login": student.login(),
         "nom": f"{student.prenom} {student.nom}".strip(),
         "userid": student.user_id(),
         "password": password,
+        "token_id": token_id,
+        "token_secret": token_secret,
         "wan_ip": wan_ip,
     }

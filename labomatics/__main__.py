@@ -62,6 +62,11 @@ def main() -> None:
     # apply / diff
     p = sub.add_parser("apply", help="Synchronise Proxmox avec le CSV")
     p.add_argument("--yes", "-y", action="store_true", help="Pas de confirmation interactive")
+    p.add_argument(
+        "--recheck-all",
+        action="store_true",
+        help="Recrée users/tokens/ACL manquants pour tous les étudiants du CSV",
+    )
 
     sub.add_parser("diff", help="Diff CSV ↔ Proxmox (lecture seule)")
 
