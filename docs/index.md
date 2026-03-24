@@ -27,3 +27,4 @@ labomatics apply   # synchronise Proxmox avec le CSV
 
 - **Administrateurs Proxmox** → [Installation et configuration](admin/setup.md)
 - **Étudiants** → [Démarrage rapide OpenWrt](openwrt/base.md)
+- **Étudiants (Terraform)** → [Provider bpg/proxmox](openwrt/terraform.md)
