@@ -34,7 +34,7 @@ variable "vm_name" {
 
 variable "storage_pool" {
   type        = string
-  description = "Stockage partagé pour le disque VM (ex: zfs-store, ceph)"
+  description = "Stockage partagé pour le disque VM (ex: local-lvm, ceph)"
 }
 
 variable "iso_storage_pool" {
