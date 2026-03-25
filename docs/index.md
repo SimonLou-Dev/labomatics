@@ -18,7 +18,7 @@ labomatics apply   # synchronise Proxmox avec le CSV
 - **Flavors** — profils de ressources (CPU/RAM/disk) assignés par étudiant
 - **Quotas natifs Proxmox** — limits sur les pools, 403 à la surcharge
 - **Daemon de quota** (`labomatics-quotad`) — stoppe la VM la plus gourmande si dépassement
-- **Build de template** — pipeline Packer → provisioning SSH/guest-agent → conversion template
+- **Build de template** — pipeline Python pur : téléchargement via API, cloud-init, conversion template
 - **Isolation** — chaque étudiant est cantonné à son pool et son VNet VXLAN dédié
 
 ---
@@ -27,4 +27,5 @@ labomatics apply   # synchronise Proxmox avec le CSV
 
 - **Administrateurs Proxmox** → [Installation et configuration](admin/setup.md)
 - **Étudiants** → [Démarrage rapide OpenWrt](openwrt/base.md)
+- **Étudiants (VMs Linux)** → [Utiliser les templates cloud-init](student/templates.md)
 - **Étudiants (Terraform)** → [Provider bpg/proxmox](openwrt/terraform.md)

@@ -89,22 +89,36 @@ class QuotadConfig(BaseModel):
 # ── Templates ─────────────────────────────────────────────────────────────────
 
 
-class TemplateProvisioningConfig(BaseModel):
-    method: str = "ssh"  # "ssh" | "guest-agent"
-    user: str = "root"
-    commands: list[str] = []
-
-
 class TemplateConfig(BaseModel):
     name: str
     vmid: int
-    packer: str | None = None
-    # Packer — variables spécifiques à la template
-    iso_file: str | None = None  # ex: "local:iso/ubuntu-24.04-live-server-amd64.iso"
-    iso_storage_pool: str = "local"  # stockage contenant l'ISO
     node: str | None = None  # nœud cible (None = pick_node automatique)
-    packer_vars: dict[str, str] = {}  # variables supplémentaires passées à packer -var
-    provisioning: TemplateProvisioningConfig = Field(default_factory=TemplateProvisioningConfig)
+    storage_pool: str = "local-lvm"  # stockage pour le disque VM
+    iso_storage_pool: str = "local"  # stockage pour télécharger l'image (type directory)
+    iso_url: str  # URL de l'image cloud à télécharger
+    iso_filename: str | None = None  # nom du fichier local (défaut: déduit de l'URL)
+    bridge: str = "vmbr0"  # bridge réseau temporaire pendant le build
+    # Surcharge par template — None = utilise TemplatesConfig.default_user / default_pass
+    cloud_init_user: str | None = None
+    cloud_init_password: str | None = None
+    memory: int = 2048  # RAM en MB
+    cores: int = 2  # vCPUs
+    disk_size: str = "10G"  # taille finale du disque (ex: "10G", "20G")
+    cloudinit: bool = True  # False = pas de drive cloud-init ni de boot (ex: OPNsense)
+    ostype: str = "l26"  # type OS Proxmox : l26, other, freebsd, win10…
+    cpu_type: str = "x86-64-v2-AES"  # type CPU Proxmox (kvm64 pour meilleure compatibilité)
+    boot_timeout: int = 300  # timeout guest agent en secondes (augmenter pour Alpine)
+    download_packages: bool = True  # False = désactiver virt-customize pour cette template
+    extra_packages: list[str] = []  # packages supplémentaires (s'ajoutent à default_packages)
+
+
+class TemplatesConfig(BaseModel):
+    default_user: str = "labomatics"  # utilisateur cloud-init par défaut (toutes les templates)
+    default_pass: str = "changeme"  # mot de passe cloud-init par défaut
+    default_packages: list[
+        str
+    ] = []  # packages installés dans toutes les templates via virt-customize
+    sources: list[TemplateConfig] = []
 
 
 # ── Config principale ─────────────────────────────────────────────────────────
@@ -115,7 +129,7 @@ class InfraConfig(BaseModel):
     openwrt: OpenWrtConfig
     flavors: dict[str, FlavorConfig] = {}
     quotad: QuotadConfig = Field(default_factory=QuotadConfig)
-    templates: list[TemplateConfig] = []
+    templates: TemplatesConfig = Field(default_factory=TemplatesConfig)
 
     def get_flavor(self, name: str) -> FlavorConfig:
         """Retourne le flavor par nom, ou le premier défini si le nom est absent."""

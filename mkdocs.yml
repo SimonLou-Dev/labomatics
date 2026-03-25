@@ -37,7 +37,8 @@ nav:
       - Vue d'ensemble: admin/overview.md
       - Installation: admin/setup.md
       - Référence CLI: admin/cli.md
-      - Build de template: admin/template.md
+      - Build OpenWrt: admin/template.md
+      - Build templates cloud-init: admin/build-template.md
   - Guide étudiant (OpenWrt):
       - Démarrage: openwrt/base.md
       - DHCP: openwrt/dhcp.md
@@ -45,6 +46,8 @@ nav:
       - NAT: openwrt/nat.md
       - Firewall: openwrt/firewall.md
       - Interface Proxmox: openwrt/proxmox.md
+  - Guide étudiant (Templates):
+      - Cloud-init & VMs Linux: student/templates.md
 
 markdown_extensions:
   - admonition

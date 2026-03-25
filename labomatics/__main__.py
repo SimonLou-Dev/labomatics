@@ -14,7 +14,7 @@ Commandes disponibles :
   ips            État des pools IP (WAN et VXLAN) avec % d'utilisation
   status         Ressources CPU/RAM/disk par étudiant vs flavor
   recreate       Recrée la VM OpenWrt d'un étudiant (--yes pour sans confirmation)
-  build-template Construit une template via Packer + provisioning
+  build-template Construit une ou plusieurs templates cloud-init
   build-openwrt  Crée la template OpenWrt sur le nœud Proxmox local (root)
   destroy-all    Supprime toutes les ressources étudiants gérées
   init           Initialise /etc/labomatics/ avec les configs par défaut
@@ -97,8 +97,13 @@ def main() -> None:
     p.add_argument("--yes", "-y", action="store_true", help="Pas de confirmation interactive")
 
     # build-template
-    p = sub.add_parser("build-template", help="Construit une template (Packer + provisioning)")
-    p.add_argument("name", metavar="NOM", nargs="?", help="Nom de la template (défaut: toutes)")
+    p = sub.add_parser("build-template", help="Construit une ou plusieurs templates cloud-init")
+    p.add_argument(
+        "names",
+        metavar="NOMS",
+        nargs="?",
+        help="Noms séparés par ',' ou '*' pour toutes (défaut: toutes)",
+    )
     p.add_argument("--yes", "-y", action="store_true", help="Pas de confirmation interactive")
 
     # build-openwrt
