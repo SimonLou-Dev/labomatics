@@ -34,7 +34,18 @@ labomatics apply      # synchronise Proxmox avec le CSV
 ## Installation
 
 ```bash
-pip install labomatics
+# Installer le module venv (Debian/Proxmox)
+apt install python3.13-venv
+
+# Créer le venv (une seule fois)
+python3 -m venv /opt/labomatics
+
+# Installer labomatics
+/opt/labomatics/bin/pip install labomatics
+
+# Optionnel : ajouter au PATH pour éviter le chemin complet
+echo 'export PATH="/opt/labomatics/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
 ```
 
 Ou depuis les sources :

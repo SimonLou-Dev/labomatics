@@ -219,6 +219,13 @@ def apply_recheck(proxmox, config, students: list, creds: dict) -> dict:
                 create_proxmox_user(proxmox, student.user_id(), password, comment="labomatics")
                 console.print(f"  [green]✓ user recréé : {student.user_id()}[/green]")
                 changed = True
+            # Migration ancien format : token_id vide mais token manuel existant sur Proxmox
+            # → on le supprime pour pouvoir récupérer le secret via recréation
+            if not token_id and token_exists(proxmox, student.user_id()):
+                delete_student_token(proxmox, student.user_id())
+                console.print(
+                    f"  [yellow]↻ token existant supprimé (migration) : {student.user_id()}[/yellow]"
+                )
             if not token_exists(proxmox, student.user_id()):
                 token_id, token_secret = create_student_token(proxmox, student.user_id())
                 console.print(f"  [green]✓ token recréé : {token_id}[/green]")
