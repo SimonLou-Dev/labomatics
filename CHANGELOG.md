@@ -1,6 +1,19 @@
 # CHANGELOG
 
 
+## v0.2.0 (2026-03-08)
+
+### Continuous Integration
+
+- **release**: Sync dev sur main après chaque release
+  ([`6f35ed9`](https://github.com/SimonLou-Dev/labomatics/commit/6f35ed91ee61181e118ecb166bfdfcbb2ee38f98))
+
+### Features
+
+- Ajout d'un diagramme d'architecture
+  ([`f6439fa`](https://github.com/SimonLou-Dev/labomatics/commit/f6439faa8b23c2d7fb58e07164fee6150eb6dd8b))
+
+
 ## v0.1.1 (2026-03-05)
 
 ### Bug Fixes
