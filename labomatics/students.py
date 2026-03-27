@@ -22,6 +22,7 @@ class Student:
     prenom: str = ""
     flavor: str = ""
     index: int = field(default=0, repr=False)  # position triée — affichage uniquement
+    classe: str | None = None  # groupe / promotion (ex: M1_SRC) — optionnel
 
     # ── identifiants Proxmox ──────────────────────────────────────────────────
 
@@ -79,6 +80,7 @@ def load_students(csv_path: Path) -> list[Student]:
                     nom=row["nom"].strip(),
                     prenom=row.get("prenom", "").strip(),
                     flavor=row.get("flavor", "").strip(),
+                    classe=row.get("classe", "").strip() or None,
                 )
             )
 

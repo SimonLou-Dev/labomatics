@@ -14,6 +14,8 @@ Commandes disponibles :
   ips            État des pools IP (WAN et VXLAN) avec % d'utilisation
   status         Ressources CPU/RAM/disk par étudiant vs flavor
   recreate       Recrée la VM OpenWrt d'un étudiant (--yes pour sans confirmation)
+  deploy         Déploie les VMs d'un TP depuis un fichier YAML
+  undeploy       Supprime toutes les VMs d'un TP
   build-template Construit une ou plusieurs templates cloud-init
   build-openwrt  Crée la template OpenWrt sur le nœud Proxmox local (root)
   destroy-all    Supprime toutes les ressources étudiants gérées
@@ -30,6 +32,7 @@ from .commands import (
     cmd_build_openwrt,
     cmd_build_template,
     cmd_credentials,
+    cmd_deploy,
     cmd_destroy_all,
     cmd_diff,
     cmd_find,
@@ -38,6 +41,7 @@ from .commands import (
     cmd_pools,
     cmd_recreate,
     cmd_status,
+    cmd_undeploy,
     cmd_vms,
     cmd_vnets,
     cmd_zones,
@@ -67,8 +71,10 @@ def main() -> None:
         action="store_true",
         help="Recrée users/tokens/ACL manquants pour tous les étudiants du CSV",
     )
+    p.add_argument("--classe", metavar="CLASSE", help="Filtrer par classe (ex: M1_SRC)")
 
-    sub.add_parser("diff", help="Diff CSV ↔ Proxmox (lecture seule)")
+    p = sub.add_parser("diff", help="Diff CSV ↔ Proxmox (lecture seule)")
+    p.add_argument("--classe", metavar="CLASSE", help="Filtrer par classe")
 
     # inspection
     sub.add_parser("pools", help="Liste les pools gérés")
@@ -83,17 +89,40 @@ def main() -> None:
     # recherche
     p = sub.add_parser("find", help="Recherche un étudiant par IP, VNet ou nom")
     p.add_argument("query", metavar="QUERY", help="IP WAN, VNet (vn00018) ou nom d'utilisateur")
+    p.add_argument("--classe", metavar="CLASSE", help="Filtrer par classe")
 
     # credentials
-    sub.add_parser("credentials", help="Affiche les credentials générés")
+    p = sub.add_parser("credentials", help="Affiche les credentials générés")
+    p.add_argument("--classe", metavar="CLASSE", help="Filtrer par classe")
 
     # ips / status
-    sub.add_parser("ips", help="État des pools IP (WAN/VXLAN) avec utilisation")
-    sub.add_parser("status", help="Ressources CPU/RAM/disk par étudiant vs flavor")
+    p = sub.add_parser("ips", help="État des pools IP (WAN/VXLAN) avec utilisation")
+    p.add_argument("--classe", metavar="CLASSE", help="Filtrer par classe")
+
+    p = sub.add_parser("status", help="Ressources CPU/RAM/disk par étudiant vs flavor")
+    p.add_argument("--classe", metavar="CLASSE", help="Filtrer par classe")
 
     # recreate
     p = sub.add_parser("recreate", help="Recrée la VM OpenWrt d'un étudiant")
     p.add_argument("nom", metavar="NOM", help="Nom de l'étudiant (login Proxmox)")
+    p.add_argument("--yes", "-y", action="store_true", help="Pas de confirmation interactive")
+    p.add_argument("--classe", metavar="CLASSE", help="Filtrer par classe")
+
+    # deploy / undeploy
+    p = sub.add_parser("deploy", help="Déploie les VMs d'un TP depuis un fichier YAML")
+    p.add_argument("-f", "--file", required=True, metavar="FILE", help="Fichier TP YAML")
+    p.add_argument(
+        "--workers", type=int, default=2, metavar="N", help="Workers parallèles (défaut: 2)"
+    )
+    p.add_argument("--yes", "-y", action="store_true", help="Pas de confirmation interactive")
+
+    p = sub.add_parser("undeploy", help="Supprime toutes les VMs d'un TP")
+    grp = p.add_mutually_exclusive_group(required=True)
+    grp.add_argument("-f", "--file", metavar="FILE", help="Fichier TP YAML")
+    grp.add_argument("--tp", metavar="NOM", help="Nom du TP (sans fichier)")
+    p.add_argument(
+        "--workers", type=int, default=2, metavar="N", help="Workers parallèles (défaut: 2)"
+    )
     p.add_argument("--yes", "-y", action="store_true", help="Pas de confirmation interactive")
 
     # build-template
@@ -166,6 +195,8 @@ def main() -> None:
         "ips": cmd_ips,
         "status": cmd_status,
         "recreate": cmd_recreate,
+        "deploy": cmd_deploy,
+        "undeploy": cmd_undeploy,
         "build-template": cmd_build_template,
         "build-openwrt": cmd_build_openwrt,
         "destroy-all": cmd_destroy_all,

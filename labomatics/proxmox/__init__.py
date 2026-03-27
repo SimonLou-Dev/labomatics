@@ -38,7 +38,9 @@ from .sdn import (
 )
 from .tasks import wait_for_task
 from .vms import (
+    find_tp_vms,
     find_vm_node,
+    get_vm_description,
     get_vm_disk_size_gb,
     get_vm_vxlan_subnet,
     get_vm_wan_ip,
@@ -55,6 +57,8 @@ __all__ = [
     # vms
     "vm_exists",
     "find_vm_node",
+    "find_tp_vms",
+    "get_vm_description",
     "pick_node",
     "get_vm_wan_ip",
     "get_vm_vxlan_subnet",

@@ -11,6 +11,7 @@ from rich.table import Table
 
 from ..config import load_config
 from ..credentials import creds_path, load_credentials
+from ._helpers import load_students_from_config
 
 console = Console()
 
@@ -25,6 +26,15 @@ def cmd_credentials(args) -> None:
         return
 
     creds = load_credentials(config)
+
+    if getattr(args, "classe", None):
+        try:
+            students = load_students_from_config(config)
+            allowed = {s.login() for s in students if s.classe == args.classe}
+            creds = {k: v for k, v in creds.items() if k in allowed}
+        except Exception:
+            pass
+
     if not creds:
         console.print("[dim]Aucun credential stocké.[/dim]")
         return

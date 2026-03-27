@@ -121,6 +121,46 @@ class TemplatesConfig(BaseModel):
     sources: list[TemplateConfig] = []
 
 
+# ── TP (déploiement de travaux pratiques) ─────────────────────────────────────
+
+
+class TpNicConfig(BaseModel):
+    """Interface réseau supplémentaire (net1+) pour une VM de TP."""
+
+    bridge: str
+    model: str = "virtio"
+
+
+class TpCloudInitConfig(BaseModel):
+    """Configuration cloud-init minimale pour une VM de TP."""
+
+    user: str | None = None
+    password: str | None = None
+
+
+class TpVmConfig(BaseModel):
+    """Définition d'une VM à déployer dans un TP."""
+
+    name: str
+    template: int  # VMID de la template source
+    memory: int = 512
+    cores: int = 1
+    start: bool = False  # démarrer après création
+    disk_size: str | None = None  # redimensionne le disque si défini (ex: "20G")
+    cloud_init: TpCloudInitConfig | None = None
+    extra_nics: list[TpNicConfig] = []  # net1, net2… (net0 = LAN étudiant, toujours auto)
+
+
+class TpConfig(BaseModel):
+    """Configuration d'un TP : VMs à déployer par groupe d'étudiants."""
+
+    name: str  # identifiant unique (utilisé pour le tracking via tags Proxmox)
+    description: str | None = None
+    tags: list[str] = []  # tags Proxmox appliqués aux VMs créées
+    target_classes: list[str] | None = None  # None = tous les étudiants du CSV
+    vms: list[TpVmConfig] = []
+
+
 # ── Config principale ─────────────────────────────────────────────────────────
 
 
@@ -156,6 +196,15 @@ def _find_file(filename: str) -> Path:
         "  Candidates: " + ", ".join(str(c) for c in candidates) + "\n"
         "  Exécutez 'labomatics init' pour créer la configuration initiale."
     )
+
+
+def load_tp_config(path: str) -> TpConfig:
+    """Charge la configuration d'un TP depuis un fichier YAML."""
+    import yaml
+
+    with open(path, encoding="utf-8") as f:
+        data = yaml.safe_load(f)
+    return TpConfig(**data)
 
 
 def load_config() -> InfraConfig:

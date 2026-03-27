@@ -9,13 +9,18 @@ from rich.panel import Panel
 from ..config import load_config
 from ..ip_pool import get_vm_vxlan_subnet, get_vm_wan_ip
 from ..proxmox import get_pool_vms, list_managed_pools, list_vnets_in_zone
-from ._helpers import make_connection
+from ._helpers import load_students_from_config, make_connection
 
 console = Console()
 
 
-def resolve_student(proxmox, config, query: str) -> dict | None:
+def resolve_student(
+    proxmox, config, query: str, allowed_pools: set[str] | None = None
+) -> dict | None:
     """Résout un étudiant par IP WAN, nom de VNet ou nom d'utilisateur.
+
+    Args:
+        allowed_pools: Si défini, restreint la recherche à ces pool IDs.
 
     Returns:
         Dictionnaire ``{pool_name, vnet_name, vm, wan_ip, vxlan_subnet}``
@@ -26,6 +31,8 @@ def resolve_student(proxmox, config, query: str) -> dict | None:
 
     for pool in list_managed_pools(proxmox):
         pool_name = pool["poolid"]
+        if allowed_pools is not None and pool_name not in allowed_pools:
+            continue
 
         # Correspondance par nom
         if query.lower() in pool_name.lower():
@@ -74,7 +81,15 @@ def cmd_find(args) -> None:
     proxmox = make_connection()
     query = args.query
 
-    result = resolve_student(proxmox, config, query)
+    allowed_pools: set[str] | None = None
+    if getattr(args, "classe", None):
+        try:
+            students = load_students_from_config(config)
+            allowed_pools = {s.pool_name() for s in students if s.classe == args.classe}
+        except Exception:
+            pass
+
+    result = resolve_student(proxmox, config, query, allowed_pools=allowed_pools)
     if not result:
         console.print(f"[yellow]Aucun étudiant trouvé pour la requête : {query}[/yellow]")
         return

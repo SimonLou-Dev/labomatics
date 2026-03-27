@@ -242,11 +242,18 @@ def apply_recheck(proxmox, config, students: list, creds: dict) -> dict:
     return creds
 
 
+def _filter_by_classe(students: list, args) -> list:
+    classe = getattr(args, "classe", None)
+    if classe:
+        return [s for s in students if s.classe == classe]
+    return students
+
+
 def cmd_diff(args) -> None:
     """Affiche le diff CSV ↔ Proxmox sans rien modifier."""
     config = load_config()
     proxmox = make_connection()
-    students = load_students_from_config(config)
+    students = _filter_by_classe(load_students_from_config(config), args)
     pools = list_managed_pools(proxmox)
     to_add, to_remove = compute_diff(pools, students)
     print_diff(to_add, to_remove, config, console)
@@ -256,7 +263,7 @@ def cmd_apply(args) -> None:
     """Synchronise Proxmox avec le CSV (diff + confirmation + apply)."""
     config = load_config()
     proxmox = make_connection()
-    students = load_students_from_config(config)
+    students = _filter_by_classe(load_students_from_config(config), args)
     pools = list_managed_pools(proxmox)
     to_add, to_remove = compute_diff(pools, students)
 
