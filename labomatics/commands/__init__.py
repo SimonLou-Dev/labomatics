@@ -11,6 +11,7 @@ from .init import cmd_init
 from .inspect import cmd_pools, cmd_vms, cmd_vnets, cmd_zones
 from .ips import cmd_ips
 from .recreate import cmd_recreate
+from .setup import cmd_setup
 from .status import cmd_status
 
 __all__ = [
@@ -31,4 +32,5 @@ __all__ = [
     "cmd_build_openwrt",
     "cmd_destroy_all",
     "cmd_init",
+    "cmd_setup",
 ]

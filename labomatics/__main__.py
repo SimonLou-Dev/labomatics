@@ -2,24 +2,21 @@
 """
 labomatics — CLI Proxmox pilotée par CSV étudiant.
 
-Commandes disponibles :
-  apply          Synchronise Proxmox avec le CSV (diff + confirmation + apply)
-  diff           Affiche le diff CSV ↔ Proxmox sans rien modifier
-  pools          Liste les pools gérés
-  zones          Liste les zones SDN
-  vnets          Liste les VNets SDN (--zone pour filtrer)
-  vms            Liste les VMs des pools gérés (--pool pour filtrer)
-  find           Recherche un étudiant par IP, VNet ou nom
-  credentials    Affiche les credentials générés (credentials.csv)
-  ips            État des pools IP (WAN et VXLAN) avec % d'utilisation
-  status         Ressources CPU/RAM/disk par étudiant vs flavor
-  recreate       Recrée la VM OpenWrt d'un étudiant (--yes pour sans confirmation)
-  deploy         Déploie les VMs d'un TP depuis un fichier YAML
-  undeploy       Supprime toutes les VMs d'un TP
-  build-template Construit une ou plusieurs templates cloud-init
-  build-openwrt  Crée la template OpenWrt sur le nœud Proxmox local (root)
-  destroy-all    Supprime toutes les ressources étudiants gérées
-  init           Initialise /etc/labomatics/ avec les configs par défaut
+Groupes de commandes :
+  setup              Assistant d'installation interactif
+  student            Gestion des étudiants (apply/diff/deploy/status…)
+  pool               Gestion des pools et des IPs
+  sdn                Inspection SDN (zones, vnets)
+  template           Construction des templates Proxmox
+
+Exemples :
+  labomatics setup
+  labomatics student apply
+  labomatics student diff --classe M1_SRC
+  labomatics student deploy -f tp.yaml
+  labomatics pool list
+  labomatics sdn vnets
+  labomatics template build
 """
 
 import argparse
@@ -36,10 +33,10 @@ from .commands import (
     cmd_destroy_all,
     cmd_diff,
     cmd_find,
-    cmd_init,
     cmd_ips,
     cmd_pools,
     cmd_recreate,
+    cmd_setup,
     cmd_status,
     cmd_undeploy,
     cmd_vms,
@@ -48,6 +45,14 @@ from .commands import (
 )
 
 console = Console()
+
+
+def _add_classe(p: argparse.ArgumentParser) -> None:
+    p.add_argument("--classe", metavar="CLASSE", help="Filtrer par classe (ex: M1_SRC)")
+
+
+def _add_yes(p: argparse.ArgumentParser) -> None:
+    p.add_argument("--yes", "-y", action="store_true", help="Pas de confirmation interactive")
 
 
 def main() -> None:
@@ -60,151 +65,162 @@ def main() -> None:
             f"  {line}" for line in __doc__.strip().splitlines() if line.startswith("  ")
         ),
     )
-    sub = parser.add_subparsers(dest="command", metavar="<commande>")
+    sub = parser.add_subparsers(dest="group", metavar="<groupe>")
     sub.required = True
 
-    # apply / diff
-    p = sub.add_parser("apply", help="Synchronise Proxmox avec le CSV")
-    p.add_argument("--yes", "-y", action="store_true", help="Pas de confirmation interactive")
+    # ── setup ─────────────────────────────────────────────────────────────────
+
+    p = sub.add_parser("setup", help="Assistant d'installation interactif")
+    p.add_argument(
+        "--dir", metavar="DIR", help="Répertoire de configuration (défaut: /etc/labomatics)"
+    )
+
+    # ── student ───────────────────────────────────────────────────────────────
+
+    student_p = sub.add_parser("student", help="Gestion des étudiants")
+    student_sub = student_p.add_subparsers(dest="command", metavar="<commande>")
+    student_sub.required = True
+
+    p = student_sub.add_parser("apply", help="Synchronise Proxmox avec le CSV")
+    _add_yes(p)
     p.add_argument(
         "--recheck-all",
         action="store_true",
-        help="Recrée users/tokens/ACL manquants pour tous les étudiants du CSV",
+        help="Recrée users/tokens/ACL manquants pour tous les étudiants",
     )
-    p.add_argument("--classe", metavar="CLASSE", help="Filtrer par classe (ex: M1_SRC)")
+    _add_classe(p)
 
-    p = sub.add_parser("diff", help="Diff CSV ↔ Proxmox (lecture seule)")
-    p.add_argument("--classe", metavar="CLASSE", help="Filtrer par classe")
+    p = student_sub.add_parser("diff", help="Diff CSV ↔ Proxmox (lecture seule)")
+    _add_classe(p)
 
-    # inspection
-    sub.add_parser("pools", help="Liste les pools gérés")
-    sub.add_parser("zones", help="Liste les zones SDN")
-
-    p = sub.add_parser("vnets", help="Liste les VNets SDN")
-    p.add_argument("--zone", metavar="ZONE", help="Filtrer par zone")
-
-    p = sub.add_parser("vms", help="Liste les VMs des pools gérés")
+    p = student_sub.add_parser("list", help="Liste les VMs des pools étudiants")
     p.add_argument("--pool", metavar="POOL", help="Filtrer par pool")
+    _add_classe(p)
 
-    # recherche
-    p = sub.add_parser("find", help="Recherche un étudiant par IP, VNet ou nom")
+    p = student_sub.add_parser("status", help="Ressources CPU/RAM/disk par étudiant vs flavor")
+    _add_classe(p)
+
+    p = student_sub.add_parser("find", help="Recherche un étudiant par IP, VNet ou nom")
     p.add_argument("query", metavar="QUERY", help="IP WAN, VNet (vn00018) ou nom d'utilisateur")
-    p.add_argument("--classe", metavar="CLASSE", help="Filtrer par classe")
+    _add_classe(p)
 
-    # credentials
-    p = sub.add_parser("credentials", help="Affiche les credentials générés")
-    p.add_argument("--classe", metavar="CLASSE", help="Filtrer par classe")
+    p = student_sub.add_parser("creds", help="Affiche les credentials étudiants")
+    _add_classe(p)
 
-    # ips / status
-    p = sub.add_parser("ips", help="État des pools IP (WAN/VXLAN) avec utilisation")
-    p.add_argument("--classe", metavar="CLASSE", help="Filtrer par classe")
+    p = student_sub.add_parser("recreate", help="Recrée la VM OpenWrt d'un étudiant")
+    p.add_argument("nom", metavar="NOM", help="Login de l'étudiant")
+    _add_yes(p)
 
-    p = sub.add_parser("status", help="Ressources CPU/RAM/disk par étudiant vs flavor")
-    p.add_argument("--classe", metavar="CLASSE", help="Filtrer par classe")
-
-    # recreate
-    p = sub.add_parser("recreate", help="Recrée la VM OpenWrt d'un étudiant")
-    p.add_argument("nom", metavar="NOM", help="Nom de l'étudiant (login Proxmox)")
-    p.add_argument("--yes", "-y", action="store_true", help="Pas de confirmation interactive")
-    p.add_argument("--classe", metavar="CLASSE", help="Filtrer par classe")
-
-    # deploy / undeploy
-    p = sub.add_parser("deploy", help="Déploie les VMs d'un TP depuis un fichier YAML")
+    p = student_sub.add_parser("deploy", help="Déploie les VMs d'un TP depuis un fichier YAML")
     p.add_argument("-f", "--file", required=True, metavar="FILE", help="Fichier TP YAML")
     p.add_argument(
         "--workers", type=int, default=2, metavar="N", help="Workers parallèles (défaut: 2)"
     )
-    p.add_argument("--yes", "-y", action="store_true", help="Pas de confirmation interactive")
+    _add_yes(p)
 
-    p = sub.add_parser("undeploy", help="Supprime toutes les VMs d'un TP")
+    p = student_sub.add_parser("undeploy", help="Supprime toutes les VMs d'un TP")
     grp = p.add_mutually_exclusive_group(required=True)
     grp.add_argument("-f", "--file", metavar="FILE", help="Fichier TP YAML")
     grp.add_argument("--tp", metavar="NOM", help="Nom du TP (sans fichier)")
     p.add_argument(
         "--workers", type=int, default=2, metavar="N", help="Workers parallèles (défaut: 2)"
     )
-    p.add_argument("--yes", "-y", action="store_true", help="Pas de confirmation interactive")
+    _add_yes(p)
 
-    # build-template
-    p = sub.add_parser("build-template", help="Construit une ou plusieurs templates cloud-init")
+    p = student_sub.add_parser("destroy", help="Supprime toutes les ressources étudiants gérées")
+    _add_yes(p)
+
+    # ── pool ──────────────────────────────────────────────────────────────────
+
+    pool_p = sub.add_parser("pool", help="Gestion des pools et des IPs")
+    pool_sub = pool_p.add_subparsers(dest="command", metavar="<commande>")
+    pool_sub.required = True
+
+    pool_sub.add_parser("list", help="Liste les pools gérés")
+    pool_sub.add_parser("ips", help="État des pools IP (WAN/VXLAN) avec utilisation")
+
+    # ── sdn ───────────────────────────────────────────────────────────────────
+
+    sdn_p = sub.add_parser("sdn", help="Inspection SDN")
+    sdn_sub = sdn_p.add_subparsers(dest="command", metavar="<commande>")
+    sdn_sub.required = True
+
+    sdn_sub.add_parser("zones", help="Liste les zones SDN")
+
+    p = sdn_sub.add_parser("vnets", help="Liste les VNets SDN")
+    p.add_argument("--zone", metavar="ZONE", help="Filtrer par zone")
+
+    # ── template ──────────────────────────────────────────────────────────────
+
+    template_p = sub.add_parser("template", help="Construction des templates Proxmox")
+    template_sub = template_p.add_subparsers(dest="command", metavar="<commande>")
+    template_sub.required = True
+
+    p = template_sub.add_parser("build", help="Construit les templates cloud-init (infra.yaml)")
     p.add_argument(
         "names",
         metavar="NOMS",
         nargs="?",
         help="Noms séparés par ',' ou '*' pour toutes (défaut: toutes)",
     )
-    p.add_argument("--yes", "-y", action="store_true", help="Pas de confirmation interactive")
+    _add_yes(p)
 
-    # build-openwrt
-    p = sub.add_parser(
-        "build-openwrt",
-        help="Crée la template OpenWrt sur le nœud Proxmox local (root requis)",
-    )
-    p.add_argument(
-        "--version",
-        default=None,
-        metavar="VERSION",
-        help="Version OpenWrt (défaut: dernière stable)",
-    )
-    p.add_argument(
-        "--vmid",
-        type=int,
-        default=None,
-        metavar="VMID",
-        help="VMID de la template (défaut: infra.yaml → openwrt.template_vmid)",
-    )
-    p.add_argument(
-        "--storage",
-        default=None,
-        metavar="STORAGE",
-        help="Stockage cible (défaut: infra.yaml → openwrt.storage)",
-    )
-    p.add_argument(
-        "--password",
-        default="openwrt",
-        metavar="PASSWORD",
-        help="Mot de passe root OpenWrt (défaut: openwrt)",
-    )
+    p = template_sub.add_parser("build-openwrt", help="Construit la template OpenWrt")
+    p.add_argument("--version", default=None, metavar="VERSION", help="Version OpenWrt")
+    p.add_argument("--vmid", type=int, default=None, metavar="VMID", help="VMID cible")
+    p.add_argument("--storage", default=None, metavar="STORAGE", help="Stockage cible")
+    p.add_argument("--password", default="openwrt", metavar="PASSWORD", help="Mot de passe root")
     p.add_argument(
         "--template-pool",
         default="template",
         metavar="POOL",
-        help="Pool Proxmox où ajouter la template (défaut: template)",
+        help="Pool template (défaut: template)",
     )
-    p.add_argument("--yes", "-y", action="store_true", help="Pas de confirmation interactive")
+    _add_yes(p)
 
-    # destroy-all
-    p = sub.add_parser("destroy-all", help="Supprime toutes les ressources étudiants gérées")
-    p.add_argument("--yes", "-y", action="store_true", help="Pas de confirmation interactive")
-
-    # init
-    p = sub.add_parser("init", help="Initialise /etc/labomatics/ avec les configs par défaut")
-    p.add_argument("--dir", metavar="DIR", help="Répertoire cible (défaut: /etc/labomatics)")
+    # ── Dispatch ──────────────────────────────────────────────────────────────
 
     args = parser.parse_args()
 
-    dispatch = {
+    student_dispatch = {
         "apply": cmd_apply,
         "diff": cmd_diff,
-        "pools": cmd_pools,
-        "zones": cmd_zones,
-        "vnets": cmd_vnets,
-        "vms": cmd_vms,
-        "find": cmd_find,
-        "credentials": cmd_credentials,
-        "ips": cmd_ips,
+        "list": cmd_vms,
         "status": cmd_status,
+        "find": cmd_find,
+        "creds": cmd_credentials,
         "recreate": cmd_recreate,
         "deploy": cmd_deploy,
         "undeploy": cmd_undeploy,
-        "build-template": cmd_build_template,
+        "destroy": cmd_destroy_all,
+    }
+    pool_dispatch = {
+        "list": cmd_pools,
+        "ips": cmd_ips,
+    }
+    sdn_dispatch = {
+        "zones": cmd_zones,
+        "vnets": cmd_vnets,
+    }
+    template_dispatch = {
+        "build": cmd_build_template,
         "build-openwrt": cmd_build_openwrt,
-        "destroy-all": cmd_destroy_all,
-        "init": cmd_init,
+    }
+
+    group_dispatch = {
+        "setup": (cmd_setup, None),
+        "student": (None, student_dispatch),
+        "pool": (None, pool_dispatch),
+        "sdn": (None, sdn_dispatch),
+        "template": (None, template_dispatch),
     }
 
     try:
-        dispatch[args.command](args)
+        top_fn, sub_dispatch = group_dispatch[args.group]
+        if top_fn is not None:
+            top_fn(args)
+        else:
+            sub_dispatch[args.command](args)  # type: ignore[index]
     except KeyboardInterrupt:
         console.print("\n[yellow]Interrompu.[/yellow]")
         sys.exit(1)

@@ -13,7 +13,7 @@ from ..proxmox import (
     list_managed_pools,
     list_vnets_in_zone,
 )
-from ._helpers import make_connection
+from ._helpers import load_students_from_config, make_connection
 
 console = Console()
 
@@ -98,7 +98,7 @@ def cmd_vnets(args) -> None:
 
 
 def cmd_vms(args) -> None:
-    """Liste les VMs des pools gérés (optionnel : --pool)."""
+    """Liste les VMs des pools gérés (optionnel : --pool / --classe)."""
     proxmox = make_connection()
 
     pool_filter = getattr(args, "pool", None)
@@ -106,6 +106,18 @@ def cmd_vms(args) -> None:
         pools = [{"poolid": pool_filter}]
     else:
         pools = list_managed_pools(proxmox)
+
+    classe = getattr(args, "classe", None)
+    if classe:
+        try:
+            from ..config import load_config
+
+            config = load_config()
+            students = load_students_from_config(config)
+            allowed = {s.pool_name() for s in students if s.classe == classe}
+            pools = [p for p in pools if p["poolid"] in allowed]
+        except Exception:
+            pass
 
     if not pools:
         console.print("[dim]Aucun pool géré.[/dim]")
