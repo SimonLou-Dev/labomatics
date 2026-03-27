@@ -22,7 +22,7 @@ Peers      : IPs de tous les nœuds du cluster
 ### 2. Pool template
 
 Un pool Proxmox nommé `template` (ou le nom défini dans `template_pool`) doit exister
-pour accueillir la template OpenWrt. `labomatics build-openwrt` **crée ce pool
+pour accueillir la template OpenWrt. `labomatics template build-openwrt` **crée ce pool
 automatiquement** s'il n'existe pas et y ajoute la template.
 
 Pour le créer manuellement si nécessaire :
@@ -126,16 +126,17 @@ PROXMOX_TOKEN_SECRET=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 ### `students.csv` — Liste des étudiants
 
 ```csv
-id,nom,prenom,flavor
-18,Dupont,Jean,CO1
-240,Korniev,Mikhail,CO2
-42,Smith,Alice,CO1
+id,nom,prenom,flavor,classe
+18,Dupont,Jean,CO1,M1_SRC
+240,Korniev,Mikhail,CO2,M2_SEC
+42,Smith,Alice,CO1,M1_SRC
 ```
 
 - `id` : entier unique et stable (clé de toutes les allocations réseau)
 - `nom` : nom de famille
 - `prenom` : prénom (première lettre + nom → login, ex. `jdupont`)
 - `flavor` : profil ressources défini dans `infra.yaml`
+- `classe` : groupe / promotion — optionnel, utilisé avec `--classe` pour filtrer
 
 Le **login Proxmox** est calculé automatiquement : `première_lettre_prénom + nom` en minuscule.
 Exemple : Jean Dupont → `jdupont@pve`, pool `jdupont`.
@@ -148,26 +149,22 @@ Exemple : Jean Dupont → `jdupont@pve`, pool `jdupont`.
 ## Ordre de mise en place (à suivre dans cet ordre)
 
 > **Ces étapes sont à réaliser une seule fois avant le premier `apply`.**
+> Le wizard `labomatics setup` les guide automatiquement.
 
-### Étape 1 — Build de la template OpenWrt
-
-La template OpenWrt doit être créée avant tout déploiement. Voir [template.md](template.md)
-pour le détail complet.
-
-À exécuter **en root sur un nœud Proxmox** ayant accès au stockage partagé :
+### Option A — Wizard interactif (recommandé)
 
 ```bash
-# Télécharge la dernière version stable d'OpenWrt, crée et configure la template
-# (vmid et storage lus depuis infra.yaml si déjà configuré)
-labomatics build-openwrt
-
-# Forcer une version ou un stockage spécifique
-labomatics build-openwrt --version 24.10.0 --vmid 90200 --storage zfs-store
+labomatics setup
 ```
 
-La commande ajoute automatiquement la template au pool `template` à la fin.
+Le wizard couvre toutes les étapes ci-dessous dans l'ordre, avec vérifications
+automatiques à chaque étape.
 
-### Étape 2 — Zone SDN VXLAN
+---
+
+### Option B — Étapes manuelles
+
+#### Étape 1 — Zone SDN VXLAN
 
 Créer la zone SDN dans `Datacenter → SDN → Zones` (si elle n'existe pas) :
 
@@ -177,37 +174,45 @@ Zone ID : esgilab
 Peers   : IPs de tous les nœuds du cluster
 ```
 
-### Étape 3 — Pool template
-
-Créer le pool template dans `Datacenter → Pools → Create` (si non existant) :
-
-```
-Pool ID : template
-```
-
-### Étape 4 — Initialisation de la configuration
+#### Étape 2 — Initialisation de la configuration
 
 ```bash
-# Initialise /etc/labomatics/ avec les fichiers de config par défaut
-labomatics init
-
-# Éditer les fichiers générés
+labomatics setup --dir /etc/labomatics   # ou manuellement :
+mkdir -p /etc/labomatics
+# Copier et éditer les fichiers de config
 nano /etc/labomatics/.env
 nano /etc/labomatics/infra.yaml
 nano /etc/labomatics/students.csv
 ```
 
-### Étape 5 — Premier `apply`
+#### Étape 3 — Build de la template OpenWrt
+
+La template OpenWrt doit être créée avant tout déploiement. Voir [template.md](template.md)
+pour le détail complet.
+
+À exécuter **en root sur un nœud Proxmox** ayant accès au stockage partagé :
+
+```bash
+# Télécharge la dernière version stable d'OpenWrt, crée et configure la template
+labomatics template build-openwrt
+
+# Forcer une version ou un stockage spécifique
+labomatics template build-openwrt --version 24.10.0 --vmid 90200 --storage zfs-store
+```
+
+La commande crée le pool `template` automatiquement s'il n'existe pas.
+
+#### Étape 4 — Premier `apply`
 
 ```bash
 # Vérifier le diff avant d'appliquer
-labomatics diff
+labomatics student diff
 
 # Appliquer (avec confirmation interactive)
-labomatics apply
+labomatics student apply
 
 # Appliquer sans confirmation (CI/CD)
-labomatics apply --yes
+labomatics student apply --yes
 ```
 
 Après `apply`, le fichier `credentials.csv` est généré dans le même répertoire

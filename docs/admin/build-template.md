@@ -2,7 +2,7 @@
 
 > **Audience** : administrateur Proxmox
 
-La commande `labomatics build-template` construit des templates Linux (Ubuntu, Debian,
+La commande `labomatics template build` construit des templates Linux (Ubuntu, Debian,
 Fedora, Alpine…) directement via l'API Proxmox, sans Packer ni SSH vers les VMs.
 
 ---
@@ -39,14 +39,14 @@ Pour chaque template définie dans `infra.yaml` :
 
 ```bash
 # Toutes les templates définies dans infra.yaml
-labomatics build-template
+labomatics template build
 
 # Une ou plusieurs templates spécifiques
-labomatics build-template ubuntu-25.10
-labomatics build-template ubuntu-25.10,debian-13
+labomatics template build ubuntu-25.10
+labomatics template build ubuntu-25.10,debian-13
 
 # Sans confirmation interactive
-labomatics build-template --yes
+labomatics template build --yes
 ```
 
 ---

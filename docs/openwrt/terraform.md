@@ -145,7 +145,7 @@ network_device {
 ```
 
 > L'administrateur peut vous confirmer le nom exact de votre VNet avec
-> `labomatics find <votre-nom>`.
+> `labomatics student find <votre-nom>`.
 
 ---
 
