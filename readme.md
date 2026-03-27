@@ -13,8 +13,8 @@ une VM OpenWrt (routeur), un compte utilisateur avec ACL, et un jeu de credentia
 
 ```
 pip install labomatics
-labomatics init       # crée /etc/labomatics/ avec les configs par défaut
-labomatics apply      # synchronise Proxmox avec le CSV
+labomatics setup             # assistant d'installation interactif
+labomatics student apply     # synchronise Proxmox avec le CSV
 ```
 
 ---
@@ -71,8 +71,8 @@ pip install -e ".[dev]"
 ### 2. Initialisation
 
 ```bash
-sudo labomatics init
-# Crée /etc/labomatics/{infra.yaml, .env, students.csv}
+sudo labomatics setup
+# Assistant interactif : credentials, config, vérifications Proxmox, template OpenWrt
 ```
 
 ### 3. Configuration
@@ -110,9 +110,9 @@ flavors:
 
 ```csv
 # /etc/labomatics/students.csv
-id,nom,prenom,flavor
-18,jdupont,Jean,CO1
-240,mkorniev,Mikhail,CO2
+id,nom,prenom,flavor,classe
+18,jdupont,Jean,CO1,M1_SRC
+240,mkorniev,Mikhail,CO2,M2_SEC
 ```
 
 L'`id` est stable et sert de clé pour le VMID et le tag VXLAN. Ne jamais le réutiliser.
@@ -120,29 +120,39 @@ L'`id` est stable et sert de clé pour le VMID et le tag VXLAN. Ne jamais le ré
 ### 5. Déployer
 
 ```bash
-labomatics diff     # aperçu sans modification
-labomatics apply    # déploiement avec confirmation
+labomatics student diff     # aperçu sans modification
+labomatics student apply    # déploiement avec confirmation
 ```
 
 ---
 
 ## Commandes CLI
 
-| Commande | Description |
-|---|---|
-| `apply [--yes]` | Synchronise Proxmox avec le CSV |
-| `diff` | Aperçu des changements (lecture seule) |
-| `pools` | Liste les pools gérés |
-| `zones` | Liste les zones SDN |
-| `vnets [--zone]` | Liste les VNets SDN |
-| `vms [--pool]` | Liste les VMs des pools gérés |
-| `find <query>` | Recherche par IP WAN, VNet ou nom |
-| `credentials` | Affiche les credentials générés |
-| `ips` | État des pools IP avec % d'utilisation |
-| `status` | Ressources CPU/RAM/disk par étudiant vs flavor |
-| `recreate <nom> [--yes]` | Recrée la VM OpenWrt d'un étudiant |
-| `build-template [nom]` | Build template via Packer + provisioning |
-| `init [--dir]` | Initialise la configuration |
+```
+labomatics setup                    # assistant d'installation interactif
+
+labomatics student apply            # synchronise Proxmox avec le CSV
+labomatics student diff             # aperçu des changements (lecture seule)
+labomatics student list             # liste les VMs des pools étudiants
+labomatics student status           # CPU/RAM/disk par étudiant vs flavor
+labomatics student find <query>     # recherche par IP WAN, VNet ou nom
+labomatics student creds            # affiche les credentials générés
+labomatics student recreate <nom>   # recrée la VM OpenWrt d'un étudiant
+labomatics student deploy -f tp.yaml   # déploie un TP
+labomatics student undeploy --tp <nom> # supprime un TP
+labomatics student destroy          # supprime toutes les ressources
+
+labomatics pool list                # liste les pools gérés
+labomatics pool ips                 # état des pools IP (WAN/VXLAN)
+
+labomatics sdn zones                # liste les zones SDN
+labomatics sdn vnets [--zone]       # liste les VNets SDN
+
+labomatics template build [nom]         # construit les templates cloud-init
+labomatics template build-openwrt       # construit la template OpenWrt
+```
+
+La plupart des commandes `student` acceptent `--classe M1_SRC` pour restreindre à un groupe.
 
 ---
 
@@ -164,14 +174,17 @@ systemctl enable --now labomatics-quotad
 
 ```bash
 # Construire toutes les templates définies dans infra.yaml
-labomatics build-template
+labomatics template build
 
 # Construire une template spécifique
-labomatics build-template ubuntu-24.04
+labomatics template build ubuntu-24.04
+
+# Construire la template OpenWrt (en root sur le nœud Proxmox)
+labomatics template build-openwrt
 ```
 
-Pipeline : suppression de l'existante → Packer build → provisioning SSH/guest-agent
-→ shutdown → suppression NICs → conversion template Proxmox.
+Pipeline : téléchargement via API Proxmox → virt-customize → démarrage + guest-agent
+→ shutdown → conversion template.
 
 ---
 
