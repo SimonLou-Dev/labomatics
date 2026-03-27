@@ -64,7 +64,7 @@ def get_vm_vxlan_subnet(proxmox: ProxmoxAPI, node: str, vmid: int) -> str | None
 
 def find_tp_vms(proxmox: ProxmoxAPI, tp_name: str) -> list[dict]:
     """Retourne toutes les VMs du cluster portant le tag ``labomatics-tp:{tp_name}``."""
-    tag = f"labomatics-tp:{tp_name}"
+    tag = f"labomatics-tp--{tp_name}"
     resources = proxmox.cluster.resources.get(type="vm")
     return [r for r in resources if tag in (r.get("tags") or "").split(";")]
 

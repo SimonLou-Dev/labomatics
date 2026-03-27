@@ -60,7 +60,8 @@ def _print_overview() -> None:
     console.print("[bold]Groupes de commandes :[/bold]\n")
     rows = [
         ("setup", "Assistant d'installation interactif"),
-        ("student", "apply  diff  list  status  find  creds  recreate  deploy  undeploy  destroy"),
+        ("student", "apply  diff  list  status  find  creds  recreate  destroy"),
+        ("tp", "deploy  undeploy               — déploiement de TPs"),
         ("pool", "list                         — pools Proxmox gérés par labomatics"),
         ("network", "zones  vnets  ips           — SDN, VNets et adresses IP"),
         ("template", "build  openwrt             — construction des templates Proxmox"),
@@ -206,45 +207,6 @@ def main() -> None:
     _add_yes(p)
 
     p = student_sub.add_parser(
-        "deploy",
-        help="Déploie les VMs d'un TP pour tous les étudiants",
-        description=(
-            "Clone les VMs définies dans un fichier TP YAML dans le pool de chaque étudiant. "
-            "Idempotent : recrée uniquement les VMs dont la configuration a changé."
-        ),
-    )
-    p.add_argument("-f", "--file", required=True, metavar="FILE", help="Fichier TP YAML")
-    p.add_argument(
-        "--workers",
-        type=int,
-        default=2,
-        metavar="N",
-        help="Nombre d'étudiants traités en parallèle (défaut : 2)",
-    )
-    _add_yes(p)
-
-    p = student_sub.add_parser(
-        "undeploy",
-        help="Supprime toutes les VMs d'un TP déployé",
-        description=(
-            "Supprime toutes les VMs portant le tag du TP spécifié dans tous les pools étudiants."
-        ),
-    )
-    grp = p.add_mutually_exclusive_group(required=True)
-    grp.add_argument(
-        "-f", "--file", metavar="FILE", help="Fichier TP YAML (pour lire le nom du TP)"
-    )
-    grp.add_argument("--tp", metavar="NOM", help="Nom du TP (sans fichier YAML)")
-    p.add_argument(
-        "--workers",
-        type=int,
-        default=2,
-        metavar="N",
-        help="Nombre d'étudiants traités en parallèle (défaut : 2)",
-    )
-    _add_yes(p)
-
-    p = student_sub.add_parser(
         "destroy",
         help="Supprime TOUTES les ressources étudiants gérées par labomatics",
         description=(
@@ -252,6 +214,44 @@ def main() -> None:
             "Action irréversible — une confirmation est demandée."
         ),
     )
+    _add_yes(p)
+
+    # ── tp ────────────────────────────────────────────────────────────────────
+
+    tp_p = sub.add_parser(
+        "tp",
+        help="Déploiement de TPs (travaux pratiques)",
+        description=(
+            "Déploie ou supprime les VMs d'un TP dans les pools étudiants. "
+            "Les VMs sont identifiées par un tag Proxmox et un marker dans leur description."
+        ),
+    )
+    tp_sub = tp_p.add_subparsers(dest="command", metavar="<commande>")
+    tp_sub.required = True
+
+    p = tp_sub.add_parser(
+        "deploy",
+        help="Déploie les VMs d'un TP pour les étudiants ciblés",
+        description=(
+            "Clone les VMs définies dans un fichier TP YAML dans le pool de chaque étudiant. "
+            "Idempotent : les VMs déjà déployées avec la même configuration sont ignorées, "
+            "celles dont la config a changé sont supprimées et recrées."
+        ),
+    )
+    p.add_argument("-f", "--file", required=True, metavar="FILE", help="Fichier TP YAML")
+    _add_yes(p)
+
+    p = tp_sub.add_parser(
+        "undeploy",
+        help="Supprime toutes les VMs d'un TP déployé",
+        description=(
+            "Supprime toutes les VMs portant le tag du TP dans tous les pools étudiants. "
+            "N'affecte pas les VMs OpenWrt ni les autres ressources étudiants."
+        ),
+    )
+    grp = p.add_mutually_exclusive_group(required=True)
+    grp.add_argument("-f", "--file", metavar="FILE", help="Fichier TP YAML (lit le nom du TP)")
+    grp.add_argument("--tp", metavar="NOM", help="Nom du TP (sans fichier YAML)")
     _add_yes(p)
 
     # ── pool ──────────────────────────────────────────────────────────────────
@@ -383,9 +383,11 @@ def main() -> None:
         "find": cmd_find,
         "creds": cmd_credentials,
         "recreate": cmd_recreate,
+        "destroy": cmd_destroy_all,
+    }
+    tp_dispatch = {
         "deploy": cmd_deploy,
         "undeploy": cmd_undeploy,
-        "destroy": cmd_destroy_all,
     }
     pool_dispatch = {
         "list": cmd_pools,
@@ -403,6 +405,7 @@ def main() -> None:
     group_dispatch = {
         "setup": (cmd_setup, None),
         "student": (None, student_dispatch),
+        "tp": (None, tp_dispatch),
         "pool": (None, pool_dispatch),
         "network": (None, network_dispatch),
         "template": (None, template_dispatch),
