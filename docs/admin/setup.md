@@ -22,7 +22,7 @@ Peers      : IPs de tous les nœuds du cluster
 ### 2. Pool template
 
 Un pool Proxmox nommé `template` (ou le nom défini dans `template_pool`) doit exister
-pour accueillir la template OpenWrt. `labomatics template build-openwrt` **crée ce pool
+pour accueillir la template OpenWrt. `labomatics template openwrt` **crée ce pool
 automatiquement** s'il n'existe pas et y ajoute la template.
 
 Pour le créer manuellement si nécessaire :
@@ -194,10 +194,10 @@ pour le détail complet.
 
 ```bash
 # Télécharge la dernière version stable d'OpenWrt, crée et configure la template
-labomatics template build-openwrt
+labomatics template openwrt
 
 # Forcer une version ou un stockage spécifique
-labomatics template build-openwrt --version 24.10.0 --vmid 90200 --storage zfs-store
+labomatics template openwrt --version 24.10.0 --vmid 90200 --storage zfs-store
 ```
 
 La commande crée le pool `template` automatiquement s'il n'existe pas.

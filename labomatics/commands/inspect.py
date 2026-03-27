@@ -107,23 +107,28 @@ def cmd_vms(args) -> None:
     else:
         pools = list_managed_pools(proxmox)
 
+    # Charger les étudiants pour afficher la classe
+    pool_to_classe: dict[str, str] = {}
+    try:
+        from ..config import load_config
+
+        config = load_config()
+        students = load_students_from_config(config)
+        pool_to_classe = {s.pool_name(): s.classe or "" for s in students}
+    except Exception:
+        pass
+
     classe = getattr(args, "classe", None)
     if classe:
-        try:
-            from ..config import load_config
-
-            config = load_config()
-            students = load_students_from_config(config)
-            allowed = {s.pool_name() for s in students if s.classe == classe}
-            pools = [p for p in pools if p["poolid"] in allowed]
-        except Exception:
-            pass
+        allowed = {pool for pool, c in pool_to_classe.items() if c == classe}
+        pools = [p for p in pools if p["poolid"] in allowed]
 
     if not pools:
         console.print("[dim]Aucun pool géré.[/dim]")
         return
 
     table = Table(show_header=True, header_style="bold magenta", title="VMs — pools gérés")
+    table.add_column("Classe", style="dim")
     table.add_column("Pool", style="cyan")
     table.add_column("VM / LXC")
     table.add_column("VMID", justify="right")
@@ -133,6 +138,7 @@ def cmd_vms(args) -> None:
 
     for p in sorted(pools, key=lambda x: x["poolid"]):
         pool_name = p["poolid"]
+        classe_str = pool_to_classe.get(pool_name, "—")
         members = get_pool_vms(proxmox, pool_name) + get_pool_lxcs(proxmox, pool_name)
         for m in sorted(members, key=lambda x: x.get("vmid", 0)):
             status = m.get("status", "—")
@@ -143,6 +149,7 @@ def cmd_vms(args) -> None:
             mem_max_mb = m.get("maxmem", 0) // (1024 * 1024)
             mem_str = f"{mem_mb}/{mem_max_mb} MB" if mem_max_mb else "—"
             table.add_row(
+                classe_str,
                 pool_name,
                 m.get("name", "—"),
                 str(m.get("vmid", "—")),

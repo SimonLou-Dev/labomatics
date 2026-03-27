@@ -271,7 +271,7 @@ def cmd_deploy(args) -> None:
             console.print("[dim]Annulé.[/dim]")
             return
 
-    workers = getattr(args, "workers", 2)
+    workers = getattr(args, "workers", 1)
 
     def _task(student: "Student") -> None:
         _process_student(proxmox, config, student, tp)

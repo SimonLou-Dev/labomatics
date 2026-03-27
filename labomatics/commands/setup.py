@@ -19,6 +19,7 @@ import getpass
 import os
 import shutil
 import subprocess
+import time
 from pathlib import Path
 
 from rich.console import Console
@@ -101,13 +102,17 @@ def _check_shared_storage(proxmox, nodes: list) -> None:
         )
 
 
-def _verify_config(proxmox, config, nodes: list) -> None:
-    """Vérifie bridges, storages et zone SDN après édition de infra.yaml."""
+def _verify_config(proxmox, config, nodes: list) -> bool:
+    """Vérifie bridges, storages et zone SDN après édition de infra.yaml.
+
+    Retourne True si tout est OK, False si des avertissements bloquants subsistent.
+    """
     from ..proxmox import check_sdn_zone_exists
 
     storage = config.openwrt.storage
     wan_bridge = config.openwrt.wan_bridge
     zone = config.openwrt.network.zone_name
+    ok = True
 
     for n in nodes:
         node_name = n["node"]
@@ -119,9 +124,10 @@ def _verify_config(proxmox, config, nodes: list) -> None:
                 console.print(f"  [green]✓ Storage '{storage}' — {node_name}[/green]")
             else:
                 console.print(
-                    f"  [yellow]⚠  Storage '{storage}' absent sur {node_name}[/yellow]\n"
+                    f"  [red]✗  Storage '{storage}' absent sur {node_name}[/red]\n"
                     f"     Storages disponibles : {', '.join(storages)}"
                 )
+                ok = False
         except Exception as e:
             console.print(
                 f"  [yellow]⚠  Impossible de vérifier le storage sur {node_name} : {e}[/yellow]"
@@ -135,9 +141,10 @@ def _verify_config(proxmox, config, nodes: list) -> None:
                 console.print(f"  [green]✓ Bridge '{wan_bridge}' — {node_name}[/green]")
             else:
                 console.print(
-                    f"  [yellow]⚠  Bridge '{wan_bridge}' absent sur {node_name}[/yellow]\n"
+                    f"  [red]✗  Bridge '{wan_bridge}' absent sur {node_name}[/red]\n"
                     f"     Bridges disponibles : {', '.join(bridges)}"
                 )
+                ok = False
         except Exception as e:
             console.print(
                 f"  [yellow]⚠  Impossible de vérifier les bridges sur {node_name} : {e}[/yellow]"
@@ -149,11 +156,14 @@ def _verify_config(proxmox, config, nodes: list) -> None:
             console.print(f"  [green]✓ Zone SDN '{zone}' présente[/green]")
         else:
             console.print(
-                f"  [yellow]⚠  Zone SDN '{zone}' absente[/yellow]\n"
+                f"  [red]✗  Zone SDN '{zone}' absente[/red]\n"
                 "     Créez-la dans Proxmox → Datacenter → SDN → Zones (type VXLAN)"
             )
+            ok = False
     except Exception as e:
         console.print(f"  [yellow]⚠  Vérification SDN : {e}[/yellow]")
+
+    return ok
 
 
 # ── Commande principale ───────────────────────────────────────────────────────
@@ -171,53 +181,54 @@ def cmd_setup(args) -> None:
     console.print("[bold cyan]║    labomatics — setup        ║[/bold cyan]")
     console.print("[bold cyan]╚══════════════════════════════╝[/bold cyan]\n")
 
-    already_init = env_file.exists() and infra_file.exists()
+    # ── Étapes 1-2 : création des fichiers manquants uniquement ──────────────
 
-    # ── Étapes 1-3 : initialisation des fichiers ──────────────────────────────
+    try:
+        config_dir.mkdir(parents=True, exist_ok=True)
+    except PermissionError:
+        console.print(
+            f"[red]❌ Permission refusée pour créer {config_dir}[/red]\n"
+            f"  Essayez : [bold]sudo labomatics setup[/bold]\n"
+            f"  Ou : [bold]labomatics setup --dir ./config[/bold]"
+        )
+        return
 
-    if not already_init:
+    # Étape 1 : credentials Proxmox (.env)
+    if not env_file.exists():
         console.print("[bold]Étape 1/9 — Credentials Proxmox[/bold]")
-        console.print("  Créez un API token dans Proxmox : Datacenter → Permissions → API Tokens\n")
-
-        try:
-            config_dir.mkdir(parents=True, exist_ok=True)
-        except PermissionError:
-            console.print(
-                f"[red]❌ Permission refusée pour créer {config_dir}[/red]\n"
-                f"  Essayez : [bold]sudo labomatics setup[/bold]\n"
-                f"  Ou : [bold]labomatics setup --dir ./config[/bold]"
-            )
-            return
+        console.print("  Créez un API token dans Proxmox :")
+        console.print("    Datacenter → Permissions → API Tokens → Add")
+        console.print(
+            "    ⚠  Décochez [bold]Privilege Separation[/bold] pour que le token hérite des droits de l'utilisateur\n"
+        )
 
         host = _ask("PROXMOX_HOST        (IP ou hostname)")
         token_id = _ask("PROXMOX_TOKEN_ID    (user@realm!token-name)")
         token_secret = getpass.getpass("   PROXMOX_TOKEN_SECRET                  : ")
 
-        env_content = (
+        env_file.write_text(
             f'PROXMOX_HOST="{host}"\n'
             f'PROXMOX_TOKEN_ID="{token_id}"\n'
             f'PROXMOX_TOKEN_SECRET="{token_secret}"\n'
         )
-        env_file.write_text(env_content)
         console.print("  [green]✓ .env créé[/green]\n")
-
-        console.print("[bold]Étape 2/9 — Création des fichiers de configuration[/bold]")
-        for src_name, dst in [
-            ("infra.yaml.example", infra_file),
-            ("students.csv.example", csv_file),
-        ]:
-            src = TEMPLATES_DIR / src_name
-            if not dst.exists() and src.exists():
-                shutil.copy(src, dst)
-                console.print(f"  [green]✓ {dst.name} créé[/green]")
-            elif dst.exists():
-                console.print(f"  [dim]⏭  {dst.name} déjà présent[/dim]")
-        console.print()
-
     else:
-        console.print(
-            f"  [dim]⏭  Déjà initialisé ({config_dir}) — passage aux vérifications[/dim]\n"
-        )
+        console.print("[bold]Étape 1/9 — Credentials Proxmox[/bold]")
+        console.print("  [dim]⏭  .env déjà présent — ignoré[/dim]\n")
+
+    # Étape 2 : fichiers de configuration (infra.yaml, students.csv)
+    console.print("[bold]Étape 2/9 — Création des fichiers de configuration[/bold]")
+    for src_name, dst in [
+        ("infra.yaml.example", infra_file),
+        ("students.csv.example", csv_file),
+    ]:
+        src = TEMPLATES_DIR / src_name
+        if not dst.exists() and src.exists():
+            shutil.copy(src, dst)
+            console.print(f"  [green]✓ {dst.name} créé[/green]")
+        elif dst.exists():
+            console.print(f"  [dim]⏭  {dst.name} déjà présent — ignoré[/dim]")
+    console.print()
 
     # ── Étape 3 : connexion Proxmox ───────────────────────────────────────────
 
@@ -250,31 +261,55 @@ def cmd_setup(args) -> None:
     if len(online) > 1:
         console.print("[bold]Étape 4/9 — Stockage partagé (cluster multi-nœuds détecté)[/bold]")
         _check_shared_storage(proxmox, online)
-        console.print()
     else:
-        console.print("[dim]Étape 4/9 — Stockage partagé : nœud unique, ignoré[/dim]\n")
+        console.print("[bold]Étape 4/9 — Stockage (nœud unique)[/bold]")
+        node_name = online[0]["node"]
+        try:
+            storages = [s["storage"] for s in proxmox.nodes(node_name).storage.get()]
+            console.print(
+                f"  Stockages disponibles sur [cyan]{node_name}[/cyan] : {', '.join(storages)}"
+            )
+        except Exception as e:
+            console.print(f"  [yellow]⚠  Impossible de lister les stockages : {e}[/yellow]")
+    console.print()
 
     # ── Étape 5 : édition infra.yaml ──────────────────────────────────────────
 
     console.print("[bold]Étape 5/9 — Configuration de infra.yaml[/bold]")
     console.print(f"  Fichier : [cyan]{infra_file}[/cyan]")
+    console.print("  [dim]Ouverture dans 2 secondes...[/dim]")
+    time.sleep(2)
     _open_editor(infra_file)
     console.print()
 
-    # ── Étape 6 : vérifications post-édition ──────────────────────────────────
+    # ── Étape 6 : vérifications post-édition (retry toutes les 10s) ──────────
 
     console.print("[bold]Étape 6/9 — Vérifications post-configuration[/bold]")
-    try:
-        from ..config import load_config
+    from ..config import InfraConfig, load_config
 
-        config = load_config()
-        _verify_config(proxmox, config, online)
-    except Exception as e:
-        console.print(f"  [red]❌ Erreur dans infra.yaml : {e}[/red]")
+    config: InfraConfig | None = None
+    while True:
+        try:
+            config = load_config()
+            ok = _verify_config(proxmox, config, online)
+        except Exception as e:
+            console.print(f"  [red]❌ {e}[/red]")
+            ok = False
+
+        if ok:
+            break
+
         console.print(
-            f"  Corrigez [cyan]{infra_file}[/cyan] et relancez [bold]labomatics setup[/bold]."
+            f"\n  Corrigez [cyan]{infra_file}[/cyan] — nouvelle vérification dans 10 s  "
+            "(Ctrl+C pour annuler)"
         )
-        return
+        try:
+            time.sleep(10)
+        except KeyboardInterrupt:
+            console.print("\n[yellow]Setup annulé.[/yellow]")
+            return
+        console.print("\n[bold]Étape 6/9 — Vérifications post-configuration[/bold]")
+    assert config is not None
     console.print()
 
     # ── Étape 7 : pool template ───────────────────────────────────────────────
@@ -312,12 +347,14 @@ def cmd_setup(args) -> None:
     if _confirm("  Construire la template OpenWrt maintenant ?"):
         from .build_openwrt import cmd_build_openwrt
 
+        _tpl_pool = config.openwrt.template_pool  # type: ignore[union-attr]
+
         class _Args:
             version = None
             vmid = None
             storage = None
             password = "openwrt"
-            template_pool = config.openwrt.template_pool
+            template_pool = _tpl_pool
             yes = True
 
         try:
@@ -326,7 +363,7 @@ def cmd_setup(args) -> None:
             console.print(f"  [red]❌ Build OpenWrt : {e}[/red]")
     else:
         console.print(
-            "  [dim]Ignoré. Lancez plus tard : [bold]labomatics template build-openwrt[/bold][/dim]"
+            "  [dim]Ignoré. Lancez plus tard : [bold]labomatics template openwrt[/bold][/dim]"
         )
 
     # ── Résumé ────────────────────────────────────────────────────────────────

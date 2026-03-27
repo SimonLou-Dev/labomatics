@@ -151,7 +151,7 @@ def _delete_existing_template(proxmox, vmid: int) -> None:
         return
     console.print(f"  [yellow]Template vmid={vmid} existante → suppression...[/yellow]")
     try:
-        proxmox.nodes(node).qemu(vmid).status.stop.post(forceStop=1)
+        proxmox.nodes(node).qemu(vmid).status.stop.post(skiplock=1)
         time.sleep(2)
     except Exception:
         pass
@@ -309,10 +309,12 @@ def _force_stop_vm(proxmox, node: str, vmid: int) -> None:
     """Force l'arrêt immédiat via l'API Proxmox.
 
     Attend d'abord que le verrou soit libéré (un shutdown échoué laisse la VM verrouillée).
+    POST /status/stop est un arrêt brutal immédiat (équivalent SIGKILL sur QEMU).
+    skiplock=1 permet de contourner un verrou résiduel du shutdown échoué.
     """
     _wait_vm_unlocked(proxmox, node, vmid)
     try:
-        task = proxmox.nodes(node).qemu(vmid).status.stop.post(forceStop=1)
+        task = proxmox.nodes(node).qemu(vmid).status.stop.post(skiplock=1)
         if task:
             wait_for_task(proxmox, node, task, timeout=30)
     except Exception as e:

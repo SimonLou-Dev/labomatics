@@ -3,7 +3,7 @@
 > **Audience** : administrateur Proxmox — opération à réaliser **une seule fois**
 > avant le premier déploiement.
 
-La commande `labomatics template build-openwrt` télécharge la dernière image OpenWrt officielle,
+La commande `labomatics template openwrt` télécharge la dernière image OpenWrt officielle,
 l'enrichit hors-ligne (mot de passe, SSH, NAT, HTTPS, cloud-init NoCloud)
 et l'enregistre comme template Proxmox. Toutes les VMs déployées par labomatics en sont
 des clones complets.
@@ -28,10 +28,10 @@ via le stockage partagé.
 
 ```bash
 # En root sur un nœud Proxmox (vmid et storage lus depuis infra.yaml)
-labomatics template build-openwrt
+labomatics template openwrt
 
 # Paramètres explicites
-labomatics template build-openwrt --version 24.10.0 --vmid 90200 --storage zfs-store --password openwrt
+labomatics template openwrt --version 24.10.0 --vmid 90200 --storage zfs-store --password openwrt
 ```
 
 ### Paramètres

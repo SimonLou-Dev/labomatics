@@ -65,12 +65,11 @@ templates:
   default_user: labomatics          # utilisateur cloud-init par défaut
   default_pass: changeme            # mot de passe cloud-init par défaut (à changer !)
 
+  # ⚠  Ne pas supprimer ni modifier - requis pour la détection de fin de boot,
+  #    le summary Proxmox et l'arrêt propre des VMs.
+  #    Ajoutez des packages supplémentaires par template via extra_packages.
   default_packages:
-    - qemu-guest-agent   # requis pour la détection de fin de boot + summary Proxmox
-    - nano
-    - curl
-    - wget
-    - vim
+    - qemu-guest-agent
 
   sources:
     - name: ubuntu-25.10
@@ -110,7 +109,7 @@ templates:
       cores: 1
       disk_size: "10G"
       cpu_type: "kvm64"      # x86-64-v2-AES peut causer des problèmes avec Alpine
-      boot_timeout: 600      # Alpine démarre lentement (OpenRC + cloud-init)
+      boot_timeout: 100      # Alpine va timeout une premiere fois re démarer et tout sera OK
 
     - name: opnsense-25
       vmid: 90110

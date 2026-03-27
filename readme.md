@@ -129,27 +129,27 @@ labomatics student apply    # déploiement avec confirmation
 ## Commandes CLI
 
 ```
-labomatics setup                    # assistant d'installation interactif
+labomatics setup                       # assistant d'installation interactif
 
-labomatics student apply            # synchronise Proxmox avec le CSV
-labomatics student diff             # aperçu des changements (lecture seule)
-labomatics student list             # liste les VMs des pools étudiants
-labomatics student status           # CPU/RAM/disk par étudiant vs flavor
-labomatics student find <query>     # recherche par IP WAN, VNet ou nom
-labomatics student creds            # affiche les credentials générés
-labomatics student recreate <nom>   # recrée la VM OpenWrt d'un étudiant
-labomatics student deploy -f tp.yaml   # déploie un TP
-labomatics student undeploy --tp <nom> # supprime un TP
-labomatics student destroy          # supprime toutes les ressources
+labomatics student apply               # provisionne / met à jour (CSV → Proxmox)
+labomatics student diff                # aperçu des changements, lecture seule
+labomatics student list                # VMs dans les pools étudiants
+labomatics student status              # CPU/RAM/disk par étudiant vs flavor
+labomatics student find <query>        # recherche par IP WAN, VNet ou login
+labomatics student creds               # credentials générés (login, token, IP)
+labomatics student recreate <nom>      # recrée la VM OpenWrt d'un étudiant
+labomatics student deploy -f tp.yaml   # déploie les VMs d'un TP
+labomatics student undeploy --tp <nom> # supprime les VMs d'un TP
+labomatics student destroy             # supprime toutes les ressources étudiants
 
-labomatics pool list                # liste les pools gérés
-labomatics pool ips                 # état des pools IP (WAN/VXLAN)
+labomatics pool list                   # pools Proxmox avec quotas et nb de VMs
 
-labomatics sdn zones                # liste les zones SDN
-labomatics sdn vnets [--zone]       # liste les VNets SDN
+labomatics network zones               # zones SDN du datacenter
+labomatics network vnets [--zone]      # VNets VXLAN (un par étudiant)
+labomatics network ips                 # utilisation des pools IP WAN et VXLAN
 
-labomatics template build [nom]         # construit les templates cloud-init
-labomatics template build-openwrt       # construit la template OpenWrt
+labomatics template build [nom]        # construit les templates Linux cloud-init
+labomatics template openwrt            # construit la template OpenWrt
 ```
 
 La plupart des commandes `student` acceptent `--classe M1_SRC` pour restreindre à un groupe.
@@ -177,10 +177,10 @@ systemctl enable --now labomatics-quotad
 labomatics template build
 
 # Construire une template spécifique
-labomatics template build ubuntu-24.04
+labomatics template build ubuntu-25.10
 
 # Construire la template OpenWrt (en root sur le nœud Proxmox)
-labomatics template build-openwrt
+labomatics template openwrt
 ```
 
 Pipeline : téléchargement via API Proxmox → virt-customize → démarrage + guest-agent

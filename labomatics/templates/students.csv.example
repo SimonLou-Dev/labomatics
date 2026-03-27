@@ -1,4 +1,4 @@
-id,nom,prenom,flavor
-18,jdupont,Jean,CO1
-46,mmichel,Marie,CO1
-240,mkorniev,Mikhail,CO2
+id,nom,prenom,flavor,classe
+18,jdupont,Jean,CO1,M1_SRC
+46,mmichel,Marie,CO1,M1_SRC
+240,mkorniev,Mikhail,CO2,M2_SEC
