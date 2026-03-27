@@ -22,8 +22,10 @@ Peers      : IPs de tous les nœuds du cluster
 ### 2. Pool template
 
 Un pool Proxmox nommé `template` (ou le nom défini dans `template_pool`) doit exister
-et contenir la template OpenWrt. Le script **ne crée pas ce pool** — il est créé
-manuellement et la template y est ajoutée après le build.
+pour accueillir la template OpenWrt. `labomatics template openwrt` **crée ce pool
+automatiquement** s'il n'existe pas et y ajoute la template.
+
+Pour le créer manuellement si nécessaire :
 
 ```
 Datacenter → Pools → Create → Pool ID: template
@@ -64,9 +66,13 @@ Permissions minimales requises sur `/` (ou par chemin) :
 ## Installation Python
 
 Proxmox tourne sur Debian — l'environnement Python système est géré par APT et
-refuse les `pip install` directs. Utiliser un **virtualenv** :
+refuse les `pip install` directs. Installer d'abord le paquet `venv` puis créer
+un virtualenv :
 
 ```bash
+# Installer le module venv (Debian/Proxmox)
+apt install python3.13-venv
+
 # Créer le venv (une seule fois)
 python3 -m venv /opt/labomatics
 
@@ -120,16 +126,17 @@ PROXMOX_TOKEN_SECRET=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 ### `students.csv` — Liste des étudiants
 
 ```csv
-id,nom,prenom,flavor
-18,Dupont,Jean,CO1
-240,Korniev,Mikhail,CO2
-42,Smith,Alice,CO1
+id,nom,prenom,flavor,classe
+18,Dupont,Jean,CO1,M1_SRC
+240,Korniev,Mikhail,CO2,M2_SEC
+42,Smith,Alice,CO1,M1_SRC
 ```
 
 - `id` : entier unique et stable (clé de toutes les allocations réseau)
 - `nom` : nom de famille
 - `prenom` : prénom (première lettre + nom → login, ex. `jdupont`)
 - `flavor` : profil ressources défini dans `infra.yaml`
+- `classe` : groupe / promotion — optionnel, utilisé avec `--classe` pour filtrer
 
 Le **login Proxmox** est calculé automatiquement : `première_lettre_prénom + nom` en minuscule.
 Exemple : Jean Dupont → `jdupont@pve`, pool `jdupont`.
@@ -142,23 +149,22 @@ Exemple : Jean Dupont → `jdupont@pve`, pool `jdupont`.
 ## Ordre de mise en place (à suivre dans cet ordre)
 
 > **Ces étapes sont à réaliser une seule fois avant le premier `apply`.**
+> Le wizard `labomatics setup` les guide automatiquement.
 
-### Étape 1 — Build de la template OpenWrt
-
-La template OpenWrt doit être créée avant tout déploiement. Voir [template.md](template.md)
-pour le détail complet.
-
-À exécuter **en root sur un nœud Proxmox** ayant accès au stockage partagé :
+### Option A — Wizard interactif (recommandé)
 
 ```bash
-# Via labomatics (recommandé)
-labomatics build-openwrt --version 23.05.5 --vmid 90200 --storage zfs-store --password openwrt
-
-# Ajouter la template au pool template (pour les ACL étudiants)
-pvesh set /pools/template -vms 90200
+labomatics setup
 ```
 
-### Étape 2 — Zone SDN VXLAN
+Le wizard couvre toutes les étapes ci-dessous dans l'ordre, avec vérifications
+automatiques à chaque étape.
+
+---
+
+### Option B — Étapes manuelles
+
+#### Étape 1 — Zone SDN VXLAN
 
 Créer la zone SDN dans `Datacenter → SDN → Zones` (si elle n'existe pas) :
 
@@ -168,37 +174,45 @@ Zone ID : esgilab
 Peers   : IPs de tous les nœuds du cluster
 ```
 
-### Étape 3 — Pool template
-
-Créer le pool template dans `Datacenter → Pools → Create` (si non existant) :
-
-```
-Pool ID : template
-```
-
-### Étape 4 — Initialisation de la configuration
+#### Étape 2 — Initialisation de la configuration
 
 ```bash
-# Initialise /etc/labomatics/ avec les fichiers de config par défaut
-labomatics init
-
-# Éditer les fichiers générés
+labomatics setup --dir /etc/labomatics   # ou manuellement :
+mkdir -p /etc/labomatics
+# Copier et éditer les fichiers de config
 nano /etc/labomatics/.env
 nano /etc/labomatics/infra.yaml
 nano /etc/labomatics/students.csv
 ```
 
-### Étape 5 — Premier `apply`
+#### Étape 3 — Build de la template OpenWrt
+
+La template OpenWrt doit être créée avant tout déploiement. Voir [template.md](template.md)
+pour le détail complet.
+
+À exécuter **en root sur un nœud Proxmox** ayant accès au stockage partagé :
+
+```bash
+# Télécharge la dernière version stable d'OpenWrt, crée et configure la template
+labomatics template openwrt
+
+# Forcer une version ou un stockage spécifique
+labomatics template openwrt --version 24.10.0 --vmid 90200 --storage zfs-store
+```
+
+La commande crée le pool `template` automatiquement s'il n'existe pas.
+
+#### Étape 4 — Premier `apply`
 
 ```bash
 # Vérifier le diff avant d'appliquer
-labomatics diff
+labomatics student diff
 
 # Appliquer (avec confirmation interactive)
-labomatics apply
+labomatics student apply
 
 # Appliquer sans confirmation (CI/CD)
-labomatics apply --yes
+labomatics student apply --yes
 ```
 
 Après `apply`, le fichier `credentials.csv` est généré dans le même répertoire

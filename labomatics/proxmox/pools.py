@@ -13,42 +13,24 @@ from .client import POOL_MARKER
 
 def list_managed_pools(proxmox: ProxmoxAPI) -> list[dict]:
     """Liste uniquement les pools créés et gérés par labomatics."""
-    return [p for p in proxmox.pools.get() if p.get("comment") == POOL_MARKER]
+    return [p for p in proxmox.pools.get() if (p.get("comment") or "").startswith(POOL_MARKER)]
 
 
-def create_pool(proxmox: ProxmoxAPI, pool_name: str) -> None:
-    """Crée un pool Proxmox marqué comme géré par labomatics."""
-    proxmox.pools.post(poolid=pool_name, comment=POOL_MARKER)
+def get_pool_vnet_name(pool: dict) -> str | None:
+    """Extrait le nom du VNet stocké dans le commentaire du pool (``POOL_MARKER:vnet_name``)."""
+    comment = pool.get("comment") or ""
+    if ":" in comment:
+        return comment.split(":", 1)[1] or None
+    return None
 
 
-def set_pool_limits(
-    proxmox: ProxmoxAPI,
-    pool_name: str,
-    max_cpu: int = 0,
-    max_ram_mb: int = 0,
-    max_disk_gb: int = 0,
-) -> None:
-    """Applique les limites de ressources natives Proxmox sur un pool (flavor).
+def create_pool(proxmox: ProxmoxAPI, pool_name: str, vnet_name: str = "") -> None:
+    """Crée un pool Proxmox marqué comme géré par labomatics.
 
-    Proxmox retournera 403 si l'étudiant tente de démarrer une VM dépassant ces limites.
-    Les valeurs à 0 sont ignorées (pas de limite).
-
-    Args:
-        proxmox: Client API Proxmox authentifié.
-        pool_name: Nom du pool à limiter.
-        max_cpu: Nombre max de vCPU cumulés (VMs running).
-        max_ram_mb: RAM max en MB cumulée (VMs running).
-        max_disk_gb: Disk max en GB cumulé (toutes VMs).
+    Le nom du VNet associé est stocké dans le commentaire pour permettre sa suppression ultérieure.
     """
-    kwargs: dict = {}
-    if max_cpu > 0:
-        kwargs["max_cpu"] = max_cpu
-    if max_ram_mb > 0:
-        kwargs["max_ram"] = max_ram_mb * 1024 * 1024  # Proxmox attend des bytes
-    if max_disk_gb > 0:
-        kwargs["max_disk"] = max_disk_gb * 1024 * 1024 * 1024
-    if kwargs:
-        proxmox.pools(pool_name).put(**kwargs)
+    comment = f"{POOL_MARKER}:{vnet_name}" if vnet_name else POOL_MARKER
+    proxmox.pools.post(poolid=pool_name, comment=comment)
 
 
 def delete_pool(proxmox: ProxmoxAPI, pool_name: str) -> None:

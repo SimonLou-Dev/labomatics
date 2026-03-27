@@ -29,13 +29,18 @@ def cmd_status(args) -> None:
     proxmox = make_connection()
 
     # Construire un index nom → étudiant
+    classe = getattr(args, "classe", None)
     try:
-        students = load_students_from_config(config)
-        student_map = {s.nom: s for s in students}
+        all_students = load_students_from_config(config)
+        if classe:
+            all_students = [s for s in all_students if s.classe == classe]
+        student_map = {s.nom: s for s in all_students}
     except Exception:
         student_map = {}
 
     pools = list_managed_pools(proxmox)
+    if classe:
+        pools = [p for p in pools if p["poolid"] in student_map]
     if not pools:
         console.print("[dim]Aucun pool géré.[/dim]")
         return

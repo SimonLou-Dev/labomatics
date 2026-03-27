@@ -11,6 +11,7 @@ L'allocation IP (WAN et VXLAN) est dynamique, réalisée depuis Proxmox
 """
 
 import csv
+import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -22,6 +23,7 @@ class Student:
     prenom: str = ""
     flavor: str = ""
     index: int = field(default=0, repr=False)  # position triée — affichage uniquement
+    classe: str | None = None  # groupe / promotion (ex: M1_SRC) — optionnel
 
     # ── identifiants Proxmox ──────────────────────────────────────────────────
 
@@ -72,6 +74,14 @@ def load_students(csv_path: Path) -> list[Student]:
     students: list[Student] = []
     with open(csv_path, newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
+        fieldnames = reader.fieldnames or []
+        if "classe" not in fieldnames:
+            warnings.warn(
+                f"⚠  Colonne 'classe' absente de {csv_path} — "
+                "les filtres --classe et target_classes seront inopérants. "
+                "Ajoutez la colonne 'classe' au CSV pour activer le filtrage par groupe.",
+                stacklevel=2,
+            )
         for row in reader:
             students.append(
                 Student(
@@ -79,6 +89,7 @@ def load_students(csv_path: Path) -> list[Student]:
                     nom=row["nom"].strip(),
                     prenom=row.get("prenom", "").strip(),
                     flavor=row.get("flavor", "").strip(),
+                    classe=row.get("classe", "").strip() or None,
                 )
             )
 

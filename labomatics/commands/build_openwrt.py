@@ -19,7 +19,6 @@ au stockage partagé.
  10. Création VM Proxmox + import disque + conversion en template
 """
 
-import gzip
 import shutil
 import subprocess
 import sys
@@ -28,91 +27,27 @@ import urllib.request
 from pathlib import Path
 
 from rich.console import Console
-from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from ._helpers import ask_confirm
 
 console = Console()
 
-_UCI_DEFAULTS_SCRIPT = """\
-#!/bin/sh
-# Lecteur cloud-init NoCloud pour OpenWrt (format Proxmox v1)
-# Applique hostname + réseau depuis le drive injecté par Proxmox
+_OPENWRT_INIT = Path(__file__).parent.parent / "templates" / "OPENWRT_INIT"
+_OPENWRT_RELEASES_URL = "https://downloads.openwrt.org/releases/"
 
-CIDEV="/dev/sr0"
 
-mkdir -p /tmp/cidata
-mount -o ro "$CIDEV" /tmp/cidata 2>/dev/null || CIDEV=""
+def _get_latest_openwrt_version() -> str:
+    """Récupère la dernière version stable d'OpenWrt depuis downloads.openwrt.org."""
+    import re
 
-if [ -n "$CIDEV" ]; then
-  if [ -f /tmp/cidata/user-data ]; then
-    HN=$(grep '^hostname:' /tmp/cidata/user-data | awk '{print $2}')
-    [ -n "$HN" ] && uci set system.@system[0].hostname="$HN"
-  fi
-
-  if [ -f /tmp/cidata/network-config ]; then
-    uci delete network.lan  2>/dev/null
-    uci delete network.wan  2>/dev/null
-    uci delete network.wan6 2>/dev/null
-
-    awk '
-      /- type: physical/ {
-        if (iface) print iface, addr, mask, gw
-        iface=""; addr=""; mask=""; gw=""; skip=0
-      }
-      /- type: nameserver/ {
-        if (iface) { print iface, addr, mask, gw; iface="" }
-        skip=1
-      }
-      skip       { next }
-      $1=="name:"    { iface=$2; gsub(/[\\047"]/, "", iface) }
-      $1=="address:" { addr=$2;  gsub(/[\\047"]/, "", addr)  }
-      $1=="netmask:" { mask=$2;  gsub(/[\\047"]/, "", mask)  }
-      $1=="gateway:" { gw=$2;    gsub(/[\\047"]/, "", gw)    }
-      END { if (iface) print iface, addr, mask, gw }
-    ' /tmp/cidata/network-config | while read IFACE ADDR MASK GW; do
-      if [ -n "$GW" ]; then NAME="wan"
-      else NAME="lan"
-      fi
-      uci set network.$NAME=interface
-      uci set network.$NAME.proto='static'
-      uci set network.$NAME.ipaddr="$ADDR"
-      uci set network.$NAME.netmask="$MASK"
-      uci set network.$NAME.device="$IFACE"
-      [ -n "$GW" ] && uci set network.$NAME.gateway="$GW"
-    done
-
-    uci commit network
-    /etc/init.d/network restart
-  fi
-
-  uci commit system
-  umount /tmp/cidata 2>/dev/null || true
-fi
-
-uci set uhttpd.main.listen_http='0.0.0.0:80'
-uci set uhttpd.main.listen_https='0.0.0.0:443'
-if [ -f /etc/uhttpd.crt ] && [ -f /etc/uhttpd.key ]; then
-  uci set uhttpd.main.cert='/etc/uhttpd.crt'
-  uci set uhttpd.main.key='/etc/uhttpd.key'
-  uci set uhttpd.main.redirect_https=1
-fi
-uci commit uhttpd
-/etc/init.d/uhttpd enable 2>/dev/null || true
-/etc/init.d/uhttpd restart 2>/dev/null || true
-
-uci add firewall rule
-uci set firewall.@rule[-1].name='Allow-Web-WAN'
-uci set firewall.@rule[-1].src='wan'
-uci set firewall.@rule[-1].dest_port='80 443'
-uci set firewall.@rule[-1].proto='tcp'
-uci set firewall.@rule[-1].target='ACCEPT'
-uci commit firewall
-/etc/init.d/firewall reload 2>/dev/null || true
-
-cp "$0" /etc/proxmox-init.sh 2>/dev/null || true
-exit 0
-"""
+    with urllib.request.urlopen(_OPENWRT_RELEASES_URL, timeout=10) as resp:
+        html = resp.read().decode()
+    # Cherche les dossiers de version stables (ex: 23.05.5/, 24.10.0/) — exclut snapshots/rc
+    versions = re.findall(r'href="(\d+\.\d+\.\d+)/"', html)
+    if not versions:
+        raise RuntimeError("Impossible de récupérer la liste des versions OpenWrt")
+    # Trier par tuple numérique et retourner la plus récente
+    return str(sorted(versions, key=lambda v: tuple(int(x) for x in v.split(".")))[-1])
 
 
 def _run(cmd: list[str], check: bool = True) -> subprocess.CompletedProcess:
@@ -130,7 +65,7 @@ def _check_root() -> None:
 
 
 def _check_deps() -> None:
-    for dep in ("losetup", "mount", "umount", "openssl", "qm", "wget"):
+    for dep in ("losetup", "mount", "umount", "openssl", "qm", "wget", "gunzip"):
         if not shutil.which(dep):
             console.print(f"[red]❌ Commande introuvable : {dep}[/red]")
             sys.exit(1)
@@ -138,9 +73,30 @@ def _check_deps() -> None:
 
 def cmd_build_openwrt(args) -> None:
     """Crée la template VM OpenWrt sur le nœud Proxmox local (root requis)."""
-    version: str = args.version
-    vmid: int = args.vmid
-    storage: str = args.storage
+    from ..config import load_config
+
+    try:
+        config = load_config()
+        _storage_default = config.openwrt.storage
+        _vmid_default = config.openwrt.template_vmid
+    except Exception:
+        _storage_default = "local-lvm"
+        _vmid_default = 90200
+
+    if args.version:
+        version: str = args.version
+    else:
+        console.print("[dim]Récupération de la dernière version OpenWrt...[/dim]")
+        try:
+            version = _get_latest_openwrt_version()
+            console.print(f"  Dernière version stable : [bold]{version}[/bold]")
+        except Exception as e:
+            console.print(
+                f"[yellow]⚠  Impossible de récupérer la version : {e} — fallback 23.05.5[/yellow]"
+            )
+            version = "23.05.5"
+    vmid: int = args.vmid if args.vmid is not None else _vmid_default
+    storage: str = args.storage if args.storage is not None else _storage_default
     password: str = args.password
 
     _check_root()
@@ -168,17 +124,37 @@ def cmd_build_openwrt(args) -> None:
         mnt = tmp / "mnt"
         mnt.mkdir()
 
-        # Téléchargement
+        # Téléchargement via wget (sortie visible pour diagnostic)
         console.print(f"\n[bold]==> Téléchargement OpenWrt {version}...[/bold]")
-        with Progress(SpinnerColumn(), TextColumn("{task.description}"), console=console) as p:
-            task = p.add_task(img_url)
-            urllib.request.urlretrieve(img_url, img_gz)
-            p.update(task, description=f"[green]✓ {img_gz.name}[/green]")
+        console.print(f"  [dim]{img_url}[/dim]")
+        ret = subprocess.run(
+            ["wget", "-O", str(img_gz), img_url],
+            check=False,
+        )
+        if ret.returncode != 0:
+            raise RuntimeError(f"wget a échoué (exit {ret.returncode})\nURL : {img_url}")
+        if not img_gz.exists() or img_gz.stat().st_size < 1024:
+            raise RuntimeError(f"Fichier téléchargé vide ou absent : {img_gz}")
+        with open(img_gz, "rb") as f:
+            magic = f.read(4)
+        if magic[:2] != b"\x1f\x8b":
+            raise RuntimeError(
+                f"Fichier téléchargé invalide — premiers bytes : {magic!r}\n"
+                f"Taille : {img_gz.stat().st_size} bytes\n"
+                f"URL : {img_url}\n"
+                f"Vérifiez la connectivité réseau du nœud (proxy ? firewall ?)."
+            )
+        console.print(
+            f"  [green]✓ {img_gz.name} ({img_gz.stat().st_size // 1024 // 1024} MB)[/green]"
+        )
 
-        # Extraction gzip
+        # Extraction gzip (exit 2 = trailing garbage sur image OpenWrt, non fatal)
         console.print("[bold]==> Extraction...[/bold]")
-        with gzip.open(img_gz, "rb") as f_in, open(img, "wb") as f_out:
-            shutil.copyfileobj(f_in, f_out)
+        r = _run(["gzip", "-d", str(img_gz)], check=False)
+        if r.returncode not in (0, 2):
+            raise RuntimeError(f"gzip -d a échoué (exit {r.returncode}) : {r.stderr.strip()}")
+        if not img.exists():
+            raise RuntimeError(f"Fichier extrait introuvable : {img}")
 
         # Montage (losetup -P pour partitions)
         console.print("[bold]==> Montage partition root (p2)...[/bold]")
@@ -195,13 +171,13 @@ def cmd_build_openwrt(args) -> None:
             pwd_hash = pwd_result.stdout.strip()
             shadow = mnt / "etc" / "shadow"
             passwd_f = mnt / "etc" / "passwd"
-            for f in (shadow, passwd_f):
-                if f.exists():
-                    content = f.read_text()
-                    import re
+            import re
 
+            for pfile in (shadow, passwd_f):
+                if pfile.exists():
+                    content = pfile.read_text()
                     content = re.sub(r"^(root):[^:]*:", f"root:{pwd_hash}:", content, flags=re.M)
-                    f.write_text(content)
+                    pfile.write_text(content)
                     break
 
             # SSH Dropbear
@@ -242,6 +218,7 @@ def cmd_build_openwrt(args) -> None:
             console.print("[bold]==> Installation qemu-guest-agent...[/bold]")
             try:
                 with urllib.request.urlopen(f"{pkg_base}/Packages.gz", timeout=30) as resp:
+                    import gzip
                     import io
 
                     with gzip.open(io.BytesIO(resp.read())) as gz:
@@ -282,7 +259,7 @@ def cmd_build_openwrt(args) -> None:
             uci_dir = mnt / "etc" / "uci-defaults"
             uci_dir.mkdir(parents=True, exist_ok=True)
             uci_script = uci_dir / "99-proxmox-init"
-            uci_script.write_text(_UCI_DEFAULTS_SCRIPT)
+            uci_script.write_text(_OPENWRT_INIT.read_text())
             uci_script.chmod(0o755)
 
             console.print("[bold]==> Démontage...[/bold]")
@@ -321,13 +298,23 @@ def cmd_build_openwrt(args) -> None:
 
         console.print("[bold]==> Import du disque...[/bold]")
         _run(["qm", "importdisk", str(vmid), str(img), storage])
+        # Lire le volume ID réel depuis qm config (ligne "unusedN: <volume>")
+        cfg_out = _run(["qm", "config", str(vmid)]).stdout
+        disk_id: str | None = None
+        for line in cfg_out.splitlines():
+            if line.startswith("unused"):
+                disk_id = line.split(":", 1)[1].strip()
+                break
+        if not disk_id:
+            disk_id = f"{storage}:vm-{vmid}-disk-0"
+            console.print(f"  [yellow]⚠ volume ID non trouvé, fallback : {disk_id}[/yellow]")
         _run(
             [
                 "qm",
                 "set",
                 str(vmid),
                 "--virtio0",
-                f"{storage}:vm-{vmid}-disk-0,discard=on,iothread=1",
+                f"{disk_id},discard=on,iothread=1",
                 "--boot",
                 "order=virtio0",
             ]
@@ -337,7 +324,3 @@ def cmd_build_openwrt(args) -> None:
         _run(["qm", "template", str(vmid)])
 
     console.print(f"\n[bold green]✓ Template prête : VM {vmid} (openwrt-{version})[/bold green]")
-    console.print(f"  Dans infra.yaml : [bold]template_vmid: {vmid}[/bold]")
-    console.print(
-        f"  Ajouter au pool template : [bold]pvesh set /pools/template -vms {vmid}[/bold]\n"
-    )

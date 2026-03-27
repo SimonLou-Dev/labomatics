@@ -9,11 +9,14 @@ directs depuis ``labomatics.proxmox`` :
 
 from .acl import (
     create_proxmox_user,
+    create_student_token,
     delete_acl,
     delete_proxmox_user,
     delete_student_acls,
+    delete_student_token,
     set_acl,
     set_student_acls,
+    token_exists,
     user_exists,
 )
 from .client import POOL_MARKER, connect
@@ -23,8 +26,8 @@ from .pools import (
     delete_pool,
     get_pool_lxcs,
     get_pool_vms,
+    get_pool_vnet_name,
     list_managed_pools,
-    set_pool_limits,
 )
 from .sdn import (
     apply_sdn,
@@ -35,7 +38,9 @@ from .sdn import (
 )
 from .tasks import wait_for_task
 from .vms import (
+    find_tp_vms,
     find_vm_node,
+    get_vm_description,
     get_vm_disk_size_gb,
     get_vm_vxlan_subnet,
     get_vm_wan_ip,
@@ -52,6 +57,8 @@ __all__ = [
     # vms
     "vm_exists",
     "find_vm_node",
+    "find_tp_vms",
+    "get_vm_description",
     "pick_node",
     "get_vm_wan_ip",
     "get_vm_vxlan_subnet",
@@ -63,7 +70,7 @@ __all__ = [
     "add_vm_to_pool",
     "get_pool_vms",
     "get_pool_lxcs",
-    "set_pool_limits",
+    "get_pool_vnet_name",
     # sdn
     "check_sdn_zone_exists",
     "list_vnets_in_zone",
@@ -78,4 +85,7 @@ __all__ = [
     "delete_acl",
     "set_student_acls",
     "delete_student_acls",
+    "token_exists",
+    "create_student_token",
+    "delete_student_token",
 ]

@@ -15,47 +15,29 @@ from ..credentials import (
     make_credential,
     save_credentials,
 )
-from ..deploy import apply_pool_flavor, destroy_all_pool_members
+from ..deploy import destroy_all_pool_members
 from ..diff import compute_diff, print_diff
 from ..proxmox import (
     apply_sdn,
     check_sdn_zone_exists,
     create_pool,
     create_proxmox_user,
+    create_student_token,
     create_vnet,
     delete_pool,
     delete_proxmox_user,
     delete_student_acls,
+    delete_student_token,
     delete_vnet,
+    get_pool_vnet_name,
     list_managed_pools,
-    list_vnets_in_zone,
     set_student_acls,
+    token_exists,
     user_exists,
 )
 from ._helpers import ask_confirm, load_students_from_config, make_connection
 
 console = Console()
-
-
-def _resolve_vnet_for_pool(proxmox, config, pool_name: str) -> str | None:
-    """Trouve le nom du VNet SDN d'un pool (depuis les VMs du pool ou les VNets)."""
-    from ..proxmox import get_pool_vms
-
-    vmid_start = config.openwrt.vmid_start
-    for vm in get_pool_vms(proxmox, pool_name):
-        vmid = vm.get("vmid")
-        if vmid:
-            student_id = vmid - vmid_start
-            vnet_candidate = f"vn{student_id:05d}"
-            return vnet_candidate
-    # Fallback : chercher par alias dans la zone
-    zone = config.openwrt.network.zone_name
-    all_vnets = list_vnets_in_zone(proxmox, zone)
-    vnet = next(
-        (v["vnet"] for v in all_vnets if v.get("alias") == pool_name),
-        None,
-    )
-    return vnet
 
 
 def apply_removes(proxmox, config, to_remove: list[dict]) -> None:
@@ -74,14 +56,15 @@ def apply_removes(proxmox, config, to_remove: list[dict]) -> None:
         # 1. Supprimer toutes les VMs QEMU et LXC du pool
         destroy_all_pool_members(proxmox, pool_name)
 
-        # 2. Trouver et supprimer le VNet associé
-        vnet_name = _resolve_vnet_for_pool(proxmox, config, pool_name)
+        # 2. Récupérer le VNet depuis le commentaire du pool
+        vnet_name = get_pool_vnet_name(pool)
 
         # 3. Supprimer les ACL
         delete_student_acls(proxmox, config, pool_name, vnet_name)
 
-        # 4. Supprimer l'utilisateur Proxmox
+        # 4. Supprimer le token + l'utilisateur Proxmox
         userid = f"{pool_name}@pve"
+        delete_student_token(proxmox, userid)
         if user_exists(proxmox, userid):
             try:
                 delete_proxmox_user(proxmox, userid)
@@ -134,16 +117,28 @@ def apply_adds(proxmox, config, to_add: list, creds: dict) -> dict:
         return creds
 
     # Étape 1 : pools + VNets
+    from ipaddress import IPv4Network
+
+    reserved_vxlan: set[IPv4Network] = set()
+
     for student in to_add:
         console.print(f"\n  [dim]Étudiant : {student.nom}[/dim]")
         try:
-            create_pool(proxmox, student.pool_name())
+            vxlan_gw, vxlan_subnet = allocate_vxlan_subnet(proxmox, config, reserved=reserved_vxlan)
+            reserved_vxlan.add(IPv4Network(vxlan_subnet, strict=False))
+        except Exception as e:
+            console.print(f"  [yellow]⚠  vxlan alloc {student.vnet_name()} : {e}[/yellow]")
+            vxlan_gw, vxlan_subnet = "", ""
+
+        try:
+            create_pool(proxmox, student.pool_name(), vnet_name=student.vnet_name())
             console.print(f"  [green]✓ pool {student.pool_name()}[/green]")
         except Exception as e:
             console.print(f"  [yellow]⚠  pool {student.pool_name()} : {e}[/yellow]")
 
         try:
-            vxlan_gw, vxlan_subnet = allocate_vxlan_subnet(proxmox, config)
+            if not vxlan_gw:
+                raise ValueError("VXLAN non alloué")
             create_vnet(
                 proxmox,
                 vnet_name=student.vnet_name(),
@@ -164,24 +159,27 @@ def apply_adds(proxmox, config, to_add: list, creds: dict) -> dict:
     except Exception as e:
         console.print(f"\n  [yellow]⚠  apply SDN : {e}[/yellow]")
 
-    # Étape 3 : users + ACL + quotas pool
+    # Étape 3 : users + tokens + ACL
     for student in to_add:
-        password = creds.get(student.login(), {}).get("password") or generate_password()
+        existing = creds.get(student.login(), {})
+        password = existing.get("password") or generate_password()
+        token_id = existing.get("token_id", "")
+        token_secret = existing.get("token_secret", "")
         try:
             if not user_exists(proxmox, student.user_id()):
                 create_proxmox_user(proxmox, student.user_id(), password, comment="labomatics")
                 console.print(f"  [green]✓ user {student.user_id()}[/green]")
+            if not token_exists(proxmox, student.user_id()):
+                token_id, token_secret = create_student_token(proxmox, student.user_id())
+                console.print(f"  [green]✓ token {token_id}[/green]")
             set_student_acls(proxmox, config, student)
         except Exception as e:
-            console.print(f"  [yellow]⚠  user/acl {student.nom} : {e}[/yellow]")
-
-        try:
-            apply_pool_flavor(proxmox, config, student)
-        except Exception as e:
-            console.print(f"  [yellow]⚠  flavor {student.nom} : {e}[/yellow]")
+            console.print(f"  [yellow]⚠  user/token/acl {student.nom} : {e}[/yellow]")
 
         # Pré-enregistrer les credentials avec WAN IP = "pending"
-        creds[student.login()] = make_credential(student, password, "pending")
+        creds[student.login()] = make_credential(
+            student, password, "pending", token_id, token_secret
+        )
 
     # Étape 4 : déploiement des VMs
     for student in to_add:
@@ -201,11 +199,61 @@ def apply_adds(proxmox, config, to_add: list, creds: dict) -> dict:
     return creds
 
 
+def apply_recheck(proxmox, config, students: list, creds: dict) -> dict:
+    """Recrée silencieusement ce qui manque pour les étudiants déjà dans Proxmox.
+
+    Pour chaque étudiant présent dans le CSV :
+    - user manquant → recréé (mot de passe conservé depuis credentials.csv)
+    - token manquant → recréé
+    - ACL → réappliquées (idempotent)
+    """
+    console.print("\n[bold cyan]Recheck...[/bold cyan]")
+    for student in students:
+        existing = creds.get(student.login(), {})
+        password = existing.get("password") or generate_password()
+        token_id = existing.get("token_id", "")
+        token_secret = existing.get("token_secret", "")
+        changed = False
+        try:
+            if not user_exists(proxmox, student.user_id()):
+                create_proxmox_user(proxmox, student.user_id(), password, comment="labomatics")
+                console.print(f"  [green]✓ user recréé : {student.user_id()}[/green]")
+                changed = True
+            # Migration ancien format : token_id vide mais token manuel existant sur Proxmox
+            # → on le supprime pour pouvoir récupérer le secret via recréation
+            if not token_id and token_exists(proxmox, student.user_id()):
+                delete_student_token(proxmox, student.user_id())
+                console.print(
+                    f"  [yellow]↻ token existant supprimé (migration) : {student.user_id()}[/yellow]"
+                )
+            if not token_exists(proxmox, student.user_id()):
+                token_id, token_secret = create_student_token(proxmox, student.user_id())
+                console.print(f"  [green]✓ token recréé : {token_id}[/green]")
+                changed = True
+            set_student_acls(proxmox, config, student)
+        except Exception as e:
+            console.print(f"  [yellow]⚠  recheck {student.nom} : {e}[/yellow]")
+            continue
+        if changed or student.login() not in creds:
+            wan_ip = existing.get("wan_ip", "")
+            creds[student.login()] = make_credential(
+                student, password, wan_ip, token_id, token_secret
+            )
+    return creds
+
+
+def _filter_by_classe(students: list, args) -> list:
+    classe = getattr(args, "classe", None)
+    if classe:
+        return [s for s in students if s.classe == classe]
+    return students
+
+
 def cmd_diff(args) -> None:
     """Affiche le diff CSV ↔ Proxmox sans rien modifier."""
     config = load_config()
     proxmox = make_connection()
-    students = load_students_from_config(config)
+    students = _filter_by_classe(load_students_from_config(config), args)
     pools = list_managed_pools(proxmox)
     to_add, to_remove = compute_diff(pools, students)
     print_diff(to_add, to_remove, config, console)
@@ -215,16 +263,22 @@ def cmd_apply(args) -> None:
     """Synchronise Proxmox avec le CSV (diff + confirmation + apply)."""
     config = load_config()
     proxmox = make_connection()
-    students = load_students_from_config(config)
+    students = _filter_by_classe(load_students_from_config(config), args)
     pools = list_managed_pools(proxmox)
     to_add, to_remove = compute_diff(pools, students)
+
+    recheck = getattr(args, "recheck_all", False)
+
     print_diff(to_add, to_remove, config, console)
 
-    if not to_add and not to_remove:
+    if not to_add and not to_remove and not recheck:
         return
 
     if not getattr(args, "yes", False):
-        if not ask_confirm("Appliquer ces changements ?"):
+        prompt = "Appliquer ces changements ?"
+        if recheck:
+            prompt = "Appliquer + recheck users/tokens/ACL pour tous les étudiants ?"
+        if not ask_confirm(prompt):
             console.print("[dim]Annulé.[/dim]")
             return
 
@@ -232,11 +286,13 @@ def cmd_apply(args) -> None:
 
     if to_remove:
         apply_removes(proxmox, config, to_remove)
-        # Nettoyer les credentials des étudiants supprimés
         removed_logins = {p["poolid"] for p in to_remove}
         creds = {k: v for k, v in creds.items() if k not in removed_logins}
 
     creds = apply_adds(proxmox, config, to_add, creds)
+
+    if recheck:
+        creds = apply_recheck(proxmox, config, students, creds)
 
     path = save_credentials(config, creds)
     console.print(f"\n[bold]Credentials sauvegardés → {path}[/bold]")

@@ -89,17 +89,76 @@ class QuotadConfig(BaseModel):
 # ── Templates ─────────────────────────────────────────────────────────────────
 
 
-class TemplateProvisioningConfig(BaseModel):
-    method: str = "ssh"  # "ssh" | "guest-agent"
-    user: str = "root"
-    commands: list[str] = []
-
-
 class TemplateConfig(BaseModel):
     name: str
     vmid: int
-    packer: str | None = None
-    provisioning: TemplateProvisioningConfig = Field(default_factory=TemplateProvisioningConfig)
+    node: str | None = None  # nœud cible (None = pick_node automatique)
+    storage_pool: str = "local-lvm"  # stockage pour le disque VM
+    iso_storage_pool: str = "local"  # stockage pour télécharger l'image (type directory)
+    iso_url: str  # URL de l'image cloud à télécharger
+    iso_filename: str | None = None  # nom du fichier local (défaut: déduit de l'URL)
+    bridge: str = "vmbr0"  # bridge réseau temporaire pendant le build
+    # Surcharge par template — None = utilise TemplatesConfig.default_user / default_pass
+    cloud_init_user: str | None = None
+    cloud_init_password: str | None = None
+    memory: int = 2048  # RAM en MB
+    cores: int = 2  # vCPUs
+    disk_size: str = "10G"  # taille finale du disque (ex: "10G", "20G")
+    cloudinit: bool = True  # False = pas de drive cloud-init ni de boot (ex: OPNsense)
+    ostype: str = "l26"  # type OS Proxmox : l26, other, freebsd, win10…
+    cpu_type: str = "x86-64-v2-AES"  # type CPU Proxmox (kvm64 pour meilleure compatibilité)
+    boot_timeout: int = 300  # timeout guest agent en secondes (augmenter pour Alpine)
+    download_packages: bool = True  # False = désactiver virt-customize pour cette template
+    extra_packages: list[str] = []  # packages supplémentaires (s'ajoutent à default_packages)
+
+
+class TemplatesConfig(BaseModel):
+    default_user: str = "labomatics"  # utilisateur cloud-init par défaut (toutes les templates)
+    default_pass: str = "changeme"  # mot de passe cloud-init par défaut
+    default_packages: list[
+        str
+    ] = []  # packages installés dans toutes les templates via virt-customize
+    sources: list[TemplateConfig] = []
+
+
+# ── TP (déploiement de travaux pratiques) ─────────────────────────────────────
+
+
+class TpNicConfig(BaseModel):
+    """Interface réseau supplémentaire (net1+) pour une VM de TP."""
+
+    bridge: str
+    model: str = "virtio"
+
+
+class TpCloudInitConfig(BaseModel):
+    """Configuration cloud-init minimale pour une VM de TP."""
+
+    user: str | None = None
+    password: str | None = None
+
+
+class TpVmConfig(BaseModel):
+    """Définition d'une VM à déployer dans un TP."""
+
+    name: str
+    template: int  # VMID de la template source
+    memory: int = 512
+    cores: int = 1
+    start: bool = False  # démarrer après création
+    disk_size: str | None = None  # redimensionne le disque si défini (ex: "20G")
+    cloud_init: TpCloudInitConfig | None = None
+    extra_nics: list[TpNicConfig] = []  # net1, net2… (net0 = LAN étudiant, toujours auto)
+
+
+class TpConfig(BaseModel):
+    """Configuration d'un TP : VMs à déployer par groupe d'étudiants."""
+
+    name: str  # identifiant unique (utilisé pour le tracking via tags Proxmox)
+    description: str | None = None
+    tags: list[str] = []  # tags Proxmox appliqués aux VMs créées
+    target_classes: list[str] | None = None  # None = tous les étudiants du CSV
+    vms: list[TpVmConfig] = []
 
 
 # ── Config principale ─────────────────────────────────────────────────────────
@@ -110,7 +169,7 @@ class InfraConfig(BaseModel):
     openwrt: OpenWrtConfig
     flavors: dict[str, FlavorConfig] = {}
     quotad: QuotadConfig = Field(default_factory=QuotadConfig)
-    templates: list[TemplateConfig] = []
+    templates: TemplatesConfig = Field(default_factory=TemplatesConfig)
 
     def get_flavor(self, name: str) -> FlavorConfig:
         """Retourne le flavor par nom, ou le premier défini si le nom est absent."""
@@ -137,6 +196,15 @@ def _find_file(filename: str) -> Path:
         "  Candidates: " + ", ".join(str(c) for c in candidates) + "\n"
         "  Exécutez 'labomatics init' pour créer la configuration initiale."
     )
+
+
+def load_tp_config(path: str) -> TpConfig:
+    """Charge la configuration d'un TP depuis un fichier YAML."""
+    import yaml
+
+    with open(path, encoding="utf-8") as f:
+        data = yaml.safe_load(f)
+    return TpConfig(**data)
 
 
 def load_config() -> InfraConfig:

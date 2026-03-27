@@ -43,10 +43,17 @@ def make_connection():
 
 def load_students_from_config(config: "InfraConfig"):
     """Charge les étudiants depuis le CSV référencé dans infra.yaml."""
+    import warnings
+
     from ..students import load_students
 
     csv_path = _find_students_csv(config)
-    return load_students(csv_path)
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        students = load_students(csv_path)
+    for w in caught:
+        console.print(f"[yellow]{w.message}[/yellow]")
+    return students
 
 
 def ask_confirm(message: str) -> bool:

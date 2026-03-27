@@ -44,26 +44,82 @@ quotad:
   action: stop    # "stop" (arrêt auto) ou "alert-only" (logs seulement)
 
 # Templates personnalisées (optionnel)
-# Construites avec : labomatics build-template
+# Construites avec : labomatics build-template [nom1,nom2 | *]
+#
+# default_user / default_pass : credentials cloud-init pré-remplis dans toutes les templates
+#   → visibles dans l'onglet Cloud-Init lors de la création d'un clone
+#   → surchargeables par template via cloud_init_user / cloud_init_password
+#
+# default_packages : liste de packages installés dans TOUTES les templates via virt-customize
+#   → exécuté en SSH sur le nœud Proxmox avant la création de la VM
+#   → libguestfs-tools auto-installé sur le nœud si absent
+#   → désactiver pour une template spécifique avec : download_packages: false
+#
+# extra_packages  : packages supplémentaires pour une template spécifique (s'ajoutent à default_packages)
+# download_packages: false → désactive virt-customize pour cette template
+#
+# cloudinit: false  → import direct sans boot (ex: OPNsense) — pas de drive cloud-init
+# iso_filename      → utile si l'URL pointe vers une archive (.bz2/.gz) ou un .img
+#                     (renommer en .qcow2 ou .raw pour satisfaire l'API Proxmox)
 templates:
-  - name: ubuntu-24.04
-    vmid: 9100
-    packer: ubuntu         # Sous-répertoire dans packer/
-    provisioning:
-      method: ssh
-      user: ubuntu
-      commands:
-        - "sudo apt-get update -y"
-        - "sudo apt-get install -y qemu-guest-agent cloud-init"
-        - "sudo systemctl enable qemu-guest-agent"
-        - "sudo cloud-init clean --logs"
+  default_user: labomatics          # utilisateur cloud-init par défaut
+  default_pass: changeme            # mot de passe cloud-init par défaut (à changer !)
 
-  - name: debian-12
-    vmid: 9101
-    packer: debian
-    provisioning:
-      method: guest-agent
-      user: root
-      commands:
-        - "apt-get update -y"
-        - "apt-get install -y qemu-guest-agent"
+  # ⚠  Ne pas supprimer ni modifier - requis pour la détection de fin de boot,
+  #    le summary Proxmox et l'arrêt propre des VMs.
+  #    Ajoutez des packages supplémentaires par template via extra_packages.
+  default_packages:
+    - qemu-guest-agent
+
+  sources:
+    - name: ubuntu-25.10
+      vmid: 90100
+      storage_pool: local-lvm
+      iso_storage_pool: local
+      iso_url: "https://cloud-images.ubuntu.com/releases/questing/release/ubuntu-25.10-server-cloudimg-amd64.img"
+      iso_filename: "ubuntu-25.10-server-cloudimg-amd64.qcow2"  # .img → .qcow2 requis par l'API Proxmox
+      memory: 2048
+      cores: 2
+      disk_size: "10G"
+
+    - name: debian-13
+      vmid: 90101
+      storage_pool: local-lvm
+      iso_storage_pool: local
+      iso_url: "https://cloud.debian.org/images/cloud/trixie/latest/debian-13-genericcloud-amd64.qcow2"
+      memory: 2048
+      cores: 2
+      disk_size: "10G"
+
+    - name: fedora-43
+      vmid: 90102
+      storage_pool: local-lvm
+      iso_storage_pool: local
+      iso_url: "https://download.fedoraproject.org/pub/fedora/linux/releases/43/Cloud/x86_64/images/Fedora-Cloud-Base-Generic-43-1.6.x86_64.qcow2"
+      memory: 2048
+      cores: 2
+      disk_size: "10G"
+
+    - name: alpine-3
+      vmid: 90103
+      storage_pool: local-lvm
+      iso_storage_pool: local
+      iso_url: "https://dl-cdn.alpinelinux.org/alpine/v3.21/releases/cloud/nocloud_alpine-3.21.0-x86_64-bios-cloudinit-r0.qcow2"
+      memory: 512
+      cores: 1
+      disk_size: "10G"
+      cpu_type: "kvm64"      # x86-64-v2-AES peut causer des problèmes avec Alpine
+      boot_timeout: 100      # Alpine va timeout une premiere fois re démarer et tout sera OK
+
+    - name: opnsense-25
+      vmid: 90110
+      storage_pool: local-lvm
+      iso_storage_pool: local
+      iso_url: "https://mirror.ams1.nl.leaseweb.net/opnsense/releases/25.1/OPNsense-25.1-nano-amd64.img.bz2"
+      iso_filename: "OPNsense-25.1-nano-amd64.raw"  # Proxmox décompresse le .bz2 ; .raw = format réel
+      cloudinit: false              # OPNsense est FreeBSD — pas de cloud-init
+      ostype: other
+      memory: 8164
+      cores: 4
+      disk_size: "30G"
+      download_packages: false   # FreeBSD — virt-customize non applicable

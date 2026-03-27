@@ -42,6 +42,7 @@ packages = ["labomatics"]
 include = [
     "labomatics/**/*.py",
     "labomatics/templates/**",
+    "labomatics/packer/**",
 ]
 
 [tool.hatch.build.targets.sdist]
