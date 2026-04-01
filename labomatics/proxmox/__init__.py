@@ -44,6 +44,7 @@ from .vms import (
     get_vm_disk_size_gb,
     get_vm_vxlan_subnet,
     get_vm_wan_ip,
+    local_node,
     pick_node,
     vm_exists,
 )
@@ -59,6 +60,7 @@ __all__ = [
     "find_vm_node",
     "find_tp_vms",
     "get_vm_description",
+    "local_node",
     "pick_node",
     "get_vm_wan_ip",
     "get_vm_vxlan_subnet",

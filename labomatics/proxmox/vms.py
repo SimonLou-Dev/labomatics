@@ -22,6 +22,20 @@ def pick_node(proxmox: ProxmoxAPI) -> str:
     return str(max(online, key=lambda n: n.get("maxmem", 0) - n.get("mem", 0))["node"])
 
 
+def local_node(proxmox: ProxmoxAPI, host: str) -> str:
+    """Retourne le nom du nœud Proxmox correspondant à l'hôte de connexion API.
+
+    Essaie d'abord une correspondance exacte (ou par nom court sans domaine),
+    puis retombe sur ``pick_node`` si aucun nœud ne correspond.
+    """
+    nodes = [n for n in proxmox.nodes.get() if n.get("status") == "online"]
+    short = host.split(".")[0]
+    for n in nodes:
+        if n["node"] == host or n["node"] == short:
+            return str(n["node"])
+    return pick_node(proxmox)
+
+
 def vm_exists(proxmox: ProxmoxAPI, vmid: int) -> bool:
     """Vérifie si une VM (QEMU ou LXC) existe sur le cluster."""
     resources = proxmox.cluster.resources.get(type="vm")

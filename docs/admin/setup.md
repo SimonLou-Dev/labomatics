@@ -39,7 +39,21 @@ dynamiquement — un stockage local (non partagé) empêcherait le clone depuis 
 
 Voir [template.md](template.md) pour la création de la template.
 
-### 4. Token API Proxmox
+### 4. Stockage `local` — type `import`
+
+Pour pouvoir télécharger des images cloud (`.img`, `.qcow2`) via l'API Proxmox,
+le stockage `local` doit avoir le type de contenu `import` activé.
+
+Vérifier dans `Datacenter → Storage → local → Edit → Content` que **Disk image (import)**
+est coché, ou vérifier `/etc/pve/storage.cfg` :
+
+```
+dir: local
+        path /var/lib/vz
+        content iso,vztmpl,backup,import
+```
+
+### 5. Token API Proxmox
 
 Créer un token API avec les permissions nécessaires :
 
