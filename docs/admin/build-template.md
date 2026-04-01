@@ -28,10 +28,59 @@ Pour chaque template définie dans `infra.yaml` :
 
 ## Prérequis
 
-- **SSH root** vers le nœud Proxmox depuis la machine qui exécute `labomatics`
-  (nécessaire uniquement si `default_packages` ou `extra_packages` sont définis)
-- `libguestfs-tools` sur le nœud — installé automatiquement si absent
-- Stockage `iso_storage_pool` de type **directory** (ex: `local`)
+### Stockage `local` — type `import` obligatoire
+
+Le téléchargement d'images cloud (`.img`, `.qcow2`) utilise le type de contenu `import`.
+Ce type n'est **pas activé par défaut** sur le stockage `local` de Proxmox.
+
+Vérifier dans `Datacenter → Storage → local → Edit → Content` que `Disk image (import)`
+est coché. En ligne de commande sur le nœud :
+
+```bash
+# Vérifier la configuration actuelle
+pvesm status --storage local
+
+# Ajouter le type import si absent (éditer /etc/pve/storage.cfg)
+# La section doit ressembler à :
+dir: local
+        path /var/lib/vz
+        content iso,vztmpl,backup,import
+```
+
+> **NFS partagé** : si `iso_storage_pool` pointe vers un NFS commun à tous les nœuds,
+> activer également `import` sur ce stockage. Les images seront accessibles depuis
+> n'importe quel nœud sans re-téléchargement.
+
+### `libguestfs-tools` — virt-customize
+
+Nécessaire uniquement si `default_packages` ou `extra_packages` sont définis dans
+`infra.yaml`. S'installe automatiquement si absent, mais il est recommandé de le
+pré-installer pour éviter un délai au premier build :
+
+```bash
+apt install -y libguestfs-tools
+```
+
+### SSH root vers le nœud de build
+
+`virt-customize` est exécuté via SSH sur le nœud cible. La clé publique de la machine
+exécutant `labomatics` doit être dans `/root/.ssh/authorized_keys` du nœud Proxmox.
+
+### Nœud de build
+
+Sur un cluster multi-nœuds, le build se fait sur le **nœud de la connexion API**
+(défini par `PROXMOX_HOST` dans `.env`). Pour forcer un nœud différent, utiliser
+le champ `node:` dans la définition de la template :
+
+```yaml
+templates:
+  sources:
+    - name: ubuntu-25.10
+      vmid: 90100
+      node: pve2          # forcer ce nœud (optionnel)
+      iso_storage_pool: local
+      ...
+```
 
 ---
 

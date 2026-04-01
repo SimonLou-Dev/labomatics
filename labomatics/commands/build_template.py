@@ -35,9 +35,10 @@ import time
 
 from rich.console import Console
 
-from ..config import load_config
-from ..proxmox import add_vm_to_pool, find_vm_node, pick_node, vm_exists, wait_for_task
-from ._helpers import ask_confirm, make_connection
+from ..config import load_config, load_proxmox_settings
+from ..proxmox import add_vm_to_pool, find_vm_node, local_node, vm_exists, wait_for_task
+from ..proxmox.client import connect
+from ._helpers import ask_confirm
 
 console = Console()
 
@@ -381,7 +382,8 @@ def _convert_to_template(
 def cmd_build_template(args) -> None:
     """Construit une ou plusieurs templates cloud-init via l'API Proxmox."""
     config = load_config()
-    proxmox = make_connection()
+    settings = load_proxmox_settings()
+    proxmox = connect(settings)
 
     tmpl_cfg = config.templates
 
@@ -422,7 +424,7 @@ def cmd_build_template(args) -> None:
                 console.print("[dim]Ignoré.[/dim]")
                 continue
 
-        node = tmpl.node or pick_node(proxmox)
+        node = tmpl.node or local_node(proxmox, settings.host)
         filename = tmpl.iso_filename or _iso_filename_from_url(tmpl.iso_url)
 
         # 1. Supprimer template existante
