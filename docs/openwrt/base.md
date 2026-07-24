@@ -53,7 +53,7 @@ ssh root@172.16.0.18       # Remplacez par votre IP WAN
 ### Via LuCI (interface web OpenWrt)
 
 ```
-https://172.16.0.18
+https://172.16.0.18:1337
 ```
 
 Le certificat est auto-signé — acceptez l'exception de sécurité dans votre navigateur.
@@ -91,7 +91,7 @@ Voir [proxmox.md](proxmox.md) pour utiliser Proxmox et accéder aux templates.
 | Service        | Port(s)  | Interface  | Remarque                         |
 |----------------|----------|------------|----------------------------------|
 | SSH (Dropbear) | TCP 22   | WAN + LAN  | Accès direct depuis le réseau lab |
-| LuCI (uhttpd)  | TCP 443  | WAN + LAN  | HTTP redirige vers HTTPS          |
+| LuCI (uhttpd)  | TCP 1336/1337 | WAN + LAN  | HTTP (1336) redirige vers HTTPS (1337) |
 
 ---
 
