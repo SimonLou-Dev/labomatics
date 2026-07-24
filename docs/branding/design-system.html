@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Design System labomatics</title>
+    <style>
+        :root {
+            --color-primary: #FF6B00;
+            --color-primary-dark: #FF8C00;
+            --color-steel: #4A4A4A;
+            --color-rust: #B8561F;
+            --color-cream: #F8F4EB;
+            --color-text-dark: #1F1F1F;
+            --color-bg-light: #FFFFFF;
+            --color-bg-dark: #2A2A2A;
+
+            --font-display: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --color-text-primary: #F8F4EB;
+                --color-text-secondary: #B0B0B0;
+                --color-bg-primary: #1F1F1F;
+                --color-bg-secondary: #2A2A2A;
+            }
+        }
+
+        @media (prefers-color-scheme: light) {
+            :root {
+                --color-text-primary: #1F1F1F;
+                --color-text-secondary: #666666;
+                --color-bg-primary: #FFFFFF;
+                --color-bg-secondary: #F8F4EB;
+            }
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background-color: var(--color-bg-primary);
+            color: var(--color-text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .hero {
+            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-rust) 100%);
+            color: white;
+            padding: 6rem 2rem;
+            text-align: center;
+        }
+
+        .hero h1 {
+            font-family: var(--font-display);
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            text-wrap: balance;
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            opacity: 0.95;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .section {
+            margin: 3rem 0;
+            padding: 2rem;
+            background-color: var(--color-bg-secondary);
+            border-radius: 8px;
+            border-left: 4px solid var(--color-primary);
+        }
+
+        h2 {
+            font-family: var(--font-display);
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 2rem;
+            color: var(--color-primary);
+        }
+
+        h3 {
+            font-family: var(--font-display);
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-top: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .palette {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .color-card {
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .color-card:hover {
+            transform: translateY(-4px);
+        }
+
+        .color-sample {
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
+
+        .color-info {
+            padding: 1rem;
+            background-color: var(--color-bg-primary);
+        }
+
+        .color-name {
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+            font-family: var(--font-display);
+        }
+
+        .color-hex {
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            color: var(--color-text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .color-usage {
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+            line-height: 1.4;
+        }
+
+        .typography-grid {
+            display: grid;
+            gap: 2rem;
+        }
+
+        .font-showcase {
+            padding: 1.5rem;
+            background-color: var(--color-bg-primary);
+            border-radius: 6px;
+            border: 1px solid var(--color-primary);
+        }
+
+        .font-label {
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+            font-family: var(--font-mono);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .display-large {
+            font-family: var(--font-display);
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            text-wrap: balance;
+        }
+
+        .display-medium {
+            font-family: var(--font-display);
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .body-large {
+            font-family: var(--font-body);
+            font-size: 1.125rem;
+            font-weight: 400;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+
+        .body-regular {
+            font-family: var(--font-body);
+            font-size: 1rem;
+            font-weight: 400;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+
+        .body-small {
+            font-family: var(--font-body);
+            font-size: 0.875rem;
+            font-weight: 400;
+            line-height: 1.5;
+            margin-bottom: 1rem;
+        }
+
+        .mono-regular {
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            font-weight: 400;
+            line-height: 1.4;
+        }
+
+        .mono-bold {
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            font-weight: 600;
+            line-height: 1.4;
+        }
+
+        .spacing-guide {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+        }
+
+        .spacing-demo {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .spacing-box {
+            width: 100%;
+            background: linear-gradient(45deg, var(--color-primary), var(--color-rust));
+            border-radius: 4px;
+            margin-bottom: 0.5rem;
+        }
+
+        .spacing-label {
+            font-size: 0.85rem;
+            text-align: center;
+            color: var(--color-text-secondary);
+            font-family: var(--font-mono);
+        }
+
+        .code-block {
+            background-color: var(--color-text-dark);
+            color: #00FF00;
+            padding: 1.5rem;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin: 1rem 0;
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .grid-demo {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+        }
+
+        .grid-item {
+            padding: 2rem;
+            background: linear-gradient(135deg, var(--color-primary), var(--color-rust));
+            color: white;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: 700;
+        }
+
+        .dark-mode-info {
+            background-color: var(--color-bg-dark);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 6px;
+            border-left: 4px solid var(--color-primary-dark);
+        }
+
+        footer {
+            background-color: var(--color-text-dark);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+            margin-top: 3rem;
+        }
+
+        footer p {
+            margin: 0.5rem 0;
+            font-size: 0.9rem;
+        }
+
+        .toc {
+            background-color: var(--color-bg-secondary);
+            padding: 1.5rem;
+            border-radius: 6px;
+            margin-bottom: 2rem;
+        }
+
+        .toc h3 {
+            margin-top: 0;
+        }
+
+        .toc a {
+            display: block;
+            color: var(--color-primary);
+            text-decoration: none;
+            padding: 0.5rem 0;
+            transition: opacity 0.2s;
+        }
+
+        .toc a:hover {
+            opacity: 0.7;
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .hero p {
+                font-size: 1rem;
+            }
+
+            .palette {
+                grid-template-columns: 1fr;
+            }
+
+            .grid-demo {
+                grid-template-columns: 1fr;
+            }
+
+            h2 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="hero">
+        <h1>Design System</h1>
+        <p>Palette, typographie, et directives pour labomatics</p>
+    </div>
+
+    <div class="container">
+        <div class="toc">
+            <h3>Sommaire</h3>
+            <a href="#palette">Palette de Couleurs</a>
+            <a href="#typography">Typographie</a>
+            <a href="#dark-mode">Mode Sombre</a>
+            <a href="#spacing">Espacement</a>
+            <a href="#guidelines">Directives</a>
+        </div>
+
+        <section class="section" id="palette">
+            <h2>🎨 Palette de Couleurs</h2>
+            <p>Les couleurs fondamentales de labomatics reflètent l'énergie industrielle et la précision scientifique.</p>
+
+            <div class="palette">
+                <div class="color-card">
+                    <div class="color-sample" style="background-color: #FF6B00;">Orange</div>
+                    <div class="color-info">
+                        <div class="color-name">Orange Primaire</div>
+                        <div class="color-hex">#FF6B00</div>
+                        <div class="color-usage">Accent principal, logos, CTA, éléments focus</div>
+                    </div>
+                </div>
+
+                <div class="color-card">
+                    <div class="color-sample" style="background-color: #FFA500;">Orange</div>
+                    <div class="color-info">
+                        <div class="color-name">Orange Chaud</div>
+                        <div class="color-hex">#FFA500</div>
+                        <div class="color-usage">Variations, texte sur fond sombre</div>
+                    </div>
+                </div>
+
+                <div class="color-card">
+                    <div class="color-sample" style="background-color: #B8561F;">Rouille</div>
+                    <div class="color-info">
+                        <div class="color-name">Rouille</div>
+                        <div class="color-hex">#B8561F</div>
+                        <div class="color-usage">Détails, accents secondaires, matérialité</div>
+                    </div>
+                </div>
+
+                <div class="color-card">
+                    <div class="color-sample" style="background-color: #4A4A4A; color: #F8F4EB;">Acier</div>
+                    <div class="color-info">
+                        <div class="color-name">Acier Sombre</div>
+                        <div class="color-hex">#4A4A4A</div>
+                        <div class="color-usage">Texte principal, logos, arrière-plans</div>
+                    </div>
+                </div>
+
+                <div class="color-card">
+                    <div class="color-sample" style="background-color: #1F1F1F;">Texte</div>
+                    <div class="color-info">
+                        <div class="color-name">Texte Sombre</div>
+                        <div class="color-hex">#1F1F1F</div>
+                        <div class="color-usage">Texte sur fonds clairs, maximum contraste</div>
+                    </div>
+                </div>
+
+                <div class="color-card">
+                    <div class="color-sample" style="background-color: #F8F4EB; color: #1F1F1F;">Crème</div>
+                    <div class="color-info">
+                        <div class="color-name">Crème</div>
+                        <div class="color-hex">#F8F4EB</div>
+                        <div class="color-usage">Arrière-plans clairs, respiration visuelle</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="typography">
+            <h2>🔤 Typographie</h2>
+            <p>Trois familles de polices pour une hiérarchie claire et lisibilité optimale.</p>
+
+            <div class="typography-grid">
+                <div class="font-showcase">
+                    <div class="font-label">Display / Logo</div>
+                    <div class="display-large">Montserrat Bold 700</div>
+                    <p style="color: var(--color-text-secondary);">Utilisée pour les titres, logos, branding. Audacieux et mémorable.</p>
+                </div>
+
+                <div class="font-showcase">
+                    <div class="font-label">Corps de Texte</div>
+                    <div class="body-large">Inter Regular 400 — Corps large</div>
+                    <div class="body-regular">Inter Regular 400 — Corps régulier, pour articles et documentation</div>
+                    <div class="body-small">Inter Regular 400 — Corps petit, pour labels et captions</div>
+                    <p style="color: var(--color-text-secondary); font-size: 0.85rem;">Hauteur de ligne: 1.6 pour lisibilité optimale. Largeur max: 65 caractères.</p>
+                </div>
+
+                <div class="font-showcase">
+                    <div class="font-label">Code / Terminal</div>
+                    <div class="mono-regular">JetBrains Mono Regular 400</div>
+                    <div class="mono-bold">JetBrains Mono Bold 600</div>
+                    <p style="color: var(--color-text-secondary);">Pour blocs de code, examples CLI, snippets techniques.</p>
+                </div>
+            </div>
+
+            <h3>Fallback Fonts</h3>
+            <div class="code-block">
+font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+font-family: 'JetBrains Mono', 'Courier New', monospace;
+            </div>
+        </section>
+
+        <section class="section" id="dark-mode">
+            <h2>🌙 Mode Sombre</h2>
+            <div class="dark-mode-info">
+                <h3 style="margin-top: 0; color: white;">Couleurs en mode sombre</h3>
+                <p><strong>Orange Primaire:</strong> #FF8C00 (au lieu de #FF6B00) pour meilleur contraste</p>
+                <p><strong>Texte:</strong> #F8F4EB sur arrière-plans sombres</p>
+                <p><strong>Arrière-plans:</strong> #2A2A2A (pas du noir pur pour réduire la fatigue oculaire)</p>
+                <p><strong>Rouille:</strong> #B8561F reste stable dans les deux modes</p>
+            </div>
+
+            <h3>Compatibilité CSS Variables</h3>
+            <div class="code-block">
+:root {
+  --color-primary: #FF6B00;
+  --color-primary-dark: #FF8C00;
+  --color-bg-primary: #FFFFFF;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-primary: #FF8C00;
+    --color-bg-primary: #1F1F1F;
+  }
+}
+            </div>
+        </section>
+
+        <section class="section" id="spacing">
+            <h2>📐 Espacement</h2>
+            <p>Scale d'espacement cohérent pour alignement et respiration visuelle.</p>
+
+            <div class="spacing-guide">
+                <div class="spacing-demo">
+                    <div class="spacing-box" style="height: 20px;"></div>
+                    <div class="spacing-label">4px</div>
+                </div>
+                <div class="spacing-demo">
+                    <div class="spacing-box" style="height: 40px;"></div>
+                    <div class="spacing-label">8px</div>
+                </div>
+                <div class="spacing-demo">
+                    <div class="spacing-box" style="height: 60px;"></div>
+                    <div class="spacing-label">12px</div>
+                </div>
+                <div class="spacing-demo">
+                    <div class="spacing-box" style="height: 80px;"></div>
+                    <div class="spacing-label">16px</div>
+                </div>
+                <div class="spacing-demo">
+                    <div class="spacing-box" style="height: 120px;"></div>
+                    <div class="spacing-label">24px</div>
+                </div>
+                <div class="spacing-demo">
+                    <div class="spacing-box" style="height: 160px;"></div>
+                    <div class="spacing-label">32px</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="guidelines">
+            <h2>✨ Directives</h2>
+
+            <h3>Contraste et Accessibilité</h3>
+            <p>Ratio de contraste minimum <strong>4.5:1</strong> pour texte sur tous les arrière-plans. Orange #FF6B00 sur crème #F8F4EB = <strong>7.2:1</strong> ✅</p>
+
+            <h3>Logo Spacing</h3>
+            <p>Minimum <strong>20px de padding</strong> sur tous les côtés du logo. Ne pas rogner, modifier les proportions, pivoter, incliner ou distordre.</p>
+
+            <h3>Dimensions Minimales</h3>
+            <ul style="margin-left: 1.5rem;">
+                <li><strong>Logo Principal:</strong> 100px de largeur</li>
+                <li><strong>Icône:</strong> 32px minimum</li>
+                <li><strong>Web:</strong> Redimensionner avec SVG (pas de rastérisation)</li>
+            </ul>
+
+            <h3>Responsive</h3>
+            <div class="grid-demo">
+                <div class="grid-item">Mobile</div>
+                <div class="grid-item">Tablet</div>
+                <div class="grid-item">Desktop</div>
+            </div>
+            <p style="margin-top: 1rem; color: var(--color-text-secondary);">Utiliser flexbox/grid avec <code style="font-family: var(--font-mono);">gap</code> pour spacing cohérent sur tous les breakpoints.</p>
+        </section>
+    </div>
+
+    <footer>
+        <p><strong>Design System labomatics v1.0</strong></p>
+        <p>Dernière mise à jour : 2026-07-24</p>
+        <p style="font-size: 0.8rem; margin-top: 1.5rem; opacity: 0.8;">Voir <a href="BRANDING.md" style="color: var(--color-primary-dark);">BRANDING.md</a> pour documentation complète</p>
+    </footer>
+</body>
+</html>
