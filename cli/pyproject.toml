@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=65.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "labomatics-cli"
+version = "0.4.0"
+description = "Orchestration centrale pour labomatics"
+requires-python = ">=3.10"
+authors = [
+    {name = "SimonLou-Dev", email = "simon.bidet@pm.me"}
+]
+license = {text = "AGPL-3.0"}
+
+dependencies = [
+    "rich>=13.0",
+    "pydantic>=2.0",
+    "requests>=2.31",
+]
+
+[project.scripts]
+labomatics = "labomatics_cli.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
