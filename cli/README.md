@@ -1,6 +1,6 @@
 # labomatics CLI v0.4
 
-Orchestration centrale pour déployer la stack labomatics sur Proxmox.
+Orchestration centrale pour déployer le cluster labomatics sur Proxmox.
 
 ## Installation
 
@@ -13,54 +13,72 @@ pip install -e .
 
 ### `labomatics install`
 
-Initialiser le cluster (créer VM centrale + stack Docker).
+Initialiser le cluster central (VM Alpine + Docker stack).
 
 **À exécuter sur un nœud du cluster Proxmox.**
 
 ```bash
-labomatics install [--dry-run] [--hostname NAME] [--domain DOMAIN] [--storage STORAGE]
+labomatics install [--dry-run]
 ```
 
-Demande interactivement:
-- URL Proxmox
-- User + Token API (admin complet)
-- Configuration de la VM
+### Flow interactif
 
-Services déployés (Docker Compose):
-- PostgreSQL
-- Keycloak (SSO)
-- FreeRADIUS (authentification réseau)
-- DNS (dnsmasq)
-- Traefik (reverse proxy)
+1. **Configuration**: domaine root, interface réseau
+2. **VM**: user, password, IP, gateway
+3. **Passwords**: générés automatiquement
+4. **Compte admin**: email, nom, prénom
+5. **Installation**: VM → Docker → Services → Keycloak setup
+6. **Output**: credentials + OIDC setup pour Proxmox
 
-À terme: API + Frontend
+### Services déployés
 
-## Security Note
-
-Le token Proxmox est admin complet. Recommandation: créer un token dédié avec un compte limité (voir docs/).
+- **PostgreSQL**: 3 DBs (labomatics, keycloak, powerdns)
+- **Keycloak**: SSO (realms: master + labomatics)
+- **PowerDNS**: DNS server (API REST)
+- **Traefik**: Reverse proxy
 
 ## Architecture
 
 ```
 cli/
 ├── labomatics_cli/
-│   ├── __main__.py              # Entry point, argparse
+│   ├── __main__.py
 │   ├── commands/
-│   │   └── install.py           # Commande install
-│   ├── utils/
-│   │   ├── proxmox.py           # Client Proxmox
-│   │   └── config.py            # Gestion config
-│   └── provisioning/
-│       └── templates/
-│           └── cloud-init.sh    # Script Alpine + Docker
+│   │   └── install.py         # Commande install complète
+│   └── utils/
+│       ├── ssh.py             # Client SSH
+│       ├── keycloak.py        # API Keycloak
+│       ├── powerdns.py        # API PowerDNS
+│       └── proxmox.py         # API Proxmox (stub)
 └── pyproject.toml
+
+provisioning/labomatics/
+├── templates/
+│   ├── cloud-init.sh          # Cloud-init minimal
+│   ├── docker-compose.yml     # Stack Docker
+│   ├── traefik.yaml           # Config Traefik
+│   └── powerdns.conf          # Config PowerDNS
+└── scripts/
+    ├── init-databases.sh      # Init PostgreSQL DBs
+    └── setup-docker.sh        # Setup Docker (SSH)
 ```
+
+## Security Notes
+
+- Passwords générés par cryptographie forte
+- Keycloak master realm: admin générés, utilisés uniquement par le CLI
+- Labomatics realm: admin = user créé (email/nom/prénom)
+- Certificats self-signed (à améliorer avec Let's Encrypt)
 
 ## Status
 
-- [ ] `labomatics install` — scaffold
-- [ ] Proxmox API client
-- [ ] VM creation (Alpine template)
-- [ ] Cloud-init injection
-- [ ] HA configuration
-- [ ] Service validation
+- [x] Structure et scaffolding
+- [x] Cloud-init Proxmox-compatible
+- [x] Docker Compose (PostgreSQL, Keycloak, PowerDNS, Traefik)
+- [x] Commande install (flow complet)
+- [x] Setup Keycloak realms + user admin
+- [x] OIDC client pour Proxmox
+- [ ] Proxmox API client (VM creation)
+- [ ] SSH file upload/exec (Paramiko)
+- [ ] Tests
+- [ ] Idempotence

@@ -22,26 +22,12 @@ def main() -> int:
     # install command
     install_parser = subparsers.add_parser(
         "install",
-        help="Initialiser le cluster (créer VM centrale + stack Docker)",
+        help="Initialiser le cluster central",
     )
     install_parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Afficher les actions sans les exécuter",
-    )
-    install_parser.add_argument(
-        "--hostname",
-        default="labomatics",
-        help="Nom d'hôte de la VM (défaut: labomatics)",
-    )
-    install_parser.add_argument(
-        "--domain",
-        default="lab.local",
-        help="Domaine (défaut: lab.local)",
-    )
-    install_parser.add_argument(
-        "--storage",
-        help="Stockage partagé pour la VM (ex: local-lvm, ceph-store)",
     )
     install_parser.set_defaults(func=cmd_install)
 
@@ -57,7 +43,9 @@ def main() -> int:
         console.print("\n[yellow]Opération annulée[/yellow]")
         return 1
     except Exception as e:
-        console.print(f"[red]Erreur:[/red] {e}")
+        console.print(f"[red]Erreur:[/red] {e}", file=sys.stderr)
+        import traceback
+        traceback.print_exc()
         return 1
 
 
