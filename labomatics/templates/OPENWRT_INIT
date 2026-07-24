@@ -53,8 +53,8 @@ if [ -n "$CIDEV" ]; then
   umount /tmp/cidata 2>/dev/null || true
 fi
 
-uci set uhttpd.main.listen_http='0.0.0.0:80'
-uci set uhttpd.main.listen_https='0.0.0.0:443'
+uci set uhttpd.main.listen_http='0.0.0.0:1336'
+uci set uhttpd.main.listen_https='0.0.0.0:1337'
 if [ -f /etc/uhttpd.crt ] && [ -f /etc/uhttpd.key ]; then
   uci set uhttpd.main.cert='/etc/uhttpd.crt'
   uci set uhttpd.main.key='/etc/uhttpd.key'
@@ -73,11 +73,11 @@ for i in $(seq 0 9); do
   fi
 done
 
-# Règles firewall : HTTP/HTTPS + SSH depuis WAN
+# Règles firewall : LuCI (1336 HTTP / 1337 HTTPS) + SSH depuis WAN
 uci add firewall rule
 uci set firewall.@rule[-1].name='Allow-Web-WAN'
 uci set firewall.@rule[-1].src='wan'
-uci set firewall.@rule[-1].dest_port='80 443'
+uci set firewall.@rule[-1].dest_port='1336 1337'
 uci set firewall.@rule[-1].proto='tcp'
 uci set firewall.@rule[-1].target='ACCEPT'
 
