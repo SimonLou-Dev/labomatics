@@ -1,0 +1,1585 @@
+
+<!doctype html>
+<html lang="fr" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="CLI Proxmox pour la gestion de labs réseau étudiants">
+      
+      
+        <meta name="author" content="SimonLou-Dev">
+      
+      
+        <link rel="canonical" href="https://simonlou-dev.github.io/labomatics/branding/BRANDING/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>labomatics — Guide d'Identité Visuelle - labomatics</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#labomatics-guide-didentite-visuelle" class="md-skip">
+          Aller au contenu
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="En-tête">
+    <a href="../.." title="labomatics" class="md-header__button md-logo" aria-label="labomatics" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            labomatics
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              labomatics — Guide d'Identité Visuelle
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Mode sombre"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Mode sombre" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Mode clair"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Mode clair" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Rechercher" placeholder="Rechercher" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Recherche">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Effacer" aria-label="Effacer" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initialisation de la recherche
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/SimonLou-Dev/labomatics" title="Aller au dépôt" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    SimonLou-Dev/labomatics
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Onglets" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Accueil
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../admin/overview/" class="md-tabs__link">
+          
+  
+  
+  Administration
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../openwrt/base/" class="md-tabs__link">
+          
+  
+  
+  Guide étudiant (OpenWrt)
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../student/templates/" class="md-tabs__link">
+          
+  
+  
+  Guide étudiant (Templates)
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="labomatics" class="md-nav__button md-logo" aria-label="labomatics" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    labomatics
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/SimonLou-Dev/labomatics" title="Aller au dépôt" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    SimonLou-Dev/labomatics
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Accueil
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Administration
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Administration
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../admin/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Vue d'ensemble
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../admin/setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../admin/cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Référence CLI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../admin/template/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Build OpenWrt
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../admin/build-template/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Build templates cloud-init
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guide étudiant (OpenWrt)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guide étudiant (OpenWrt)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../openwrt/base/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Démarrage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../openwrt/dhcp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DHCP
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../openwrt/dns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DNS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../openwrt/nat/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    NAT
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../openwrt/firewall/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Firewall
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../openwrt/proxmox/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interface Proxmox
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guide étudiant (Templates)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guide étudiant (Templates)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../student/templates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cloud-init & VMs Linux
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table des matières">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table des matières
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#palette-de-couleurs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Palette de Couleurs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#typographie" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Typographie
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Typographie">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#display-logo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Display / Logo
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#corps-de-texte" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Corps de Texte
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#code-terminal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Code / Terminal
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#systeme-de-logo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Système de Logo
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Système de Logo">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#logo-principal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Logo Principal
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#icon-favicon" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Icon / Favicon
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#directives-dutilisation-du-logo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Directives d'Utilisation du Logo
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Directives d&#39;Utilisation du Logo">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#espacement-respiration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Espacement &amp; Respiration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#variations-de-couleur" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Variations de Couleur
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dimensionnement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dimensionnement
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#arriere-plans" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Arrière-plans
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#exemples-dutilisation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exemples d'Utilisation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Exemples d&#39;Utilisation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#web" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Web
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Documentation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reseaux-sociaux" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Réseaux Sociaux
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#impression" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Impression
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quand-utiliser-quel-logo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quand Utiliser Quel Logo
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mode-sombre" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mode Sombre
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Mode Sombre">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#couleurs-en-mode-sombre" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Couleurs en Mode Sombre
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#logo-en-mode-sombre" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Logo en Mode Sombre
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#strategie-des-fallback-fonts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stratégie des Fallback Fonts
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#versionnage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Versionnage
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fichiers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fichiers
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#questions-contributions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Questions &amp; Contributions
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="labomatics-guide-didentite-visuelle">labomatics — Guide d'Identité Visuelle<a class="headerlink" href="#labomatics-guide-didentite-visuelle" title="Permanent link">&para;</a></h1>
+<p><strong>Automation industrielle, précision de laboratoire, culture expérimentale.</strong></p>
+<hr />
+<h2 id="palette-de-couleurs">Palette de Couleurs<a class="headerlink" href="#palette-de-couleurs" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Couleur</th>
+<th>Hex</th>
+<th>Usage</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Orange Primaire</strong></td>
+<td><code>#FF6B00</code></td>
+<td>Accent principal, logos, CTA</td>
+<td>Énergie industrielle, audacieux</td>
+</tr>
+<tr>
+<td><strong>Orange Chaud</strong></td>
+<td><code>#FFA500</code></td>
+<td>Variations, texte sur fond sombre</td>
+<td>Accessible, secondaire</td>
+</tr>
+<tr>
+<td><strong>Rouille</strong></td>
+<td><code>#B8561F</code></td>
+<td>Détails, accents</td>
+<td>Matérialité, authenticité</td>
+</tr>
+<tr>
+<td><strong>Acier Sombre</strong></td>
+<td><code>#1F1F1F</code></td>
+<td>Texte, arrière-plans</td>
+<td>Technique, précis</td>
+</tr>
+<tr>
+<td><strong>Crème</strong></td>
+<td><code>#F8F4EB</code></td>
+<td>Arrière-plans clairs</td>
+<td>Respiration visuelle</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Mode Sombre:</strong>
+- Orange Primaire → <code>#FF8C00</code> (plus clair sur fonds sombres)
+- Arrière-plans → <code>#2A2A2A</code> (pas du noir pur)</p>
+<hr />
+<h2 id="typographie">Typographie<a class="headerlink" href="#typographie" title="Permanent link">&para;</a></h2>
+<h3 id="display-logo">Display / Logo<a class="headerlink" href="#display-logo" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Police:</strong> Montserrat</li>
+<li><strong>Poids:</strong> Gras (700)</li>
+<li><strong>Google Fonts:</strong> Oui</li>
+<li><strong>Stack fallback:</strong> <code>-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif</code></li>
+<li><strong>Usage:</strong> Titres, logos, branding</li>
+</ul>
+<h3 id="corps-de-texte">Corps de Texte<a class="headerlink" href="#corps-de-texte" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Police:</strong> Inter</li>
+<li><strong>Poids:</strong> Régulier (400)</li>
+<li><strong>Google Fonts:</strong> Oui</li>
+<li><strong>Stack fallback:</strong> <code>-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif</code></li>
+<li><strong>Usage:</strong> Articles, documentation, texte UI</li>
+<li><strong>Hauteur de ligne:</strong> 1.6</li>
+<li><strong>Largeur max:</strong> 65 caractères pour lisibilité</li>
+</ul>
+<h3 id="code-terminal">Code / Terminal<a class="headerlink" href="#code-terminal" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Police:</strong> JetBrains Mono</li>
+<li><strong>Poids:</strong> Régulier (400) / Gras (600)</li>
+<li><strong>Google Fonts:</strong> Oui</li>
+<li><strong>Stack fallback:</strong> <code>'Courier New', monospace</code></li>
+<li><strong>Usage:</strong> Blocs de code, exemples CLI, snippets techniques</li>
+</ul>
+<hr />
+<h2 id="systeme-de-logo">Système de Logo<a class="headerlink" href="#systeme-de-logo" title="Permanent link">&para;</a></h2>
+<h3 id="logo-principal">Logo Principal<a class="headerlink" href="#logo-principal" title="Permanent link">&para;</a></h3>
+<p><strong>Fichier:</strong> <code>labomatics-logo-primary.svg</code></p>
+<p><strong>Composition:</strong>
+- "lab" en gris acier (#4A4A4A)
+- O remplacé par un engrenage mécanique
+- "matics" en gris acier (#4A4A4A)
+- Fiole (Erlenmeyer) + bras robot en orange (#FF6B00)</p>
+<p><strong>Dimensions:</strong> 800×200 (ratio 16:4)</p>
+<p><strong>Usage:</strong>
+- Sections héros
+- Communications officielles
+- Grand format (en-têtes web, documents)
+- Toujours maintenir minimum 20px de padding autour du logo</p>
+<p><strong>Couleurs dans le SVG:</strong>
+- Texte: <code>#4A4A4A</code> (acier)
+- Engrenage: <code>#FF6B00</code> (orange primaire)
+- Contours engrenage: <code>#FF6B00</code>
+- Fiole/bras: <code>#FF6B00</code></p>
+<h3 id="icon-favicon">Icon / Favicon<a class="headerlink" href="#icon-favicon" title="Permanent link">&para;</a></h3>
+<p><strong>Fichier:</strong> <code>labomatics-logo-icon.svg</code></p>
+<p><strong>Composition:</strong>
+- Engrenage (O) comme élément central
+- Fiole Erlenmeyer intégrée
+- Détails du bras robot</p>
+<p><strong>Dimensions:</strong> 200×200 (carré, 1:1)</p>
+<p><strong>Usage:</strong>
+- Favicon (32×32, 16×16)
+- Icônes d'application
+- Avatars réseaux sociaux
+- Petites marques contextuelles
+- Verrouillage de logo quand l'espace est limité</p>
+<p><strong>Reconnaissable:</strong> Identité de marque maintenue à 32px et plus petit</p>
+<hr />
+<h2 id="directives-dutilisation-du-logo">Directives d'Utilisation du Logo<a class="headerlink" href="#directives-dutilisation-du-logo" title="Permanent link">&para;</a></h2>
+<h3 id="espacement-respiration">Espacement &amp; Respiration<a class="headerlink" href="#espacement-respiration" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Minimum 20px de padding sur tous les côtés</li>
+<li>Ne pas rogner ou modifier les proportions</li>
+<li>Ne pas pivoter, incliner ou distordre</li>
+<li>Ne pas appliquer d'effets (ombres, lueurs) sauf approbation explicite</li>
+</ul>
+<h3 id="variations-de-couleur">Variations de Couleur<a class="headerlink" href="#variations-de-couleur" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Primaire:</strong> Couleur complète (orange #FF6B00 + acier #4A4A4A)</li>
+<li><strong>Monochrome:</strong> Orange uniquement (contraintes monocouleur)</li>
+<li><strong>Inversé:</strong> Blanc/crème sur fonds sombres</li>
+<li>Ne jamais inverser les couleurs arbitrairement</li>
+</ul>
+<h3 id="dimensionnement">Dimensionnement<a class="headerlink" href="#dimensionnement" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Minimum:</strong> 100px de largeur pour logo principal (lisibilité du texte)</li>
+<li><strong>Icône:</strong> 32px minimum (taille favicon)</li>
+<li><strong>Web:</strong> Redimensionner au besoin avec SVG moderne (pas de rastérisation)</li>
+</ul>
+<h3 id="arriere-plans">Arrière-plans<a class="headerlink" href="#arriere-plans" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Arrière-plans clairs:</strong> Utiliser couleur primaire telle quelle</li>
+<li><strong>Arrière-plans sombres:</strong> Utiliser <code>#FF8C00</code> pour meilleur contraste</li>
+<li><strong>Arrière-plans texturés:</strong> Assurer ratio de contraste 4.5:1</li>
+</ul>
+<hr />
+<h2 id="exemples-dutilisation">Exemples d'Utilisation<a class="headerlink" href="#exemples-dutilisation" title="Permanent link">&para;</a></h2>
+<h3 id="web">Web<a class="headerlink" href="#web" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="cm">&lt;!-- Bannière héros --&gt;</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="p">&lt;</span><span class="nt">img</span> <span class="na">src</span><span class="o">=</span><span class="s">&quot;/branding/labomatics-logo-primary.svg&quot;</span> <span class="na">alt</span><span class="o">=</span><span class="s">&quot;labomatics&quot;</span> <span class="na">width</span><span class="o">=</span><span class="s">&quot;400&quot;</span> <span class="p">/&gt;</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="cm">&lt;!-- Favicon --&gt;</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="p">&lt;</span><span class="nt">link</span> <span class="na">rel</span><span class="o">=</span><span class="s">&quot;icon&quot;</span> <span class="na">type</span><span class="o">=</span><span class="s">&quot;image/svg+xml&quot;</span> <span class="na">href</span><span class="o">=</span><span class="s">&quot;/branding/labomatics-logo-icon.svg&quot;</span> <span class="p">/&gt;</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="cm">&lt;!-- Logo de navigation --&gt;</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="p">&lt;</span><span class="nt">img</span> <span class="na">src</span><span class="o">=</span><span class="s">&quot;/branding/labomatics-logo-icon.svg&quot;</span> <span class="na">alt</span><span class="o">=</span><span class="s">&quot;labomatics&quot;</span> <span class="na">width</span><span class="o">=</span><span class="s">&quot;48&quot;</span> <span class="p">/&gt;</span>
+</code></pre></div>
+<h3 id="documentation">Documentation<a class="headerlink" href="#documentation" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Utiliser logo principal en haut du README</li>
+<li>Utiliser icône en navigation/breadcrumbs</li>
+<li>Garder minimum 20px de padding</li>
+</ul>
+<h3 id="reseaux-sociaux">Réseaux Sociaux<a class="headerlink" href="#reseaux-sociaux" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Avatar: Utiliser icône (200×200)</li>
+<li>Couverture: Utiliser logo principal centré</li>
+<li>Posts: S'assurer que orange #FF6B00 ressort sur miniatures</li>
+</ul>
+<h3 id="impression">Impression<a class="headerlink" href="#impression" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Utiliser exports SVG haute résolution (PDF via Illustrator/Inkscape)</li>
+<li>Pour raster: Exporter à minimum 300 DPI</li>
+<li>Maintenir exactitude couleur #FF6B00 (match Pantone si possible)</li>
+</ul>
+<hr />
+<h2 id="quand-utiliser-quel-logo">Quand Utiliser Quel Logo<a class="headerlink" href="#quand-utiliser-quel-logo" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Contexte</th>
+<th>Logo</th>
+<th>Raison</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Héros site web</td>
+<td>Principal</td>
+<td>Message de marque complet</td>
+</tr>
+<tr>
+<td>Favicon/icône</td>
+<td>Icône</td>
+<td>Reconnaissable à petite taille</td>
+</tr>
+<tr>
+<td>Avatar réseaux</td>
+<td>Icône</td>
+<td>Carré, clair à 200×200</td>
+</tr>
+<tr>
+<td>En-tête documentation</td>
+<td>Principal</td>
+<td>Professionnel, officiel</td>
+</tr>
+<tr>
+<td>Barre de navigation</td>
+<td>Icône</td>
+<td>Compact, lisibilité</td>
+</tr>
+<tr>
+<td>Carte de visite</td>
+<td>Icône ou petit principal</td>
+<td>Espace limité</td>
+</tr>
+<tr>
+<td>Signature email</td>
+<td>Icône</td>
+<td>Intégré, professionnel</td>
+</tr>
+<tr>
+<td>Branding outil CLI</td>
+<td>Icône</td>
+<td>Propre, minimal</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="mode-sombre">Mode Sombre<a class="headerlink" href="#mode-sombre" title="Permanent link">&para;</a></h2>
+<h3 id="couleurs-en-mode-sombre">Couleurs en Mode Sombre<a class="headerlink" href="#couleurs-en-mode-sombre" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Orange Primaire: Utiliser <code>#FF8C00</code> au lieu de <code>#FF6B00</code> (meilleur contraste)</li>
+<li>Acier Sombre: <code>#1F1F1F</code> pour texte sur clair, <code>#F8F4EB</code> pour texte sur sombre</li>
+<li>Rouille: <code>#B8561F</code> reste stable</li>
+</ul>
+<h3 id="logo-en-mode-sombre">Logo en Mode Sombre<a class="headerlink" href="#logo-en-mode-sombre" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Icône: Orange ressort bien, pas de changement nécessaire</li>
+<li>Principal: Texte acier peut nécessiter version plus claire (<code>#B0B0B0</code>) sur arrière-plans sombres</li>
+</ul>
+<hr />
+<h2 id="strategie-des-fallback-fonts">Stratégie des Fallback Fonts<a class="headerlink" href="#strategie-des-fallback-fonts" title="Permanent link">&para;</a></h2>
+<p><strong>Pourquoi les fallbacks sont importants:</strong>
+- Utilisateurs n'ont pas Google Fonts en cache
+- Documentation hors ligne doit rester lisible
+- Performance: Les fonts système chargent instantanément</p>
+<p><strong>Philosophie de la stack:</strong>
+1. Choix primaire (Google Fonts)
+2. Fonts système modernes (<code>-apple-system</code>, <code>BlinkMacSystemFont</code>, <code>Segoe UI</code>)
+3. Fallbacks legacy (<code>Arial</code>, <code>sans-serif</code>)</p>
+<p><strong>Tester les fallbacks:</strong>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c">/* Charger Google Fonts */</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="p">@</span><span class="k">import</span><span class="w"> </span><span class="nt">url</span><span class="o">(</span><span class="s1">&#39;https://fonts.googleapis.com/css2?family=Montserrat:wght@700&amp;family=Inter:wght@400&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap&#39;</span><span class="o">)</span><span class="p">;</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c">/* Stack fallback (critique pour docs hors ligne) */</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="nt">body</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">  </span><span class="k">font-family</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;Inter&#39;</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">apple-system</span><span class="p">,</span><span class="w"> </span><span class="n">BlinkMacSystemFont</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Segoe UI&#39;</span><span class="p">,</span><span class="w"> </span><span class="kc">sans-serif</span><span class="p">;</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="p">}</span>
+</code></pre></div></p>
+<hr />
+<h2 id="versionnage">Versionnage<a class="headerlink" href="#versionnage" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Version</th>
+<th>Date</th>
+<th>Changements</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1.0</td>
+<td>2026-07-24</td>
+<td>Release initiale. Display Montserrat, body Inter, code JetBrains Mono. Orange #FF6B00 primaire.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="fichiers">Fichiers<a class="headerlink" href="#fichiers" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>docs/branding/
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>├── BRANDING.md                      (ce fichier)
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>├── labomatics-logo-primary.svg      (800×200, logo complet)
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>├── labomatics-logo-icon.svg         (200×200, icône/favicon)
+</code></pre></div>
+<hr />
+<h2 id="questions-contributions">Questions &amp; Contributions<a class="headerlink" href="#questions-contributions" title="Permanent link">&para;</a></h2>
+<p>Pour questions branding, consulter ce guide. Si quelque chose n'est pas clair, ouvrir une issue GitHub avec label <code>branding</code>.</p>
+<hr />
+<p><strong>Dernière mise à jour:</strong> 2026-07-24<br />
+<strong>Statut:</strong> Actif</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Retour en haut de la page
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.top", "search.highlight", "content.code.copy"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copi\u00e9 dans le presse-papier", "clipboard.copy": "Copier dans le presse-papier", "search.result.more.one": "1 de plus sur cette page", "search.result.more.other": "# de plus sur cette page", "search.result.none": "Aucun document trouv\u00e9", "search.result.one": "1 document trouv\u00e9", "search.result.other": "# documents trouv\u00e9s", "search.result.placeholder": "Taper pour d\u00e9marrer la recherche", "search.result.term.missing": "Non trouv\u00e9", "select.version": "S\u00e9lectionner la version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>
