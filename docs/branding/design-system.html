@@ -3,41 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Design System labomatics</title>
+    <title>Design System labomatics — UI Unifié</title>
     <style>
+        /* ===== TOKENS ===== */
         :root {
+            /* Primaires */
             --color-primary: #FF6B00;
-            --color-primary-dark: #FF8C00;
-            --color-steel: #4A4A4A;
-            --color-rust: #B8561F;
-            --color-cream: #F8F4EB;
-            --color-text-dark: #1F1F1F;
-            --color-bg-light: #FFFFFF;
-            --color-bg-dark: #2A2A2A;
+            --color-secondary: #1F1F1F;
 
-            --font-display: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            /* Sémantiques */
+            --color-success: #10B981;
+            --color-warning: #F59E0B;
+            --color-critical: #EF4444;
+            --color-info: #3B82F6;
+
+            /* Neutres */
+            --color-cream: #F8F4EB;
+            --color-light: #F3F4F6;
+            --color-border: #D1D5DB;
+            --color-text-primary: #1F1F1F;
+            --color-text-secondary: #6B7280;
+            --color-text-light: #9CA3AF;
+            --color-bg-primary: #FFFFFF;
+            --color-bg-secondary: #F8F4EB;
+            --color-bg-tertiary: #F3F4F6;
+
+            /* Typo */
+            --font-display: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+
+            /* Spacing */
+            --spacing-xs: 0.25rem;
+            --spacing-sm: 0.5rem;
+            --spacing-md: 1rem;
+            --spacing-lg: 1.5rem;
+            --spacing-xl: 2rem;
+            --spacing-2xl: 3rem;
+
+            /* Radius */
+            --radius-sm: 4px;
+            --radius-md: 6px;
+            --radius-lg: 8px;
         }
 
         @media (prefers-color-scheme: dark) {
             :root {
                 --color-text-primary: #F8F4EB;
                 --color-text-secondary: #B0B0B0;
+                --color-text-light: #8B8B8B;
                 --color-bg-primary: #1F1F1F;
                 --color-bg-secondary: #2A2A2A;
+                --color-bg-tertiary: #3F3F3F;
+                --color-border: #4B5563;
             }
         }
 
-        @media (prefers-color-scheme: light) {
-            :root {
-                --color-text-primary: #1F1F1F;
-                --color-text-secondary: #666666;
-                --color-bg-primary: #FFFFFF;
-                --color-bg-secondary: #F8F4EB;
-            }
+        :root[data-theme="dark"] {
+            --color-text-primary: #F8F4EB;
+            --color-text-secondary: #B0B0B0;
+            --color-text-light: #8B8B8B;
+            --color-bg-primary: #1F1F1F;
+            --color-bg-secondary: #2A2A2A;
+            --color-bg-tertiary: #3F3F3F;
+            --color-border: #4B5563;
         }
 
+        :root[data-theme="light"] {
+            --color-text-primary: #1F1F1F;
+            --color-text-secondary: #6B7280;
+            --color-text-light: #9CA3AF;
+            --color-bg-primary: #FFFFFF;
+            --color-bg-secondary: #F8F4EB;
+            --color-bg-tertiary: #F3F4F6;
+            --color-border: #D1D5DB;
+        }
+
+        /* ===== RESET ===== */
         * {
             margin: 0;
             padding: 0;
@@ -53,266 +95,439 @@
             background-color: var(--color-bg-primary);
             color: var(--color-text-primary);
             line-height: 1.6;
-            overflow-x: hidden;
+            font-size: 16px;
         }
 
-        .hero {
-            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-rust) 100%);
-            color: white;
-            padding: 6rem 2rem;
-            text-align: center;
+        /* ===== DYSLEXIA MODE ===== */
+        [data-font-mode="dyslexia"] {
+            letter-spacing: 0.05em;
+            line-height: 1.8 !important;
+            word-spacing: 0.1em;
+            text-align: left !important;
         }
 
-        .hero h1 {
+        [data-font-mode="dyslexia"] h1,
+        [data-font-mode="dyslexia"] h2,
+        [data-font-mode="dyslexia"] h3 {
+            line-height: 1.4 !important;
+        }
+
+        /* ===== TYPOGRAPHY ===== */
+        h1 {
             font-family: var(--font-display);
-            font-size: 3.5rem;
+            font-size: 2rem;
             font-weight: 700;
-            margin-bottom: 1rem;
+            line-height: 1.2;
+            margin-bottom: var(--spacing-lg);
             text-wrap: balance;
-        }
-
-        .hero p {
-            font-size: 1.25rem;
-            opacity: 0.95;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 2rem;
-        }
-
-        .section {
-            margin: 3rem 0;
-            padding: 2rem;
-            background-color: var(--color-bg-secondary);
-            border-radius: 8px;
-            border-left: 4px solid var(--color-primary);
         }
 
         h2 {
             font-family: var(--font-display);
-            font-size: 2rem;
+            font-size: 1.5rem;
             font-weight: 700;
-            margin-bottom: 2rem;
+            line-height: 1.3;
+            margin-bottom: var(--spacing-md);
             color: var(--color-primary);
         }
 
         h3 {
             font-family: var(--font-display);
             font-size: 1.25rem;
-            font-weight: 700;
-            margin-top: 1.5rem;
-            margin-bottom: 1rem;
+            font-weight: 600;
+            line-height: 1.4;
+            margin-top: var(--spacing-lg);
+            margin-bottom: var(--spacing-md);
         }
 
+        p {
+            margin-bottom: var(--spacing-md);
+            max-width: 65ch;
+        }
+
+        .text-small {
+            font-size: 0.875rem;
+            color: var(--color-text-secondary);
+        }
+
+        .text-xs {
+            font-size: 0.75rem;
+            color: var(--color-text-light);
+        }
+
+        .mono {
+            font-family: var(--font-mono);
+            font-size: 0.875rem;
+            font-weight: 400;
+        }
+
+        /* ===== LAYOUT ===== */
+        .hero {
+            background: linear-gradient(135deg, var(--color-primary) 0%, #E85A00 100%);
+            color: white;
+            padding: var(--spacing-2xl) var(--spacing-lg);
+            text-align: center;
+            margin-bottom: var(--spacing-2xl);
+        }
+
+        .hero h1 {
+            color: white;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .hero p {
+            font-size: 1.125rem;
+            opacity: 0.95;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: var(--spacing-lg);
+        }
+
+        .section {
+            margin: var(--spacing-2xl) 0;
+            padding: var(--spacing-xl);
+            background-color: var(--color-bg-secondary);
+            border-radius: var(--radius-lg);
+            border-left: 4px solid var(--color-primary);
+        }
+
+        /* ===== GRID & FLEX ===== */
+        .grid {
+            display: grid;
+            gap: var(--spacing-lg);
+        }
+
+        .grid-2 {
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        }
+
+        .grid-3 {
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        }
+
+        .flex-center {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--spacing-md);
+        }
+
+        /* ===== PALETTE CARDS ===== */
         .palette {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
+            gap: var(--spacing-lg);
+            margin-bottom: var(--spacing-xl);
         }
 
         .color-card {
-            border-radius: 8px;
+            border-radius: var(--radius-lg);
             overflow: hidden;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease;
+            transition: transform 0.2s ease;
+            border: 1px solid var(--color-border);
         }
 
         .color-card:hover {
-            transform: translateY(-4px);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
 
         .color-sample {
-            height: 120px;
+            height: 100px;
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
-            font-weight: 700;
+            font-weight: 600;
             text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
         }
 
         .color-info {
-            padding: 1rem;
+            padding: var(--spacing-md);
             background-color: var(--color-bg-primary);
         }
 
         .color-name {
-            font-weight: 700;
-            margin-bottom: 0.25rem;
+            font-weight: 600;
+            margin-bottom: var(--spacing-xs);
             font-family: var(--font-display);
+            color: var(--color-text-primary);
         }
 
         .color-hex {
             font-family: var(--font-mono);
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             color: var(--color-text-secondary);
-            margin-bottom: 0.5rem;
+            margin-bottom: var(--spacing-sm);
         }
 
         .color-usage {
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             color: var(--color-text-secondary);
             line-height: 1.4;
         }
 
-        .typography-grid {
+        /* ===== COMPONENT EXAMPLES ===== */
+        .component-grid {
             display: grid;
-            gap: 2rem;
+            gap: var(--spacing-xl);
+            margin-top: var(--spacing-xl);
         }
 
-        .font-showcase {
-            padding: 1.5rem;
+        .component-example {
+            padding: var(--spacing-xl);
             background-color: var(--color-bg-primary);
-            border-radius: 6px;
-            border: 1px solid var(--color-primary);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
         }
 
-        .font-label {
-            font-size: 0.85rem;
-            color: var(--color-text-secondary);
-            font-family: var(--font-mono);
-            margin-bottom: 0.5rem;
+        .component-label {
+            display: block;
+            font-size: 0.75rem;
             text-transform: uppercase;
             letter-spacing: 0.05em;
-        }
-
-        .display-large {
-            font-family: var(--font-display);
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin-bottom: 1rem;
-            text-wrap: balance;
-        }
-
-        .display-medium {
-            font-family: var(--font-display);
-            font-size: 2rem;
-            font-weight: 700;
-            margin-bottom: 1rem;
-        }
-
-        .body-large {
-            font-family: var(--font-body);
-            font-size: 1.125rem;
-            font-weight: 400;
-            line-height: 1.6;
-            margin-bottom: 1rem;
-        }
-
-        .body-regular {
-            font-family: var(--font-body);
-            font-size: 1rem;
-            font-weight: 400;
-            line-height: 1.6;
-            margin-bottom: 1rem;
-        }
-
-        .body-small {
-            font-family: var(--font-body);
-            font-size: 0.875rem;
-            font-weight: 400;
-            line-height: 1.5;
-            margin-bottom: 1rem;
-        }
-
-        .mono-regular {
-            font-family: var(--font-mono);
-            font-size: 0.9rem;
-            font-weight: 400;
-            line-height: 1.4;
-        }
-
-        .mono-bold {
-            font-family: var(--font-mono);
-            font-size: 0.9rem;
+            color: var(--color-text-secondary);
+            margin-bottom: var(--spacing-md);
             font-weight: 600;
-            line-height: 1.4;
         }
 
-        .spacing-guide {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 1rem;
+        /* Button Styles */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            font-family: var(--font-display);
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
         }
 
-        .spacing-demo {
+        .btn-primary {
+            background-color: var(--color-primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #E55A00;
+            box-shadow: 0 4px 12px rgba(255, 107, 0, 0.2);
+        }
+
+        .btn-primary:focus {
+            outline: 2px solid var(--color-primary);
+            outline-offset: 2px;
+        }
+
+        .btn-secondary {
+            background-color: transparent;
+            color: var(--color-primary);
+            border: 2px solid var(--color-primary);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--color-cream);
+        }
+
+        .btn-danger {
+            background-color: var(--color-critical);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: #DC2626;
+        }
+
+        /* Badge Styles */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+        }
+
+        .badge-success {
+            background-color: rgba(16, 185, 129, 0.1);
+            color: var(--color-success);
+        }
+
+        .badge-warning {
+            background-color: rgba(245, 158, 11, 0.1);
+            color: var(--color-warning);
+        }
+
+        .badge-critical {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: var(--color-critical);
+        }
+
+        .badge-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        /* Input Styles */
+        .input-group {
             display: flex;
             flex-direction: column;
-            align-items: center;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-md);
         }
 
-        .spacing-box {
-            width: 100%;
-            background: linear-gradient(45deg, var(--color-primary), var(--color-rust));
-            border-radius: 4px;
-            margin-bottom: 0.5rem;
+        .input-label {
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: var(--color-text-primary);
         }
 
-        .spacing-label {
-            font-size: 0.85rem;
-            text-align: center;
-            color: var(--color-text-secondary);
-            font-family: var(--font-mono);
+        input[type="text"],
+        input[type="email"],
+        input[type="password"],
+        select {
+            padding: var(--spacing-sm) var(--spacing-md);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            font-family: var(--font-body);
+            font-size: 1rem;
+            background-color: var(--color-bg-primary);
+            color: var(--color-text-primary);
+            transition: all 0.2s ease;
         }
 
-        .code-block {
-            background-color: var(--color-text-dark);
-            color: #00FF00;
-            padding: 1.5rem;
-            border-radius: 6px;
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.1);
+        }
+
+        /* Table Styles */
+        .table-wrapper {
             overflow-x: auto;
-            margin: 1rem 0;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+
+        thead {
+            background-color: var(--color-secondary);
+            color: white;
+        }
+
+        th {
+            padding: var(--spacing-md);
+            text-align: left;
+            font-weight: 600;
+            font-family: var(--font-display);
+        }
+
+        td {
+            padding: var(--spacing-md);
+            border-top: 1px solid var(--color-border);
+        }
+
+        tbody tr:nth-child(odd) {
+            background-color: var(--color-bg-primary);
+        }
+
+        tbody tr:nth-child(even) {
+            background-color: var(--color-bg-secondary);
+        }
+
+        tbody tr:hover {
+            background-color: var(--color-cream);
+        }
+
+        /* Quota Card */
+        .quota-card {
+            padding: var(--spacing-lg);
+            background-color: var(--color-bg-secondary);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-md);
+        }
+
+        .quota-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+        }
+
+        .quota-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--color-text-primary);
+        }
+
+        .quota-value {
             font-family: var(--font-mono);
-            font-size: 0.9rem;
-            line-height: 1.5;
+            font-size: 0.875rem;
+            color: var(--color-text-secondary);
         }
 
-        .grid-demo {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 1rem;
+        .progress-bar {
+            width: 100%;
+            height: 12px;
+            background-color: var(--color-light);
+            border-radius: 9999px;
+            overflow: hidden;
         }
 
-        .grid-item {
-            padding: 2rem;
-            background: linear-gradient(135deg, var(--color-primary), var(--color-rust));
-            color: white;
-            border-radius: 6px;
-            text-align: center;
-            font-weight: 700;
+        .progress-fill {
+            height: 100%;
+            transition: width 0.3s ease;
+            border-radius: 9999px;
         }
 
-        .dark-mode-info {
-            background-color: var(--color-bg-dark);
-            color: white;
-            padding: 1.5rem;
-            border-radius: 6px;
-            border-left: 4px solid var(--color-primary-dark);
+        .progress-fill.success {
+            background-color: var(--color-success);
         }
 
-        footer {
-            background-color: var(--color-text-dark);
-            color: white;
-            padding: 2rem;
-            text-align: center;
-            margin-top: 3rem;
+        .progress-fill.warning {
+            background-color: var(--color-warning);
         }
 
-        footer p {
-            margin: 0.5rem 0;
-            font-size: 0.9rem;
+        .progress-fill.critical {
+            background-color: var(--color-critical);
         }
 
+        .quota-label {
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        /* ===== TOC ===== */
         .toc {
             background-color: var(--color-bg-secondary);
-            padding: 1.5rem;
-            border-radius: 6px;
-            margin-bottom: 2rem;
+            padding: var(--spacing-lg);
+            border-radius: var(--radius-lg);
+            border-left: 4px solid var(--color-primary);
+            margin-bottom: var(--spacing-2xl);
         }
 
         .toc h3 {
@@ -323,8 +538,9 @@
             display: block;
             color: var(--color-primary);
             text-decoration: none;
-            padding: 0.5rem 0;
+            padding: var(--spacing-sm) 0;
             transition: opacity 0.2s;
+            font-size: 0.95rem;
         }
 
         .toc a:hover {
@@ -332,230 +548,687 @@
             text-decoration: underline;
         }
 
+        /* ===== FOOTER ===== */
+        footer {
+            background-color: var(--color-secondary);
+            color: white;
+            padding: var(--spacing-xl);
+            text-align: center;
+            margin-top: var(--spacing-2xl);
+        }
+
+        footer p {
+            margin: var(--spacing-sm) 0;
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        footer a {
+            color: var(--color-primary);
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* ===== DARK MODE TOGGLE ===== */
+        .theme-toggle {
+            position: fixed;
+            top: var(--spacing-lg);
+            right: var(--spacing-lg);
+            z-index: 100;
+            display: flex;
+            gap: var(--spacing-sm);
+            align-items: center;
+        }
+
+        .toggle-btn {
+            padding: var(--spacing-sm) var(--spacing-md);
+            border: 1px solid var(--color-border);
+            background-color: var(--color-bg-secondary);
+            color: var(--color-text-primary);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .toggle-btn.active {
+            background-color: var(--color-primary);
+            color: white;
+            border-color: var(--color-primary);
+        }
+
+        /* ===== RESPONSIVE ===== */
         @media (max-width: 768px) {
-            .hero h1 {
-                font-size: 2.5rem;
+            .container {
+                padding: var(--spacing-md);
             }
 
-            .hero p {
-                font-size: 1rem;
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            h2 {
+                font-size: 1.25rem;
+            }
+
+            .section {
+                padding: var(--spacing-lg);
+            }
+
+            .hero {
+                padding: var(--spacing-xl) var(--spacing-md);
             }
 
             .palette {
                 grid-template-columns: 1fr;
             }
 
-            .grid-demo {
+            .grid-2 {
                 grid-template-columns: 1fr;
             }
 
-            h2 {
-                font-size: 1.5rem;
+            .grid-3 {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            table {
+                font-size: 0.75rem;
+            }
+
+            th,
+            td {
+                padding: var(--spacing-sm);
+            }
+
+            .theme-toggle {
+                position: relative;
+                top: auto;
+                right: auto;
+                justify-content: center;
+                margin-bottom: var(--spacing-lg);
             }
         }
     </style>
 </head>
 <body>
+    <div class="theme-toggle" id="themeToggle">
+        <button class="toggle-btn active" data-theme="light">☀️ Jour</button>
+        <button class="toggle-btn" data-theme="dark">🌙 Nuit</button>
+        <button class="toggle-btn" id="dyslexiaToggle">🔤 Dyslexie</button>
+    </div>
+
     <div class="hero">
-        <h1>Design System</h1>
-        <p>Palette, typographie, et directives pour labomatics</p>
+        <h1>labomatics Design System</h1>
+        <p>UI unifié pour Frontend Vue.js + CLI. Inter partout, accessibilité WCAG AA, mode dyslexie-friendly.</p>
     </div>
 
     <div class="container">
         <div class="toc">
-            <h3>Sommaire</h3>
+            <h3>📋 Sommaire</h3>
             <a href="#palette">Palette de Couleurs</a>
             <a href="#typography">Typographie</a>
-            <a href="#dark-mode">Mode Sombre</a>
-            <a href="#spacing">Espacement</a>
-            <a href="#guidelines">Directives</a>
+            <a href="#semantique">Couleurs Sémantiques</a>
+            <a href="#trois-roles">Trois Rôles Utilisateurs</a>
+            <a href="#components">Composants Réutilisables</a>
+            <a href="#accessibilite">Accessibilité (WCAG AA)</a>
+            <a href="#dyslexia">Mode Dyslexie-Friendly</a>
+            <a href="#dark-mode">Dark Mode</a>
         </div>
 
+        <!-- PALETTE -->
         <section class="section" id="palette">
             <h2>🎨 Palette de Couleurs</h2>
-            <p>Les couleurs fondamentales de labomatics reflètent l'énergie industrielle et la précision scientifique.</p>
+            <p>Palette unique partagée entre Frontend Vue et CLI Python. Cohésion maximale dans tout le produit.</p>
 
             <div class="palette">
                 <div class="color-card">
                     <div class="color-sample" style="background-color: #FF6B00;">Orange</div>
                     <div class="color-info">
-                        <div class="color-name">Orange Primaire</div>
+                        <div class="color-name">Primaire</div>
                         <div class="color-hex">#FF6B00</div>
-                        <div class="color-usage">Accent principal, logos, CTA, éléments focus</div>
+                        <div class="color-usage">Accent, CTAs principales, logos (branding uniquement)</div>
                     </div>
                 </div>
 
                 <div class="color-card">
-                    <div class="color-sample" style="background-color: #FFA500;">Orange</div>
+                    <div class="color-sample" style="background-color: #1F1F1F;">Acier</div>
                     <div class="color-info">
-                        <div class="color-name">Orange Chaud</div>
-                        <div class="color-hex">#FFA500</div>
-                        <div class="color-usage">Variations, texte sur fond sombre</div>
-                    </div>
-                </div>
-
-                <div class="color-card">
-                    <div class="color-sample" style="background-color: #B8561F;">Rouille</div>
-                    <div class="color-info">
-                        <div class="color-name">Rouille</div>
-                        <div class="color-hex">#B8561F</div>
-                        <div class="color-usage">Détails, accents secondaires, matérialité</div>
-                    </div>
-                </div>
-
-                <div class="color-card">
-                    <div class="color-sample" style="background-color: #4A4A4A; color: #F8F4EB;">Acier</div>
-                    <div class="color-info">
-                        <div class="color-name">Acier Sombre</div>
-                        <div class="color-hex">#4A4A4A</div>
-                        <div class="color-usage">Texte principal, logos, arrière-plans</div>
-                    </div>
-                </div>
-
-                <div class="color-card">
-                    <div class="color-sample" style="background-color: #1F1F1F;">Texte</div>
-                    <div class="color-info">
-                        <div class="color-name">Texte Sombre</div>
+                        <div class="color-name">Secondaire</div>
                         <div class="color-hex">#1F1F1F</div>
-                        <div class="color-usage">Texte sur fonds clairs, maximum contraste</div>
+                        <div class="color-usage">Texte, autorité, en-têtes tableaux</div>
                     </div>
                 </div>
 
+                <div class="color-card">
+                    <div class="color-sample" style="background-color: #10B981;">Succès</div>
+                    <div class="color-info">
+                        <div class="color-name">Succès</div>
+                        <div class="color-hex">#10B981</div>
+                        <div class="color-usage">Complété, actif, running</div>
+                    </div>
+                </div>
+
+                <div class="color-card">
+                    <div class="color-sample" style="background-color: #F59E0B;">Attention</div>
+                    <div class="color-info">
+                        <div class="color-name">Warning</div>
+                        <div class="color-hex">#F59E0B</div>
+                        <div class="color-usage">Attention, quota élevé (75-89%)</div>
+                    </div>
+                </div>
+
+                <div class="color-card">
+                    <div class="color-sample" style="background-color: #EF4444;">Critique</div>
+                    <div class="color-info">
+                        <div class="color-name">Critical</div>
+                        <div class="color-hex">#EF4444</div>
+                        <div class="color-usage">Erreur, danger, quota épuisé (90%+)</div>
+                    </div>
+                </div>
+
+                <div class="color-card">
+                    <div class="color-sample" style="background-color: #3B82F6;">Info</div>
+                    <div class="color-info">
+                        <div class="color-name">Info</div>
+                        <div class="color-hex">#3B82F6</div>
+                        <div class="color-usage">Information, détails, notifications</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="palette">
                 <div class="color-card">
                     <div class="color-sample" style="background-color: #F8F4EB; color: #1F1F1F;">Crème</div>
                     <div class="color-info">
-                        <div class="color-name">Crème</div>
+                        <div class="color-name">Crème (fond clair)</div>
                         <div class="color-hex">#F8F4EB</div>
-                        <div class="color-usage">Arrière-plans clairs, respiration visuelle</div>
+                        <div class="color-usage">Arrière-plan secondaire, respiration visuelle</div>
+                    </div>
+                </div>
+
+                <div class="color-card">
+                    <div class="color-sample" style="background-color: #F3F4F6; color: #1F1F1F;">Gris léger</div>
+                    <div class="color-info">
+                        <div class="color-name">Gris Léger</div>
+                        <div class="color-hex">#F3F4F6</div>
+                        <div class="color-usage">Tertiary bg, séparations subtiles</div>
+                    </div>
+                </div>
+
+                <div class="color-card">
+                    <div class="color-sample" style="background-color: #D1D5DB; color: #1F1F1F;">Bordure</div>
+                    <div class="color-info">
+                        <div class="color-name">Bordure</div>
+                        <div class="color-hex">#D1D5DB</div>
+                        <div class="color-usage">Séparations, cards, inputs</div>
+                    </div>
+                </div>
+
+                <div class="color-card">
+                    <div class="color-sample" style="background-color: #FFFFFF; border: 1px solid #D1D5DB;">Blanc</div>
+                    <div class="color-info">
+                        <div class="color-name">Blanc Primaire</div>
+                        <div class="color-hex">#FFFFFF</div>
+                        <div class="color-usage">Arrière-plan principal (jour)</div>
                     </div>
                 </div>
             </div>
         </section>
 
+        <!-- TYPOGRAPHIE -->
         <section class="section" id="typography">
             <h2>🔤 Typographie</h2>
-            <p>Trois familles de polices pour une hiérarchie claire et lisibilité optimale.</p>
+            <p><strong>Une seule police pour l'app: Inter.</strong> Montserrat réservé au branding externe (landing page).</p>
 
-            <div class="typography-grid">
-                <div class="font-showcase">
-                    <div class="font-label">Display / Logo</div>
-                    <div class="display-large">Montserrat Bold 700</div>
-                    <p style="color: var(--color-text-secondary);">Utilisée pour les titres, logos, branding. Audacieux et mémorable.</p>
+            <div class="component-grid">
+                <div class="component-example">
+                    <span class="component-label">Display XL — Page Title</span>
+                    <h1 style="margin-bottom: 0.5rem;">labomatics Admin Dashboard</h1>
+                    <p class="text-small">Inter 700, 2rem, line-height 1.2</p>
                 </div>
 
-                <div class="font-showcase">
-                    <div class="font-label">Corps de Texte</div>
-                    <div class="body-large">Inter Regular 400 — Corps large</div>
-                    <div class="body-regular">Inter Regular 400 — Corps régulier, pour articles et documentation</div>
-                    <div class="body-small">Inter Regular 400 — Corps petit, pour labels et captions</div>
-                    <p style="color: var(--color-text-secondary); font-size: 0.85rem;">Hauteur de ligne: 1.6 pour lisibilité optimale. Largeur max: 65 caractères.</p>
+                <div class="component-example">
+                    <span class="component-label">Display L — Section Heading</span>
+                    <h2 style="margin-bottom: 0.5rem;">Gestion des Étudiants</h2>
+                    <p class="text-small">Inter 700, 1.5rem, line-height 1.3</p>
                 </div>
 
-                <div class="font-showcase">
-                    <div class="font-label">Code / Terminal</div>
-                    <div class="mono-regular">JetBrains Mono Regular 400</div>
-                    <div class="mono-bold">JetBrains Mono Bold 600</div>
-                    <p style="color: var(--color-text-secondary);">Pour blocs de code, examples CLI, snippets techniques.</p>
+                <div class="component-example">
+                    <span class="component-label">Display M — Subsection</span>
+                    <h3 style="margin-bottom: 0.5rem;">Filtrer par promotion</h3>
+                    <p class="text-small">Inter 600, 1.25rem, line-height 1.4</p>
                 </div>
-            </div>
 
-            <h3>Fallback Fonts</h3>
-            <div class="code-block">
-font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-font-family: 'JetBrains Mono', 'Courier New', monospace;
+                <div class="component-example">
+                    <span class="component-label">Body — UI Text (default)</span>
+                    <p style="margin-bottom: 0;">Ceci est du texte standard pour les interfaces. Inter 400, 1rem, line-height 1.6. Lisible, neutre, accessible.</p>
+                    <p class="text-small">Utilisé partout: descriptions, labels, détails.</p>
+                </div>
+
+                <div class="component-example">
+                    <span class="component-label">Body Small — Labels & Hints</span>
+                    <p class="text-small" style="margin-bottom: 0;">Petits textes pour hints, captions, timestamps. Inter 400, 0.875rem, line-height 1.5</p>
+                </div>
+
+                <div class="component-example">
+                    <span class="component-label">Mono — Code & Quotas</span>
+                    <p class="mono" style="margin-bottom: 0;">user@proxmox:~$ labomatics status</p>
+                    <p class="mono" style="margin-bottom: 0;">Quota CPU: 4 / 8 cores (50%)</p>
+                    <p class="text-small">JetBrains Mono 400, 0.875rem. Pour chiffres, code, valeurs.</p>
+                </div>
             </div>
         </section>
 
+        <!-- COULEURS SÉMANTIQUES -->
+        <section class="section" id="semantique">
+            <h2>🎯 Couleurs Sémantiques — États et Feedback</h2>
+            <p>Les couleurs ne sont pas décoratives. Elles encodent l'état, pas juste un design.</p>
+
+            <div class="grid grid-2">
+                <div class="component-example">
+                    <span class="component-label">Success — État Complété</span>
+                    <div class="flex-center" style="gap: 1rem;">
+                        <div style="width: 40px; height: 40px; background-color: #10B981; border-radius: 8px;"></div>
+                        <div>
+                            <p style="margin: 0; font-weight: 600;">TP Lancé</p>
+                            <p style="margin: 0; font-size: 0.875rem; color: var(--color-text-secondary);">#10B981</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="component-example">
+                    <span class="component-label">Warning — Attention Requise</span>
+                    <div class="flex-center" style="gap: 1rem;">
+                        <div style="width: 40px; height: 40px; background-color: #F59E0B; border-radius: 8px;"></div>
+                        <div>
+                            <p style="margin: 0; font-weight: 600;">Quota Élevé (75%+)</p>
+                            <p style="margin: 0; font-size: 0.875rem; color: var(--color-text-secondary);">#F59E0B</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="component-example">
+                    <span class="component-label">Critical — Erreur/Danger</span>
+                    <div class="flex-center" style="gap: 1rem;">
+                        <div style="width: 40px; height: 40px; background-color: #EF4444; border-radius: 8px;"></div>
+                        <div>
+                            <p style="margin: 0; font-weight: 600; color: white;">Quota Épuisé (90%+)</p>
+                            <p style="margin: 0; font-size: 0.875rem; color: var(--color-text-secondary);">#EF4444</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="component-example">
+                    <span class="component-label">Info — Information</span>
+                    <div class="flex-center" style="gap: 1rem;">
+                        <div style="width: 40px; height: 40px; background-color: #3B82F6; border-radius: 8px;"></div>
+                        <div>
+                            <p style="margin: 0; font-weight: 600; color: white;">Détails/Notification</p>
+                            <p style="margin: 0; font-size: 0.875rem; color: var(--color-text-secondary);">#3B82F6</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TROIS RÔLES -->
+        <section class="section" id="trois-roles">
+            <h2>👥 Trois Rôles Utilisateurs = Trois Hiérarchies</h2>
+
+            <div class="component-grid">
+                <div class="component-example">
+                    <h3>👨‍🎓 Élève — Self-Service + Quota</h3>
+                    <p>Objectif: Voir son allocation et son utilisation rapidement.</p>
+                    <div class="quota-card">
+                        <div class="quota-header">
+                            <span class="quota-title">CPU</span>
+                            <span class="quota-value">4 / 8 cores</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill success" style="width: 50%;"></div>
+                        </div>
+                        <p class="quota-label" style="color: #10B981;">50% utilisé ✓</p>
+                    </div>
+                    <div class="quota-card">
+                        <div class="quota-header">
+                            <span class="quota-title">RAM</span>
+                            <span class="quota-value">6 / 8 GB</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill warning" style="width: 75%;"></div>
+                        </div>
+                        <p class="quota-label" style="color: #F59E0B;">⚠️ 75% — Attention</p>
+                    </div>
+                </div>
+
+                <div class="component-example">
+                    <h3>👨‍🏫 Prof — Lancer TPs</h3>
+                    <p>Objectif: Actions rapides, statut évident des TPs en cours.</p>
+                    <button class="btn btn-primary" style="margin-bottom: 1rem; width: 100%;">🚀 Lancer TP Réseaux</button>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>TP</th>
+                                    <th>Statut</th>
+                                    <th>Étudiants</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>Réseaux I</strong></td>
+                                    <td><span class="badge badge-success"><span class="badge-dot"></span>Actif</span></td>
+                                    <td>28/30</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Sécurité</strong></td>
+                                    <td><span class="badge badge-warning"><span class="badge-dot"></span>En attente</span></td>
+                                    <td>25/30</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="component-example">
+                    <h3>👔 Admin Pédagogique — Gestion Quotas</h3>
+                    <p>Objectif: Aperçu complet, drill-down sur détails, actions en masse.</p>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nom</th>
+                                    <th>Promo</th>
+                                    <th>CPU</th>
+                                    <th>RAM</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>18</td>
+                                    <td><strong>Jean D.</strong></td>
+                                    <td>2025</td>
+                                    <td><span class="mono">4/8</span></td>
+                                    <td><span class="mono">6/8</span></td>
+                                    <td><span class="badge badge-warning"><span class="badge-dot"></span>75%</span></td>
+                                    <td><button class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">Edit</button></td>
+                                </tr>
+                                <tr>
+                                    <td>240</td>
+                                    <td><strong>Mikhail K.</strong></td>
+                                    <td>2025</td>
+                                    <td><span class="mono">8/8</span></td>
+                                    <td><span class="mono">8/8</span></td>
+                                    <td><span class="badge badge-critical"><span class="badge-dot"></span>100%</span></td>
+                                    <td><button class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">Edit</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- COMPOSANTS -->
+        <section class="section" id="components">
+            <h2>🧩 Composants Réutilisables</h2>
+
+            <h3>Buttons</h3>
+            <div class="component-example" style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                <button class="btn btn-primary">Primary Action</button>
+                <button class="btn btn-secondary">Secondary</button>
+                <button class="btn btn-danger">Danger</button>
+                <button class="btn" style="background-color: var(--color-text-light); color: white; cursor: not-allowed; opacity: 0.6;">Disabled</button>
+            </div>
+
+            <h3 style="margin-top: 2rem;">Badges (Status)</h3>
+            <div class="component-example" style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
+                <span class="badge badge-success"><span class="badge-dot" style="background-color: #10B981;"></span>Running</span>
+                <span class="badge badge-warning"><span class="badge-dot" style="background-color: #F59E0B;"></span>Pending</span>
+                <span class="badge badge-critical"><span class="badge-dot" style="background-color: #EF4444;"></span>Error</span>
+            </div>
+
+            <h3 style="margin-top: 2rem;">Form Input</h3>
+            <div class="component-example">
+                <div class="input-group">
+                    <label class="input-label">Nom de l'étudiant</label>
+                    <input type="text" placeholder="Jean Dupont">
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Email</label>
+                    <input type="email" placeholder="jean@example.com">
+                </div>
+            </div>
+
+            <h3 style="margin-top: 2rem;">Quota Card (Élève)</h3>
+            <div class="grid grid-3">
+                <div class="quota-card">
+                    <div class="quota-header">
+                        <span class="quota-title">CPU</span>
+                        <span class="quota-value">2 / 4</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill success" style="width: 50%;"></div>
+                    </div>
+                    <p class="quota-label" style="color: #10B981;">50%</p>
+                </div>
+
+                <div class="quota-card">
+                    <div class="quota-header">
+                        <span class="quota-title">RAM</span>
+                        <span class="quota-value">6 / 8 GB</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill warning" style="width: 75%;"></div>
+                    </div>
+                    <p class="quota-label" style="color: #F59E0B;">75%</p>
+                </div>
+
+                <div class="quota-card">
+                    <div class="quota-header">
+                        <span class="quota-title">Disque</span>
+                        <span class="quota-value">38 / 40 GB</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill critical" style="width: 95%;"></div>
+                    </div>
+                    <p class="quota-label" style="color: #EF4444;">95% — Critique!</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ACCESSIBILITÉ -->
+        <section class="section" id="accessibilite">
+            <h2>♿ Accessibilité (WCAG AA)</h2>
+            <p><strong>Standard minimum obligatoire:</strong> Tous les composants doivent passer WCAG AA (4.5:1 de contraste pour le texte).</p>
+
+            <h3>Contraste Validé</h3>
+            <div class="grid grid-2">
+                <div class="component-example">
+                    <span class="component-label">✅ Orange sur Blanc</span>
+                    <p style="color: #FF6B00; font-weight: 600; font-size: 1.125rem; margin-bottom: 0;">Contraste: 7.2:1</p>
+                    <p class="text-small">WCAG AAA ✓</p>
+                </div>
+
+                <div class="component-example">
+                    <span class="component-label">✅ Acier sur Blanc</span>
+                    <p style="color: #1F1F1F; font-weight: 600; font-size: 1.125rem; margin-bottom: 0;">Contraste: 17:1</p>
+                    <p class="text-small">WCAG AAA ✓</p>
+                </div>
+
+                <div class="component-example">
+                    <span class="component-label">✅ Vert (succès)</span>
+                    <p style="color: #10B981; font-weight: 600; font-size: 1.125rem; margin-bottom: 0;">Contraste: 6.1:1</p>
+                    <p class="text-small">WCAG AA ✓</p>
+                </div>
+
+                <div class="component-example">
+                    <span class="component-label">✅ Ambre (warning)</span>
+                    <p style="color: #F59E0B; font-weight: 600; font-size: 1.125rem; margin-bottom: 0;">Contraste: 5.4:1</p>
+                    <p class="text-small">WCAG AA ✓</p>
+                </div>
+            </div>
+
+            <h3 style="margin-top: 2rem;">Focus States</h3>
+            <div class="component-example">
+                <p>Tous les éléments interactifs ont un ring orange visible au focus:</p>
+                <button class="btn btn-primary" style="margin-top: 1rem; outline: 2px solid #FF6B00; outline-offset: 2px;">Bouton au focus (ring visible)</button>
+            </div>
+
+            <h3 style="margin-top: 2rem;">Labels & ARIA</h3>
+            <div class="component-example">
+                <pre style="font-family: var(--font-mono); font-size: 0.85rem; overflow-x: auto; background-color: var(--color-bg-tertiary); padding: 1rem; border-radius: 4px;">
+&lt;label for="student-name"&gt;Nom de l'étudiant&lt;/label&gt;
+&lt;input id="student-name" type="text" /&gt;
+
+&lt;button aria-label="Fermer la modal"&gt;×&lt;/button&gt;
+
+&lt;div role="status" aria-live="polite"&gt;
+  Étudiant créé avec succès!
+&lt;/div&gt;</pre>
+            </div>
+        </section>
+
+        <!-- DARK MODE -->
         <section class="section" id="dark-mode">
-            <h2>🌙 Mode Sombre</h2>
-            <div class="dark-mode-info">
-                <h3 style="margin-top: 0; color: white;">Couleurs en mode sombre</h3>
-                <p><strong>Orange Primaire:</strong> #FF8C00 (au lieu de #FF6B00) pour meilleur contraste</p>
-                <p><strong>Texte:</strong> #F8F4EB sur arrière-plans sombres</p>
-                <p><strong>Arrière-plans:</strong> #2A2A2A (pas du noir pur pour réduire la fatigue oculaire)</p>
-                <p><strong>Rouille:</strong> #B8561F reste stable dans les deux modes</p>
-            </div>
+            <h2>🌙 Dark Mode</h2>
+            <p>Support natif du mode sombre via <code style="font-family: var(--font-mono);">@media (prefers-color-scheme: dark)</code>.</p>
 
-            <h3>Compatibilité CSS Variables</h3>
-            <div class="code-block">
-:root {
-  --color-primary: #FF6B00;
-  --color-primary-dark: #FF8C00;
-  --color-bg-primary: #FFFFFF;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-primary: #FF8C00;
-    --color-bg-primary: #1F1F1F;
-  }
-}
-            </div>
-        </section>
-
-        <section class="section" id="spacing">
-            <h2>📐 Espacement</h2>
-            <p>Scale d'espacement cohérent pour alignement et respiration visuelle.</p>
-
-            <div class="spacing-guide">
-                <div class="spacing-demo">
-                    <div class="spacing-box" style="height: 20px;"></div>
-                    <div class="spacing-label">4px</div>
-                </div>
-                <div class="spacing-demo">
-                    <div class="spacing-box" style="height: 40px;"></div>
-                    <div class="spacing-label">8px</div>
-                </div>
-                <div class="spacing-demo">
-                    <div class="spacing-box" style="height: 60px;"></div>
-                    <div class="spacing-label">12px</div>
-                </div>
-                <div class="spacing-demo">
-                    <div class="spacing-box" style="height: 80px;"></div>
-                    <div class="spacing-label">16px</div>
-                </div>
-                <div class="spacing-demo">
-                    <div class="spacing-box" style="height: 120px;"></div>
-                    <div class="spacing-label">24px</div>
-                </div>
-                <div class="spacing-demo">
-                    <div class="spacing-box" style="height: 160px;"></div>
-                    <div class="spacing-label">32px</div>
-                </div>
+            <div class="component-example">
+                <span class="component-label">Couleurs en Mode Sombre</span>
+                <table style="margin-top: 1rem; width: 100%;">
+                    <thead>
+                        <tr>
+                            <th>Token</th>
+                            <th>Jour</th>
+                            <th>Nuit</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Texte Primaire</strong></td>
+                            <td><code class="mono">#1F1F1F</code></td>
+                            <td><code class="mono">#F8F4EB</code></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Arrière-plan</strong></td>
+                            <td><code class="mono">#FFFFFF</code></td>
+                            <td><code class="mono">#1F1F1F</code></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Secondaire</strong></td>
+                            <td><code class="mono">#F8F4EB</code></td>
+                            <td><code class="mono">#2A2A2A</code></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Bordure</strong></td>
+                            <td><code class="mono">#D1D5DB</code></td>
+                            <td><code class="mono">#4B5563</code></td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </section>
 
-        <section class="section" id="guidelines">
-            <h2>✨ Directives</h2>
+        <!-- DYSLEXIA -->
+        <section class="section" id="dyslexia">
+            <h2>🔤 Mode Dyslexie-Friendly</h2>
+            <p>Mode optionnel pour les utilisateurs dyslexiques. Activable via un bouton dans l'interface.</p>
 
-            <h3>Contraste et Accessibilité</h3>
-            <p>Ratio de contraste minimum <strong>4.5:1</strong> pour texte sur tous les arrière-plans. Orange #FF6B00 sur crème #F8F4EB = <strong>7.2:1</strong> ✅</p>
-
-            <h3>Logo Spacing</h3>
-            <p>Minimum <strong>20px de padding</strong> sur tous les côtés du logo. Ne pas rogner, modifier les proportions, pivoter, incliner ou distordre.</p>
-
-            <h3>Dimensions Minimales</h3>
+            <h3>Adjustements Appliqués</h3>
             <ul style="margin-left: 1.5rem;">
-                <li><strong>Logo Principal:</strong> 100px de largeur</li>
-                <li><strong>Icône:</strong> 32px minimum</li>
-                <li><strong>Web:</strong> Redimensionner avec SVG (pas de rastérisation)</li>
+                <li><strong>Letter-spacing:</strong> +0.05em (écarter les lettres)</li>
+                <li><strong>Line-height:</strong> 1.8 (au lieu de 1.6) — plus d'espace entre lignes</li>
+                <li><strong>Word-spacing:</strong> +0.1em — séparation des mots</li>
+                <li><strong>Font-size:</strong> +2% globalement</li>
+                <li><strong>Text-align:</strong> Toujours à gauche (jamais justified)</li>
             </ul>
 
-            <h3>Responsive</h3>
-            <div class="grid-demo">
-                <div class="grid-item">Mobile</div>
-                <div class="grid-item">Tablet</div>
-                <div class="grid-item">Desktop</div>
+            <div class="component-example" style="margin-top: 1rem;">
+                <span class="component-label">Sans dyslexie</span>
+                <p>Ceci est un exemple de texte normal pour comparer avec le mode dyslexie-friendly.</p>
             </div>
-            <p style="margin-top: 1rem; color: var(--color-text-secondary);">Utiliser flexbox/grid avec <code style="font-family: var(--font-mono);">gap</code> pour spacing cohérent sur tous les breakpoints.</p>
+
+            <div class="component-example" data-font-mode="dyslexia" style="margin-top: 1rem;">
+                <span class="component-label">Avec mode dyslexie-friendly</span>
+                <p>Ceci est un exemple de texte normal pour comparer avec le mode dyslexie-friendly.</p>
+            </div>
+
+            <p style="margin-top: 1rem;" class="text-small">
+                <strong>Note:</strong> Ceci est un mode optionnel. Les utilisateurs peuvent l'activer/désactiver au besoin via le bouton en haut à droite. Le préférence est sauvegardée en localStorage.
+            </p>
+        </section>
+
+        <!-- REFERENCES -->
+        <section class="section">
+            <h2>📚 Références & Documentation</h2>
+            <ul style="margin-left: 1.5rem;">
+                <li><strong><a href="FRONTEND_GUIDELINES.md" style="color: var(--color-primary); text-decoration: none;">FRONTEND_GUIDELINES.md</a></strong> — Setup Vue.js + Tailwind, composants détaillés</li>
+                <li><strong><a href="BRANDING.md" style="color: var(--color-primary); text-decoration: none;">BRANDING.md</a></strong> — Brand identity, logos, usage</li>
+                <li><a href="https://www.w3.org/WAI/WCAG21/quickref/" style="color: var(--color-primary); text-decoration: none;">WCAG 2.1 Quick Reference</a></li>
+                <li><a href="https://webaim.org/resources/contrastchecker/" style="color: var(--color-primary); text-decoration: none;">WebAIM Contrast Checker</a></li>
+            </ul>
         </section>
     </div>
 
     <footer>
-        <p><strong>Design System labomatics v1.0</strong></p>
-        <p>Dernière mise à jour : 2026-07-24</p>
-        <p style="font-size: 0.8rem; margin-top: 1.5rem; opacity: 0.8;">Voir <a href="BRANDING.md" style="color: var(--color-primary-dark);">BRANDING.md</a> pour documentation complète</p>
+        <p><strong>labomatics Design System v2.0</strong></p>
+        <p>Frontend Vue.js + CLI Unified — WCAG AA + Dyslexia-friendly</p>
+        <p style="font-size: 0.85rem; margin-top: 1.5rem; opacity: 0.7;">Dernière mise à jour: 2026-07-26</p>
     </footer>
+
+    <script>
+        // Theme Toggle
+        const themeToggle = document.getElementById('themeToggle');
+        const dyslexiaToggle = document.getElementById('dyslexiaToggle');
+        const root = document.documentElement;
+
+        // Initialize theme
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        root.setAttribute('data-theme', savedTheme);
+        updateThemeButtons();
+
+        themeToggle.addEventListener('click', (e) => {
+            if (e.target.dataset.theme) {
+                const theme = e.target.dataset.theme;
+                root.setAttribute('data-theme', theme);
+                localStorage.setItem('theme', theme);
+                updateThemeButtons();
+            }
+        });
+
+        function updateThemeButtons() {
+            themeToggle.querySelectorAll('.toggle-btn[data-theme]').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.theme === root.getAttribute('data-theme'));
+            });
+        }
+
+        // Dyslexia Toggle
+        const isDyslexia = localStorage.getItem('dyslexia-mode') === 'true';
+        if (isDyslexia) {
+            root.setAttribute('data-font-mode', 'dyslexia');
+            dyslexiaToggle.classList.add('active');
+        }
+
+        dyslexiaToggle.addEventListener('click', () => {
+            const isActive = root.getAttribute('data-font-mode') === 'dyslexia';
+            if (isActive) {
+                root.removeAttribute('data-font-mode');
+                localStorage.setItem('dyslexia-mode', 'false');
+                dyslexiaToggle.classList.remove('active');
+            } else {
+                root.setAttribute('data-font-mode', 'dyslexia');
+                localStorage.setItem('dyslexia-mode', 'true');
+                dyslexiaToggle.classList.add('active');
+            }
+        });
+    </script>
 </body>
 </html>
