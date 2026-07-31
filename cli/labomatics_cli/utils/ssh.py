@@ -2,15 +2,21 @@
 
 import paramiko
 import time
-from pathlib import Path
 from typing import Optional
 
 
 class SSHClient:
     """Client SSH avec upload/exec."""
 
-    def __init__(self, host: str, user: str, password: Optional[str] = None,
-                 key_filename: Optional[str] = None, port: int = 22, timeout: int = 30):
+    def __init__(
+        self,
+        host: str,
+        user: str,
+        password: Optional[str] = None,
+        key_filename: Optional[str] = None,
+        port: int = 22,
+        timeout: int = 30,
+    ):
         """Initialiser le client SSH."""
         self.host = host
         self.user = user
@@ -38,7 +44,7 @@ class SSHClient:
                     allow_agent=False,
                 )
                 return
-            except (paramiko.SSHException, OSError) as e:
+            except (paramiko.SSHException, OSError):
                 if attempt < retries - 1:
                     time.sleep(delay)
                 else:
@@ -67,34 +73,34 @@ class SSHClient:
             raise RuntimeError("Not connected")
 
         stdin, stdout, stderr = self.client.exec_command(command)
-        
+
         for line in stdout:
             print(line.rstrip())
-        
+
         exit_code = stdout.channel.recv_exit_status()
-        
+
         if exit_code != 0:
             for line in stderr:
                 print(f"[err] {line.rstrip()}")
-        
+
         return exit_code
 
     def put_file(self, local_path: str, remote_path: str) -> None:
         """Uploader un fichier."""
         if not self.client:
             raise RuntimeError("Not connected")
-        
+
         sftp = self.client.open_sftp()
         try:
             sftp.put(local_path, remote_path)
         finally:
             sftp.close()
 
-    def put_file_content(self, content: str, remote_path: str) -> None:
+    def put_file_content(self, remote_path: str, content: str) -> None:
         """Créer un fichier avec du contenu."""
         if not self.client:
             raise RuntimeError("Not connected")
-        
+
         sftp = self.client.open_sftp()
         try:
             with sftp.file(remote_path, "w") as f:
@@ -106,7 +112,7 @@ class SSHClient:
         """Downloader un fichier."""
         if not self.client:
             raise RuntimeError("Not connected")
-        
+
         sftp = self.client.open_sftp()
         try:
             sftp.get(remote_path, local_path)
@@ -117,7 +123,7 @@ class SSHClient:
         """Créer un répertoire."""
         if not self.client:
             raise RuntimeError("Not connected")
-        
+
         sftp = self.client.open_sftp()
         try:
             try:

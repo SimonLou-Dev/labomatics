@@ -3,9 +3,14 @@
 
 import argparse
 import sys
+import warnings
+
 from rich.console import Console
 
 from .commands.install import cmd_install
+
+# Suppress SSL warnings for self-signed certs (Proxmox, etc)
+warnings.filterwarnings("ignore", message="Unverified HTTPS request")
 
 console = Console()
 
@@ -43,8 +48,9 @@ def main() -> int:
         console.print("\n[yellow]Opération annulée[/yellow]")
         return 1
     except Exception as e:
-        console.print(f"[red]Erreur:[/red] {e}", file=sys.stderr)
+        console.print(f"[red]Erreur:[/red] {e}")
         import traceback
+
         traceback.print_exc()
         return 1
 

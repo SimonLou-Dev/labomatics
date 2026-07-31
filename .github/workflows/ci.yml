@@ -19,16 +19,28 @@ jobs:
           cache: pip
 
       - name: Install dependencies
-        run: pip install -e ".[dev]"
+        run: pip install -e backend/ ".[dev]"
 
       - name: ruff check
-        run: ruff check labomatics/
+        run: ruff check backend/
 
       - name: ruff format check
-        run: ruff format --check labomatics/
+        run: ruff format --check backend/
 
       - name: mypy
-        run: mypy labomatics/ --ignore-missing-imports
+        run: mypy backend/ --ignore-missing-imports
+
+      - name: Install dependencies
+        run: pip install -e cli/ ".[dev]"
+
+      - name: ruff check
+        run: ruff check cli/
+
+      - name: ruff format check
+        run: ruff format --check cli/
+
+      - name: mypy
+        run: mypy cli/ --ignore-missing-imports
 
   test:
     name: Tests (Python ${{ matrix.python-version }})
@@ -46,10 +58,10 @@ jobs:
           cache: pip
 
       - name: Install dependencies
-        run: pip install -e ".[dev]"
+        run: pip install -e backend/ ".[dev]"
 
       - name: Run tests
-        run: pytest tests/ -v --tb=short --cov=labomatics --cov-report=xml
+        run: pytest backend/tests/ -v --tb=short --cov=labomatics --cov-report=xml
 
       - name: Upload coverage
         if: matrix.python-version == '3.11'

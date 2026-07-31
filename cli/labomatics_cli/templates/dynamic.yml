@@ -1,0 +1,75 @@
+tls:
+  stores:
+    default:
+      defaultCertificate:
+        certFile: /etc/traefik/certs/default.crt
+        keyFile: /etc/traefik/certs/default.key
+  certificates:
+    - certFile: /etc/traefik/certs/{{ DOMAIN }}.crt
+      keyFile: /etc/traefik/certs/{{ DOMAIN }}.key
+    - certFile: /etc/traefik/certs/keycloak.{{ DOMAIN }}.crt
+      keyFile: /etc/traefik/certs/keycloak.{{ DOMAIN }}.key
+    - certFile: /etc/traefik/certs/api.{{ DOMAIN }}.crt
+      keyFile: /etc/traefik/certs/api.{{ DOMAIN }}.key
+
+http:
+  middlewares:
+    # ─── CrowdSec bouncer ──────────────────────────────────────────────────────
+    # À activer quand CrowdSec sera déployé
+    # crowdsec:
+    #   plugin:
+    #     bouncer:
+    #       enabled: true
+    #       crowdsecLapiKey: 97e%aQXZBkxu6fx$7S6FPtK^MpBcZa
+    #       crowdsecLapiScheme: http
+    #       crowdsecLapiHost: crowdsec:8080
+
+    # ─── Redirections ──────────────────────────────────────────────────────────
+    https-redirect:
+      redirectScheme:
+        scheme: https
+        permanent: true
+
+    # ─── Rate limiting API publique ────────────────────────────────────────────
+    api-ratelimit:
+      rateLimit:
+        average: 100
+        burst: 200
+        period: 1s
+
+    # ─── Rate limiting interface d'administration ──────────────────────────────
+    admin-ratelimit:
+      rateLimit:
+        average: 20
+        burst: 40
+        period: 1s
+
+    # ─── Sécurité headers HTTP ─────────────────────────────────────────────────
+    secure-headers:
+      headers:
+        stsSeconds: 31536000
+        stsIncludeSubdomains: true
+        stsPreload: true
+        forceSTSHeader: true
+        contentTypeNosniff: true
+        browserXssFilter: true
+        referrerPolicy: "strict-origin-when-cross-origin"
+        permissionsPolicy: "camera=(), microphone=(), geolocation=()"
+        customFrameOptionsValue: "SAMEORIGIN"
+
+    # ─── Chain API publique ────────────────────────────────────────────────────
+    api-chain:
+      chain:
+        middlewares:
+          # - crowdsec
+          - api-ratelimit
+          - secure-headers
+
+    # ─── Chain interfaces d'administration ────────────────────────────────────
+    admin-chain:
+      chain:
+        middlewares:
+          # - crowdsec
+          - admin-ratelimit
+          - secure-headers
+

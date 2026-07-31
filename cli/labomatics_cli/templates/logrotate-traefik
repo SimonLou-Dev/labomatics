@@ -1,0 +1,11 @@
+/etc/labomatics/logs/access.log {
+    daily
+    rotate 1
+    missingok
+    notifempty
+    compress
+    delaycompress
+    copytruncate
+    dateext
+    dateformat -%Y%m%d
+}
