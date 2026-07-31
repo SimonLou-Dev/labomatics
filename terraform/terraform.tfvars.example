@@ -1,0 +1,29 @@
+# Copier ce fichier à terraform.tfvars et adapter les valeurs
+
+# Mémoire RAM pour chaque VM (en MB)
+# vm_memory = 4096
+
+# Nombre de vCPU pour chaque VM
+# vm_vcpu = 4
+
+# Taille du disque de boot (en GB)
+# boot_disk_size_gb = 50
+
+# Taille du disque supplémentaire pour pxmx1 (en GB)
+# extra_disk_size_gb = 100
+
+# Sous-réseau NAT
+# network_subnet = "192.168.122.0/24"
+
+# Chemin de l'ISO Proxmox
+# iso_path = "/home/virtu/iso/proxmox-ve_9.1-1.iso"
+
+# Nom du pool libvirt existant
+# pool_name = "default"
+
+# Réseau libvirt existant pour le LAN (première interface des VMs)
+# Réseaux disponibles: lan-bridge, lanA, lanB, admin52, default
+# lan_network = "lan-bridge"
+
+# Interface réseau de l'hôte pour les bridges (eth0, wlan0, etc.)
+# bridge_interface = "eth0"
