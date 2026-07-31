@@ -1,26 +1,31 @@
-[build-system]
-requires = ["setuptools>=65.0", "wheel"]
-build-backend = "setuptools.build_meta"
-
-[project]
+[tool.poetry]
 name = "labomatics-cli"
 version = "0.4.0"
 description = "Orchestration centrale pour labomatics"
-requires-python = ">=3.10"
-authors = [
-    {name = "SimonLou-Dev", email = "simon.bidet@pm.me"}
-]
-license = {text = "AGPL-3.0"}
+authors = ["SimonLou-Dev <simon.bidet@pm.me>"]
+license = "AGPL-3.0"
+readme = "README.md"
+packages = [{include = "labomatics_cli"}]
 
-dependencies = [
-    "rich>=13.0",
-    "pydantic>=2.0",
-    "requests>=2.31",
-    "paramiko>=3.0",
-]
+[tool.poetry.dependencies]
+python = "^3.10"
+rich = "^13.0"
+pydantic = "^2.0"
+requests = "^2.31"
+paramiko = "^3.0"
+jinja2 = "^3.0"
+pyyaml = "^6.0"
+proxmoxer = "^2.0"
 
-[project.scripts]
+[tool.poetry.scripts]
 labomatics = "labomatics_cli.__main__:main"
 
-[tool.setuptools.packages.find]
-where = ["."]
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.0"
+black = "^23.0"
+ruff = "^0.1"
+mypy = "^1.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

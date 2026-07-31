@@ -2,7 +2,7 @@
 
 import requests
 import time
-from typing import Optional
+from .theme import info, success, warning
 
 
 class ServiceVerifier:
@@ -12,21 +12,32 @@ class ServiceVerifier:
     def wait_for_http(url: str, timeout: int = 300, verify_ssl: bool = False) -> bool:
         """Attendre qu'un endpoint HTTP réponde."""
         start = time.time()
+        attempt = 0
         while time.time() - start < timeout:
+            attempt += 1
+            elapsed = int(time.time() - start)
             try:
                 resp = requests.get(url, timeout=5, verify=verify_ssl)
                 if resp.status_code == 200:
+                    success(f"Service prêt [{elapsed}s]")
                     return True
+                else:
+                    info(f"  Tentative {attempt}: HTTP {resp.status_code} [{elapsed}s]")
+            except requests.ConnectionError:
+                info(f"  Tentative {attempt}: Connexion refusée [{elapsed}s]")
+            except requests.Timeout:
+                info(f"  Tentative {attempt}: Timeout [{elapsed}s]")
             except requests.RequestException:
-                pass
+                info(f"  Tentative {attempt}: Erreur réseau [{elapsed}s]")
             time.sleep(2)
+        warning(f"Timeout après {timeout}s")
         return False
 
     @staticmethod
     def check_keycloak(base_url: str, timeout: int = 60) -> bool:
         """Vérifier que Keycloak est prêt."""
-        health_url = f"{base_url}/health/ready"
-        return ServiceVerifier.wait_for_http(health_url, timeout)
+        admin_url = f"{base_url}/admin/master/console/"
+        return ServiceVerifier.wait_for_http(admin_url, timeout, verify_ssl=False)
 
     @staticmethod
     def check_postgres(host: str, port: int = 5432, timeout: int = 60) -> bool:

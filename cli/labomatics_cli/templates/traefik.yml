@@ -1,0 +1,48 @@
+global:
+  checkNewVersion: false
+  sendAnonymousUsage: false
+
+api:
+  insecure: true
+  dashboard: true
+
+log:
+  level: INFO
+
+accessLog:
+  filePath: "/var/log/traefik/access.log"
+  format: json
+  filters:
+    statusCodes:
+      - "200-299"
+      - "300-302"
+      - "400-599"
+  fields:
+    headers:
+      defaultMode: drop
+      names:
+        User-Agent: keep
+        X-Real-Ip: keep
+        X-Forwarded-For: keep
+        X-Forwarded-Proto: keep
+
+entryPoints:
+  web:
+    address: ":80"
+
+  websecure:
+    address: ":443"
+
+# experimental:
+#   plugins:
+#     bouncer:
+#       moduleName: github.com/maxlerebourg/crowdsec-bouncer-traefik-plugin
+#       version: "v1.5.0"
+
+providers:
+  docker:
+    exposedByDefault: false
+    network: labomatics_proxy
+  file:
+    directory: /etc/traefik/dynamic
+    watch: true
