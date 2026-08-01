@@ -1,11 +1,11 @@
 from datetime import datetime
-from uuid import UUID
 
-from backend.labomatics.core.db.base import Base
-from backend.labomatics.core.db.mixin import UUIDPkMixin
 from sqlalchemy import Index
 from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.orm import Mapped, mapped_column
+
+from labomatics.core.db.base import Base
+from labomatics.core.db.mixin import UUIDPkMixin
 
 
 class AuditLog(Base, UUIDPkMixin):
@@ -13,17 +13,13 @@ class AuditLog(Base, UUIDPkMixin):
 
     __tablename__ = "audit_log"
 
-    actor_keycloak_id: Mapped[UUID] = mapped_column(
-        comment="Keycloak sub de l'acteur",
+    actor_keycloak_id: Mapped[str] = mapped_column()
+    actor_role: Mapped[str] = mapped_column()
+    action: Mapped[str] = mapped_column()
+    resource_type: Mapped[str] = mapped_column()
+    resource_id: Mapped[str | None] = mapped_column(
+        nullable=True,
     )
-    actor_role: Mapped[str] = mapped_column(
-        comment="Rôle: student|teacher|admin|system",
-    )
-    action: Mapped[str] = mapped_column(
-        comment="Action: lab.destroy, token.regenerate, etc.",
-    )
-    resource_type: Mapped[str]
-    resource_id: Mapped[UUID | None] = None
     details: Mapped[dict | None] = mapped_column(
         JSON,
         nullable=True,

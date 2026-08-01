@@ -1,5 +1,5 @@
-from backend.labomatics.core.db.base import Base
-from backend.labomatics.core.db.models import (
+from labomatics.core.db.base import Base
+from labomatics.core.db.models import (
     AuditLog,
     Cluster,
     ClusterCredential,

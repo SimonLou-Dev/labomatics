@@ -4,10 +4,11 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from backend.labomatics.core.db.models import AuditLog
-from backend.labomatics.core.db.repository.base import BaseRepository
-from backend.labomatics.core.db.session import async_session_local
 from sqlalchemy import select
+
+from labomatics.core.db.models import AuditLog
+from labomatics.core.db.repository.base import BaseRepository
+from labomatics.core.db.session import async_session_local
 
 
 class AuditLogRepository(BaseRepository[AuditLog]):

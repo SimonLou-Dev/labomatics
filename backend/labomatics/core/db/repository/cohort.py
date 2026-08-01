@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from backend.labomatics.core.db.models import Cohort
-from backend.labomatics.core.db.repository.base import BaseRepository
-from backend.labomatics.core.db.session import async_session_local
 from sqlalchemy import select
+
+from labomatics.core.db.models import Cohort
+from labomatics.core.db.repository.base import BaseRepository
+from labomatics.core.db.session import async_session_local
 
 
 class CohortRepository(BaseRepository[Cohort]):

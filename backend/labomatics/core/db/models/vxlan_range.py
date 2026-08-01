@@ -1,8 +1,9 @@
-from backend.labomatics.core.db.base import Base
-from backend.labomatics.core.db.mixin import TimestampMixin, UUIDPkMixin
 from sqlalchemy import UniqueConstraint
 from sqlalchemy.dialects.postgresql import CIDR, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from labomatics.core.db.base import Base
+from labomatics.core.db.mixin import TimestampMixin, UUIDPkMixin
 
 
 class VxlanRange(Base, UUIDPkMixin, TimestampMixin):
@@ -17,12 +18,10 @@ class VxlanRange(Base, UUIDPkMixin, TimestampMixin):
     vni_max: Mapped[int]
     base_network: Mapped[str] = mapped_column(
         CIDR,
-        comment="Réseau base (ex. 10.100.0.0/12)",
     )
     exclusions: Mapped[list | None] = mapped_column(
         JSON,
         nullable=True,
-        comment="Liste de CIDR à exclure",
     )
 
     # Relationships
@@ -37,9 +36,9 @@ class VxlanRange(Base, UUIDPkMixin, TimestampMixin):
 
 
 # Forward references for circular imports
-from backend.labomatics.core.db.models.vxlan_allocation import (  # noqa: E402
+from labomatics.core.db.models.vxlan_allocation import (  # noqa: E402
     VxlanAllocation,
 )
-from backend.labomatics.core.db.models.vxlan_range_cluster import (  # noqa: E402
+from labomatics.core.db.models.vxlan_range_cluster import (  # noqa: E402
     VxlanRangeCluster,
 )

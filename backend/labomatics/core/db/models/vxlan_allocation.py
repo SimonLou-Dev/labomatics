@@ -1,11 +1,12 @@
 from datetime import datetime
 from uuid import UUID
 
-from backend.labomatics.core.db.base import Base
-from backend.labomatics.core.db.mixin import TimestampMixin, UUIDPkMixin
 from sqlalchemy import ForeignKey, Index, text
 from sqlalchemy.dialects.postgresql import CIDR
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from labomatics.core.db.base import Base
+from labomatics.core.db.mixin import TimestampMixin, UUIDPkMixin
 
 
 class VxlanAllocation(Base, UUIDPkMixin, TimestampMixin):
@@ -22,7 +23,6 @@ class VxlanAllocation(Base, UUIDPkMixin, TimestampMixin):
     vni: Mapped[int]
     subnet: Mapped[str] = mapped_column(
         CIDR,
-        comment="Subnet /24 alloué",
     )
     allocated_at: Mapped[datetime] = mapped_column(
         default=datetime.utcnow,
@@ -44,7 +44,6 @@ class VxlanAllocation(Base, UUIDPkMixin, TimestampMixin):
             "vni",
             postgresql_where=text("released_at IS NULL"),
             unique=True,
-            comment="Un seul VNI actif par range/cluster",
         ),
         Index(
             "idx_vxlan_alloc_student_active",
@@ -52,11 +51,10 @@ class VxlanAllocation(Base, UUIDPkMixin, TimestampMixin):
             "student_id",
             postgresql_where=text("released_at IS NULL"),
             unique=True,
-            comment="Un seul VNI actif par étudiant par cluster",
         ),
     )
 
 
 # Forward references for circular imports
-from backend.labomatics.core.db.models.student import Student  # noqa: E402
-from backend.labomatics.core.db.models.vxlan_range import VxlanRange  # noqa: E402
+from labomatics.core.db.models.student import Student  # noqa: E402
+from labomatics.core.db.models.vxlan_range import VxlanRange  # noqa: E402

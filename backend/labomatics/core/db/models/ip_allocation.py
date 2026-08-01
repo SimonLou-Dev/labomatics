@@ -1,11 +1,12 @@
 from datetime import datetime
 from uuid import UUID
 
-from backend.labomatics.core.db.base import Base
-from backend.labomatics.core.db.mixin import TimestampMixin, UUIDPkMixin
 from sqlalchemy import ForeignKey, Index, text
 from sqlalchemy.dialects.postgresql import INET
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from labomatics.core.db.base import Base
+from labomatics.core.db.mixin import TimestampMixin, UUIDPkMixin
 
 
 class IpAllocation(Base, UUIDPkMixin, TimestampMixin):
@@ -42,7 +43,6 @@ class IpAllocation(Base, UUIDPkMixin, TimestampMixin):
             "ip_address",
             postgresql_where=text("released_at IS NULL"),
             unique=True,
-            comment="Une seule IP active par range/cluster",
         ),
         Index(
             "idx_ip_alloc_student_active",
@@ -50,11 +50,10 @@ class IpAllocation(Base, UUIDPkMixin, TimestampMixin):
             "student_id",
             postgresql_where=text("released_at IS NULL"),
             unique=True,
-            comment="Une seule IP active par étudiant par cluster",
         ),
     )
 
 
 # Forward references for circular imports
-from backend.labomatics.core.db.models.ip_range import IpRange  # noqa: E402
-from backend.labomatics.core.db.models.student import Student  # noqa: E402
+from labomatics.core.db.models.ip_range import IpRange  # noqa: E402
+from labomatics.core.db.models.student import Student  # noqa: E402

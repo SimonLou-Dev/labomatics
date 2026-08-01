@@ -1,9 +1,10 @@
 from uuid import UUID
 
-from backend.labomatics.core.db.base import Base
-from backend.labomatics.core.db.mixin import TimestampMixin, UUIDPkMixin
 from sqlalchemy import ForeignKey, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from labomatics.core.db.base import Base
+from labomatics.core.db.mixin import TimestampMixin, UUIDPkMixin
 
 
 class VxlanRangeCluster(Base, UUIDPkMixin, TimestampMixin):
@@ -28,5 +29,5 @@ class VxlanRangeCluster(Base, UUIDPkMixin, TimestampMixin):
 
 
 # Forward references for circular imports
-from backend.labomatics.core.db.models.cluster import Cluster  # noqa: E402
-from backend.labomatics.core.db.models.vxlan_range import VxlanRange  # noqa: E402
+from labomatics.core.db.models.cluster import Cluster  # noqa: E402
+from labomatics.core.db.models.vxlan_range import VxlanRange  # noqa: E402
