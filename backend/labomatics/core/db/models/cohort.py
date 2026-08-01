@@ -1,7 +1,8 @@
-from backend.labomatics.core.db.base import Base
-from backend.labomatics.core.db.mixin import TimestampMixin, UUIDPkMixin
 from sqlalchemy import UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from labomatics.core.db.base import Base
+from labomatics.core.db.mixin import TimestampMixin, UUIDPkMixin
 
 
 class Cohort(Base, UUIDPkMixin, TimestampMixin):
@@ -10,9 +11,7 @@ class Cohort(Base, UUIDPkMixin, TimestampMixin):
     __tablename__ = "cohort"
 
     name: Mapped[str]
-    year: Mapped[int] = mapped_column(
-        comment="Année de la promo",
-    )
+    year: Mapped[int] = mapped_column()
     is_active: Mapped[bool] = mapped_column(
         default=True,
     )
@@ -32,10 +31,10 @@ class Cohort(Base, UUIDPkMixin, TimestampMixin):
 
 
 # Forward references for circular imports
-from backend.labomatics.core.db.models.cohort_cluster import (  # noqa: E402
+from labomatics.core.db.models.cohort_cluster import (  # noqa: E402
     CohortCluster,
 )
-from backend.labomatics.core.db.models.enrollment import Enrollment  # noqa: E402
-from backend.labomatics.core.db.models.teacher_cohort import (  # noqa: E402
+from labomatics.core.db.models.enrollment import Enrollment  # noqa: E402
+from labomatics.core.db.models.teacher_cohort import (  # noqa: E402
     TeacherCohort,
 )

@@ -2,11 +2,12 @@ from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
-from backend.labomatics.core.db.base import Base
-from backend.labomatics.core.db.mixin import TimestampMixin, UUIDPkMixin
 from sqlalchemy import ForeignKey, Index, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from labomatics.core.db.base import Base
+from labomatics.core.db.mixin import TimestampMixin, UUIDPkMixin
 
 # === TP / EXERCISE (v0.7) ===
 
@@ -17,9 +18,7 @@ class Exercise(Base, UUIDPkMixin, TimestampMixin):
     __tablename__ = "exercise"
 
     name: Mapped[str]
-    owner_keycloak_id: Mapped[UUID] = mapped_column(
-        comment="Keycloak sub du responsable",
-    )
+    owner_keycloak_id: Mapped[UUID] = mapped_column()
     is_active: Mapped[bool] = mapped_column(
         default=True,
     )
@@ -41,7 +40,6 @@ class ExerciseVersion(Base, UUIDPkMixin, TimestampMixin):
     version_number: Mapped[int]
     definition: Mapped[dict] = mapped_column(
         JSON,
-        comment="TpConfig V0 sérialisé",
     )
     duration_hours: Mapped[int | None] = None
     created_at: Mapped[datetime] = mapped_column(
@@ -90,18 +88,11 @@ class ExerciseDeploymentCampaign(Base, UUIDPkMixin, TimestampMixin):
 
     exercise_version_id: Mapped[UUID] = mapped_column(
         ForeignKey("exercise_version.id", ondelete="RESTRICT"),
-        comment="Figé au lancement",
     )
-    mode: Mapped[str] = mapped_column(
-        comment="individual|batch",
-    )
+    mode: Mapped[str] = mapped_column()
     triggered_by_keycloak_id: Mapped[UUID]
-    triggered_by_role: Mapped[str] = mapped_column(
-        comment="student|teacher",
-    )
-    status: Mapped[str] = mapped_column(
-        comment="running|completed|partial_failure|failed",
-    )
+    triggered_by_role: Mapped[str] = mapped_column()
+    status: Mapped[str] = mapped_column()
     requested_at: Mapped[datetime] = mapped_column(
         default=datetime.utcnow,
     )
@@ -134,11 +125,8 @@ class ExerciseDeploymentInstance(Base, UUIDPkMixin, TimestampMixin):
     proxmox_vm_id: Mapped[int | None] = None
     proxmox_tag: Mapped[str] = mapped_column(
         default="exercise",
-        comment="Tag Proxmox (probablement 'tp' en pratique pour l'exclusion quota)",
     )
-    status: Mapped[str] = mapped_column(
-        comment="pending|running|active|stopped|deleted|error",
-    )
+    status: Mapped[str] = mapped_column()
     provisioned_at: Mapped[datetime | None] = None
     last_stopped_at: Mapped[datetime | None] = None
     deleted_at: Mapped[datetime | None] = None
@@ -231,14 +219,9 @@ class DnsRecord(Base, UUIDPkMixin, TimestampMixin):
     cluster_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("cluster.id", ondelete="RESTRICT"),
         nullable=True,
-        comment="NULL tant que multi-lab vs domaine unique n'est pas tranché",
     )
-    subdomain: Mapped[str] = mapped_column(
-        comment="Slug DNS (ex. mkorniev)",
-    )
-    target: Mapped[str] = mapped_column(
-        comment="Cible (IP ou nom)",
-    )
+    subdomain: Mapped[str] = mapped_column()
+    target: Mapped[str] = mapped_column()
 
     # Relationships
     student: Mapped["Student"] = relationship()  # type: ignore
@@ -248,6 +231,6 @@ class DnsRecord(Base, UUIDPkMixin, TimestampMixin):
 
 
 # Import forward references
-from backend.labomatics.core.db.models.cluster import Cluster  # noqa: E402
-from backend.labomatics.core.db.models.cohort import Cohort  # noqa: E402
-from backend.labomatics.core.db.models.student import Student  # noqa: E402
+from labomatics.core.db.models.cluster import Cluster  # noqa: E402
+from labomatics.core.db.models.cohort import Cohort  # noqa: E402
+from labomatics.core.db.models.student import Student  # noqa: E402

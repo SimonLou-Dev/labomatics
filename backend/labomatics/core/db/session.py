@@ -7,7 +7,11 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from labomatics.core.config.settings import settings
 
-engine = create_async_engine(settings.get_async_db_url(), future=True)
+engine = create_async_engine(
+    settings.get_async_db_url(),
+    echo=False,
+    pool_pre_ping=True,
+)
 
 async_session_local = async_sessionmaker(
     engine,

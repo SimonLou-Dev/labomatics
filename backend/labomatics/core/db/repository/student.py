@@ -4,10 +4,11 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from backend.labomatics.core.db.models import Student
-from backend.labomatics.core.db.repository.base import BaseRepository
-from backend.labomatics.core.db.session import async_session_local
 from sqlalchemy import select
+
+from labomatics.core.db.models import Student
+from labomatics.core.db.repository.base import BaseRepository
+from labomatics.core.db.session import async_session_local
 
 
 class StudentRepository(BaseRepository[Student]):

@@ -4,10 +4,11 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from backend.labomatics.core.db.models import VxlanAllocation
-from backend.labomatics.core.db.repository.base import BaseRepository
-from backend.labomatics.core.db.session import async_session_local
 from sqlalchemy import select
+
+from labomatics.core.db.models import VxlanAllocation
+from labomatics.core.db.repository.base import BaseRepository
+from labomatics.core.db.session import async_session_local
 
 
 class VxlanAllocationRepository(BaseRepository[VxlanAllocation]):
@@ -54,7 +55,7 @@ class VxlanAllocationRepository(BaseRepository[VxlanAllocation]):
     async def list_by_cluster(self, cluster_id: UUID) -> list[VxlanAllocation]:
         """Liste les allocations VXLAN actives d'un cluster."""
         async with async_session_local() as session:
-            from backend.labomatics.core.db.models import VxlanRangeCluster
+            from labomatics.core.db.models import VxlanRangeCluster
 
             stmt = (
                 select(self.model)

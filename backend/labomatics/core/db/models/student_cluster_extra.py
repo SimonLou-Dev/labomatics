@@ -1,10 +1,11 @@
 from datetime import datetime
 from uuid import UUID
 
-from backend.labomatics.core.db.base import Base
-from backend.labomatics.core.db.mixin import TimestampMixin, UUIDPkMixin
 from sqlalchemy import ForeignKey, Index, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from labomatics.core.db.base import Base
+from labomatics.core.db.mixin import TimestampMixin, UUIDPkMixin
 
 
 class StudentClusterExtra(Base, UUIDPkMixin, TimestampMixin):
@@ -42,5 +43,5 @@ class StudentClusterExtra(Base, UUIDPkMixin, TimestampMixin):
 
 
 # Forward references for circular imports
-from backend.labomatics.core.db.models.cluster import Cluster  # noqa: E402
-from backend.labomatics.core.db.models.student import Student  # noqa: E402
+from labomatics.core.db.models.cluster import Cluster  # noqa: E402
+from labomatics.core.db.models.student import Student  # noqa: E402

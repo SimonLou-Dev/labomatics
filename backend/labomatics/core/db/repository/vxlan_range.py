@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from backend.labomatics.core.db.models import VxlanRange
-from backend.labomatics.core.db.repository.base import BaseRepository
-from backend.labomatics.core.db.session import async_session_local
 from sqlalchemy import select
+
+from labomatics.core.db.models import VxlanRange
+from labomatics.core.db.repository.base import BaseRepository
+from labomatics.core.db.session import async_session_local
 
 
 class VxlanRangeRepository(BaseRepository[VxlanRange]):

@@ -53,13 +53,8 @@ class Settings(BaseSettings):
     url_prefix: str | None = Field(alias="URL_PREFIX", default=None)
 
     # --- Keycloak admin ---
-
-    class Config:
-        """Configuration Pydantic."""
-
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = True
+    keycloak_admin_username: str = Field(alias="KEYCLOAK_ADMIN_USERNAME")
+    keycloak_admin_password: str = Field(alias="KEYCLOAK_ADMIN_PASSWORD")
 
     # --- Misc ---
     environment: str = "development"

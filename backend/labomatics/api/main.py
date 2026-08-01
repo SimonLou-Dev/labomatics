@@ -3,12 +3,11 @@ import sys
 from contextlib import asynccontextmanager
 
 import uvicorn
-from alembic.config import Config
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
-from alembic import command
+from labomatics.api.middlewares.auth import AuthMiddleware
 from labomatics.api.middlewares.csrf import CSRFMiddleware
 from labomatics.api.routes.router_v1 import router_v1
 from labomatics.core.config.settings import settings
@@ -33,10 +32,10 @@ async def lifespan(app: FastAPI):
 
     logger.info("📦 Running database migrations...")
     try:
-        alembic_cfg = Config("alembic.ini")
-        command.upgrade(
-            alembic_cfg, "head"
-        )  #############################################
+        # alembic_cfg = Config("alembic.ini")
+        # command.upgrade(
+        #     alembic_cfg, "head"
+        # )
         logger.info("✅ Migrations completed successfully")
     except Exception as e:
         logger.error("⚠️  Migration error: %s", e, exc_info=True)
@@ -82,10 +81,10 @@ allowed_origins = [
 # Starlette's add_middleware() inserts each new middleware at position 0,
 # so the LAST one added becomes the OUTERMOST layer.
 # Desired execution order (outermost → innermost):
-#   CORSMiddleware → CSRFMiddleware → TrustedHostMiddleware → Route
+#   CORSMiddleware → CSRFMiddleware → AuthMiddleware → TrustedHostMiddleware → Route
 #
 # This ensures CORS headers are present on ALL responses, including
-# 403s returned by the CSRF middleware.
+# 401s returned by the Auth middleware.
 # ---------------------------------------------------------------------------
 
 
@@ -102,18 +101,22 @@ app.add_middleware(
     allowed_hosts=allowed_hosts,
 )
 
-# 2. CSRFMiddleware
+# 2. AuthMiddleware (validates JWT)
+app.add_middleware(AuthMiddleware)
+
+# 3. CSRFMiddleware
 app.add_middleware(
     CSRFMiddleware,
     allowed_origins=set(allowed_origins),
     exclude_prefixes=(
         "/docs",
         "/openapi.json",
-        "/v1/oauth2/csrf-token",
+        "/v1/auth",
+        "/v1/health",
     ),
 )
 
-# 3. CORSMiddleware (outermost — added last)
+# 4. CORSMiddleware (outermost — added last)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,

@@ -4,10 +4,11 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from backend.labomatics.core.db.models import IpAllocation
-from backend.labomatics.core.db.repository.base import BaseRepository
-from backend.labomatics.core.db.session import async_session_local
 from sqlalchemy import select
+
+from labomatics.core.db.models import IpAllocation
+from labomatics.core.db.repository.base import BaseRepository
+from labomatics.core.db.session import async_session_local
 
 
 class IpAllocationRepository(BaseRepository[IpAllocation]):
@@ -54,7 +55,7 @@ class IpAllocationRepository(BaseRepository[IpAllocation]):
     async def list_by_cluster(self, cluster_id: UUID) -> list[IpAllocation]:
         """Liste les allocations IP actives d'un cluster."""
         async with async_session_local() as session:
-            from backend.labomatics.core.db.models import IpRangeCluster
+            from labomatics.core.db.models import IpRangeCluster
 
             stmt = (
                 select(self.model)

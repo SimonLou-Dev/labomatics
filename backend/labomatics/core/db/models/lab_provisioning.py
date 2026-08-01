@@ -1,10 +1,11 @@
 from datetime import datetime
 from uuid import UUID
 
-from backend.labomatics.core.db.base import Base
-from backend.labomatics.core.db.mixin import TimestampMixin, UUIDPkMixin
 from sqlalchemy import ForeignKey, Index, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from labomatics.core.db.base import Base
+from labomatics.core.db.mixin import TimestampMixin, UUIDPkMixin
 
 
 class LabProvisioning(Base, UUIDPkMixin, TimestampMixin):
@@ -18,12 +19,8 @@ class LabProvisioning(Base, UUIDPkMixin, TimestampMixin):
     cluster_id: Mapped[UUID] = mapped_column(
         ForeignKey("cluster.id", ondelete="RESTRICT"),
     )
-    status: Mapped[str] = mapped_column(
-        comment="pending|creating|active|deleting|deleted|error",
-    )
-    access_origin: Mapped[str] = mapped_column(
-        comment="cohort|extra — figé au moment du provisioning",
-    )
+    status: Mapped[str] = mapped_column()
+    access_origin: Mapped[str] = mapped_column()
     vxlan_allocation_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("vxlan_allocation.id", ondelete="SET NULL"),
         nullable=True,
@@ -54,5 +51,5 @@ class LabProvisioning(Base, UUIDPkMixin, TimestampMixin):
 
 
 # Forward references for circular imports
-from backend.labomatics.core.db.models.cluster import Cluster  # noqa: E402
-from backend.labomatics.core.db.models.student import Student  # noqa: E402
+from labomatics.core.db.models.cluster import Cluster  # noqa: E402
+from labomatics.core.db.models.student import Student  # noqa: E402
