@@ -144,5 +144,13 @@ def _display_completion_summary(state, domain):
         "[bold]Admin Password[/bold]",
         f"[yellow]{state.get('labomatics_user_password')}[/yellow]",
     )
+    table.add_row(
+        "[bold]Backend Keycloak User[/bold]",
+        state.get('labomatics_admin_username'),
+    )
+    table.add_row(
+        "[bold]Backend Keycloak Password[/bold]",
+        f"[yellow]{state.get('labomatics_admin_password')}[/yellow]",
+    )
     console.print(table)
     console.print("\n[bold cyan]════════════════════════════════════════[/bold cyan]\n")

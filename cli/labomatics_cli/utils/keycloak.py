@@ -61,14 +61,17 @@ class KeycloakClient:
         client_id: str,
         name: str = None,
         redirect_uris: list = None,
+        public_client: bool = False,
+        enable_auth: bool = False,
     ) -> str:
-        """Créer un client OIDC et retourner le client secret."""
+        """Créer un client OIDC et retourner le client secret (ou vide pour clients publics)."""
         url = f"{self.base_url}/admin/realms/{realm_name}/clients"
         data = {
             "clientId": client_id,
             "name": name or client_id,
             "enabled": True,
-            "publicClient": False,
+            "publicClient": public_client,
+            "authorizationServicesEnabled": enable_auth,
             "redirectUris": redirect_uris or [],
             "protocol": "openid-connect",
             "attributes": {
@@ -109,7 +112,11 @@ class KeycloakClient:
                     f"Failed to parse client response: {resp.text}"
                 ) from e
 
-        # Récupérer le secret
+        # Les clients publics n'ont pas de secret
+        if public_client:
+            return ""
+
+        # Récupérer le secret pour les clients confidentiels
         url_secret = f"{self.base_url}/admin/realms/{realm_name}/clients/{client_uuid}/client-secret"
         resp = requests.get(url_secret, headers=self._headers(), verify=False)
         resp.raise_for_status()
@@ -393,3 +400,76 @@ class KeycloakClient:
                 f"Failed to set default group: {resp.status_code} - {resp.text}"
             )
         resp.raise_for_status()
+
+    def get_client_uuid(self, realm_name: str, client_id: str) -> str:
+        """Récupère l'UUID d'un client par son ID (ex: realm-management)."""
+        url = f"{self.base_url}/admin/realms/{realm_name}/clients"
+        clients = requests.get(
+            f"{url}?clientId={client_id}", headers=self._headers(), verify=False
+        ).json()
+        if not clients:
+            raise RuntimeError(f"Client {client_id} not found in realm {realm_name}")
+        return clients[0]["id"]
+
+    def create_client_role(
+        self, realm_name: str, client_id: str, role_name: str, description: str = None
+    ) -> str:
+        """Créer un rôle client et retourner son ID."""
+        client_uuid = self.get_client_uuid(realm_name, client_id)
+        url = f"{self.base_url}/admin/realms/{realm_name}/clients/{client_uuid}/roles"
+        data = {
+            "name": role_name,
+            "description": description or role_name,
+        }
+        resp = requests.post(url, json=data, headers=self._headers(), verify=False)
+
+        if resp.status_code == 409:
+            # Role exists, get its ID
+            roles = requests.get(url, headers=self._headers(), verify=False).json()
+            for role in roles:
+                if role["name"] == role_name:
+                    return role["id"]
+
+        if resp.status_code == 201:
+            location = resp.headers.get("Location", "")
+            if location:
+                return location.split("/")[-1]
+
+        resp.raise_for_status()
+        return resp.json()["id"]
+
+    def assign_client_role_to_user(
+        self, realm_name: str, user_id: str, client_id: str, role_name: str
+    ) -> None:
+        """Assigne un rôle client à un user."""
+        # Récupérer l'UUID du client
+        client_uuid = self.get_client_uuid(realm_name, client_id)
+
+        # Récupérer les rôles du client
+        roles_url = (
+            f"{self.base_url}/admin/realms/{realm_name}/clients/{client_uuid}/roles"
+        )
+        roles = requests.get(roles_url, headers=self._headers(), verify=False).json()
+
+        # Trouver le rôle
+        role_obj = None
+        for role in roles:
+            if role["name"] == role_name:
+                role_obj = role
+                break
+
+        if not role_obj:
+            raise RuntimeError(f"Role '{role_name}' not found in client {client_id}")
+
+        # Assigner le rôle au user
+        url = f"{self.base_url}/admin/realms/{realm_name}/users/{user_id}/role-mappings/clients/{client_uuid}"
+        resp = requests.post(
+            url,
+            json=[role_obj],
+            headers=self._headers(),
+            verify=False,
+        )
+        if resp.status_code >= 400:
+            raise RuntimeError(
+                f"Failed to assign role: {resp.status_code} - {resp.text}"
+            )

@@ -41,6 +41,11 @@ class KeycloakSetup:
         kc.create_realm_role("labomatics", "admin", "Administrator", composite=True)
         kc.create_realm_role("labomatics", "teacher", "Teacher")
         kc.create_realm_role("labomatics", "student", "Student")
+        kc.create_realm_role(
+            "labomatics",
+            "manage_user",
+            "Gestion des utilisateurs (CRUD compte, changement de groupe)",
+        )
 
         try:
             kc.add_all_client_roles_to_role("labomatics", "admin")
@@ -48,6 +53,7 @@ class KeycloakSetup:
             warning(f"Permissions admin (optionnel): {e}")
 
         kc.add_realm_role_to_group("labomatics", superadmin_gid, "admin")
+        kc.add_realm_role_to_group("labomatics", superadmin_gid, "manage_user")
         kc.add_realm_role_to_group("labomatics", prof_gid, "teacher")
         kc.add_realm_role_to_group("labomatics", student_gid, "student")
 
@@ -71,6 +77,56 @@ class KeycloakSetup:
         kc.set_user_password("labomatics", user_id, user_password, temporary=True)
         kc.add_user_to_group("labomatics", user_id, superadmin_gid)
 
+        # Create labomatics-admin service account (non-temporary password)
+        admin_svc_password = secrets.token_urlsafe(16)
+        admin_svc_id = kc.create_user(
+            "labomatics",
+            "labomatics-admin",
+            first_name="Labomatics",
+            last_name="Admin",
+            email=f"admin@labomatics.{self.domain}",
+        )
+        kc.set_user_password(
+            "labomatics", admin_svc_id, admin_svc_password, temporary=False
+        )
+        # Assign realm-management client roles (no group)
+        for role_name in (
+            "manage-users",
+            "view-users",
+            "manage-clients",
+            "view-clients",
+        ):
+            try:
+                kc.assign_client_role_to_user(
+                    "labomatics", admin_svc_id, "realm-management", role_name
+                )
+            except RuntimeError as e:
+                warning(f"Failed to assign role {role_name} to labomatics-admin: {e}")
+
+        # Create labomatics (web frontend) client - confidential with authorization
+        labomatics_redirect_uris = [
+            f"https://api.{self.domain}/v1/auth/callback",
+            "http://localhost:5173/#/",
+            "http://localhost:8001/#/",
+        ]
+        labomatics_client_secret = kc.create_client(
+            "labomatics",
+            client_id="labomatics",
+            name="Labomatics Web",
+            redirect_uris=labomatics_redirect_uris,
+            public_client=False,
+            enable_auth=True,
+        )
+        self.state.set("labomatics_client_id", "labomatics")
+        self.state.set("labomatics_client_secret", labomatics_client_secret)
+        # Create client role manage-user
+        kc.create_client_role(
+            "labomatics",
+            "labomatics",
+            "manage-user",
+            "Gestion des utilisateurs (CRUD compte, changement de groupe)",
+        )
+
         # Create Proxmox client with FQDNs as redirect URIs
         node_fqdns = self.state.get("node_dns_entries") or {}
         redirect_uris = [f"https://{fqdn}/" for fqdn in node_fqdns.keys()]
@@ -85,6 +141,8 @@ class KeycloakSetup:
         )
 
         self.state.set("labomatics_user_password", user_password)
+        self.state.set("labomatics_admin_username", "labomatics-admin")
+        self.state.set("labomatics_admin_password", admin_svc_password)
         self.state.set("proxmox_client_id", client_id)
         self.state.set("proxmox_oidc_secret", client_secret)
         self.state.set("admin_first_name", admin_first_name)
