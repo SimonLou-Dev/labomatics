@@ -68,3 +68,24 @@ class IpAllocationRepository(BaseRepository[IpAllocation]):
             )
             result = await session.execute(stmt)
             return result.scalars().all()
+
+    async def list_by_ip_range(self, ip_range_id: UUID) -> list[IpAllocation]:
+        """Liste les allocations IP d'une plage IP (tous les clusters)."""
+        async with async_session_local() as session:
+            from sqlalchemy.orm import selectinload
+
+            from labomatics.core.db.models import IpRangeCluster
+
+            stmt = (
+                select(self.model)
+                .join(IpRangeCluster)
+                .options(selectinload(self.model.student))
+                .where(
+                    (self.model.ip_range_cluster_id == IpRangeCluster.id)
+                    & (IpRangeCluster.ip_range_id == ip_range_id)
+                    & (self.model.released_at is None)
+                )
+                .order_by(self.model.allocated_at)
+            )
+            result = await session.execute(stmt)
+            return result.scalars().all()

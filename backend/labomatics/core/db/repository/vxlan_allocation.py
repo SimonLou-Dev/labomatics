@@ -68,3 +68,24 @@ class VxlanAllocationRepository(BaseRepository[VxlanAllocation]):
             )
             result = await session.execute(stmt)
             return result.scalars().all()
+
+    async def list_by_vxlan_range(self, vxlan_range_id: UUID) -> list[VxlanAllocation]:
+        """Liste les allocations VXLAN d'une plage VXLAN (tous les clusters)."""
+        async with async_session_local() as session:
+            from sqlalchemy.orm import selectinload
+
+            from labomatics.core.db.models import VxlanRangeCluster
+
+            stmt = (
+                select(self.model)
+                .join(VxlanRangeCluster)
+                .options(selectinload(self.model.student))
+                .where(
+                    (self.model.vxlan_range_cluster_id == VxlanRangeCluster.id)
+                    & (VxlanRangeCluster.vxlan_range_id == vxlan_range_id)
+                    & (self.model.released_at is None)
+                )
+                .order_by(self.model.allocated_at)
+            )
+            result = await session.execute(stmt)
+            return result.scalars().all()
