@@ -56,6 +56,9 @@ class Settings(BaseSettings):
     keycloak_admin_username: str = Field(alias="KEYCLOAK_ADMIN_USERNAME")
     keycloak_admin_password: str = Field(alias="KEYCLOAK_ADMIN_PASSWORD")
 
+    # --- Cluster Config ---
+    cluster_config_path: str | None = Field(default=None, alias="CLUSTER_CONFIG_PATH")
+
     # --- Misc ---
     environment: str = "development"
 
