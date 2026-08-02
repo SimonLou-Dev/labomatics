@@ -26,3 +26,23 @@ class StudentListResponseDTO(BaseModel):
     page: int
     size: int
     total_pages: int
+
+
+class StudentImportItemDTO(BaseModel):
+    """Élément d'import d'étudiant."""
+
+    login: str
+    first_name: str
+    last_name: str
+    email: str
+    cohort_name: str | None = None
+    notes: str = ""
+
+
+class StudentImportDiffDTO(BaseModel):
+    """Résultat du diff d'import (preview ou apply)."""
+
+    added: list[StudentImportItemDTO] = Field(default_factory=list)
+    modified: list[StudentImportItemDTO] = Field(default_factory=list)
+    deleted: list[StudentImportItemDTO] = Field(default_factory=list)
+    errors: list[str] = Field(default_factory=list)

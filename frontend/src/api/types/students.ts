@@ -59,6 +59,22 @@ export interface StudentImportError {
   reason: string
 }
 
+export interface StudentImportItemXML {
+  login: string
+  first_name: string
+  last_name: string
+  email: string
+  cohort_name?: string
+  notes?: string
+}
+
+export interface StudentImportDiffXML {
+  added: StudentImportItemXML[]
+  modified: StudentImportItemXML[]
+  deleted: StudentImportItemXML[]
+  errors: string[]
+}
+
 export interface StudentDetailDTO {
   id: string
   login: string
