@@ -1,0 +1,25 @@
+kind: clusterconfig/v1
+clusters:
+  - name: labomatics
+    token_id: labomatics@pam!labomatics-cli
+    token_secret: REDACTED-FOR-TESTS
+    url: https://172.29.20.173:8006
+    storage: shared
+    sdn_zone: labs
+    wan:
+      name: esgilabs
+      iface: vmbr0
+    vnets:
+      name: esgilab
+wan:
+  - name: esgilabs
+    network: 172.29.20.0/24
+    gateway: 172.29.20.254
+    exclusions:
+      - 172.29.20.1-172.29.20.199
+vnets:
+  - name: esgilab
+    network: 10.96.0.0/12
+    mtu: 1350
+    vni_min: 1000
+    vni_max: 4000
