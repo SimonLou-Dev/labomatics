@@ -31,7 +31,7 @@ class StudentListResponseDTO(BaseModel):
 class StudentImportItemDTO(BaseModel):
     """Élément d'import d'étudiant."""
 
-    login: str
+    id: str
     first_name: str
     last_name: str
     email: str

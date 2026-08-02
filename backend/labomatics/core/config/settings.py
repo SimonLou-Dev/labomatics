@@ -31,11 +31,22 @@ class Settings(BaseSettings):
         """Obtenir l'url postgres sync."""
         return f"postgresql+psycopg2://{self.database_user!s}:{self.database_password!s}@{self.database_host}:{self.database_port}/{self.database_name}"
 
-    # --- Redis (for task queue, cache…) ---
-    redis_url: str = Field(
-        default="redis://redis:6379/0",
-        alias="REDIS_URL",
+    # --- Redis ---
+    redis_host: str = Field(default="localhost", alias="REDIS_HOST")
+    redis_port: int = Field(default=6379, alias="REDIS_PORT")
+    redis_database: int = Field(default=0, alias="REDIS_DATABASE")
+    redis_password: str | None = Field(default=None, alias="REDIS_PASSWORD")
+    redis_prefix: str = Field(default="kitcat", alias="REDIS_PREFIX")
+    # Sentinel (optionnel)
+    redis_sentinel_host: str | None = Field(default=None, alias="REDIS_SENTINEL_HOST")
+    redis_sentinel_port: int = Field(default=26379, alias="REDIS_SENTINEL_PORT")
+    redis_sentinel_service: str = Field(
+        default="mymaster", alias="REDIS_SENTINEL_SERVICE"
     )
+
+    @property
+    def celery_broker_url(self) -> str:
+        return f"redis://{self.redis_host}:{self.redis_port}/{self.redis_database}"
 
     # --- Keycloak / Auth ---
     keycloak_url: str = Field(default="http://keycloak:8080/", alias="KEYCLOAK_URL")
@@ -61,6 +72,8 @@ class Settings(BaseSettings):
 
     # --- Misc ---
     environment: str = Field(default="development", alias="ENVIRONMENT")
+
+    redis_prefix: str = Field(default=f"laboamtics-{environment}")
 
 
 settings = Settings()

@@ -1,53 +1,76 @@
-"""Connecteur Redis pour les sessions et cache."""
+"""Connecteurs Redis (sync + async), singletons, support Sentinel optionnel."""
 
 from __future__ import annotations
 
-import json
-from typing import Any
+from dataclasses import dataclass
+from functools import lru_cache
 
-import redis
+from redis import Redis, Sentinel
+from redis.asyncio import Redis as RedisAsync
+from redis.asyncio import Sentinel as SentinelAsync
 
 from labomatics.core.config.settings import settings
 
 
-class RedisConnector:
-    """Connecteur Redis pour les sessions OAuth2, cache, etc."""
+@dataclass
+class RedisClient:
+    """Paire lecture/ecriture (identique hors Sentinel)."""
 
-    def __init__(self, url: str | None = None):
-        """Initialise la connexion Redis."""
-        self.url = url or settings.redis_url
-        self.client = redis.from_url(self.url, decode_responses=True)
+    read: Redis
+    write: Redis
 
-    def set(
-        self,
-        key: str,
-        value: Any,
-        ex: int | None = None,
-    ) -> None:
-        """Stocke une valeur avec expiration optionnelle (en secondes)."""
-        if isinstance(value, (dict, list)):
-            value = json.dumps(value)
-        self.client.set(key, value, ex=ex)
 
-    def get(self, key: str) -> str | None:
-        """Récupère une valeur."""
-        return self.client.get(key)
+@dataclass
+class RedisAsyncClient:
+    read: RedisAsync
+    write: RedisAsync
 
-    def get_json(self, key: str) -> dict | list | None:
-        """Récupère et désérialise une valeur JSON."""
-        value = self.client.get(key)
-        if value:
-            return json.loads(value)
-        return None
 
-    def delete(self, key: str) -> int:
-        """Supprime une clé. Retourne le nombre de clés supprimées."""
-        return self.client.delete(key)
+@lru_cache
+def get_redis_sync() -> RedisClient:
+    """Singleton Redis synchrone."""
+    if settings.redis_sentinel_host:
+        sentinel = Sentinel(
+            [(settings.redis_sentinel_host, settings.redis_sentinel_port)],
+            socket_timeout=0.5,
+            db=settings.redis_database,
+            password=settings.redis_password,
+            decode_responses=True,
+        )
+        return RedisClient(
+            read=sentinel.slave_for(settings.redis_sentinel_service),
+            write=sentinel.master_for(settings.redis_sentinel_service),
+        )
+    client = Redis(
+        host=settings.redis_host,
+        port=settings.redis_port,
+        db=settings.redis_database,
+        password=settings.redis_password,
+        decode_responses=True,
+    )
+    return RedisClient(read=client, write=client)
 
-    def exists(self, key: str) -> bool:
-        """Vérifie si une clé existe."""
-        return self.client.exists(key) > 0
 
-    def close(self) -> None:
-        """Ferme la connexion."""
-        self.client.close()
+@lru_cache
+def get_redis_async() -> RedisAsyncClient:
+    """Singleton Redis asynchrone."""
+    if settings.redis_sentinel_host:
+        sentinel = SentinelAsync(
+            [(settings.redis_sentinel_host, settings.redis_sentinel_port)],
+            socket_timeout=0.5,
+            db=settings.redis_database,
+            password=settings.redis_password,
+            decode_responses=True,
+        )
+        return RedisAsyncClient(
+            read=sentinel.slave_for(settings.redis_sentinel_service),
+            write=sentinel.master_for(settings.redis_sentinel_service),
+        )
+    client = RedisAsync(
+        host=settings.redis_host,
+        port=settings.redis_port,
+        db=settings.redis_database,
+        password=settings.redis_password,
+        decode_responses=True,
+    )
+    return RedisAsyncClient(read=client, write=client)

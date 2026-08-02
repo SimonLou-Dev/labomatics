@@ -10,10 +10,10 @@ from fastapi.responses import RedirectResponse
 from labomatics.api.deps.auth import CurrentUser
 from labomatics.api.dto.auth import MeDTO
 from labomatics.core.config.settings import settings
-from labomatics.core.connectors.redis import RedisConnector
+from labomatics.core.connectors.redis import get_redis_async
 from labomatics.services.auth_service import AuthService
 
-redis_connector = RedisConnector()
+redis_connector = get_redis_async().write
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -27,7 +27,7 @@ async def login(redirect: str = Query(default="/")):
     """
     state = secrets.token_urlsafe(32)
     # Stocke le state -> redirect_url mapping en Redis (expire après 10 min)
-    redis_connector.set(f"oauth2:state:{state}", redirect, ex=600)
+    await redis_connector.set(f"oauth2:state:{state}", redirect, ex=600)
 
     keycloak_auth_url = (
         f"{settings.keycloak_url.rstrip('/')}/realms/{settings.keycloak_realm}"
@@ -44,14 +44,14 @@ async def login(redirect: str = Query(default="/")):
 @router.get("/callback")
 async def callback(code: str = Query(...), state: str = Query(...)):
     """Callback OAuth2 — échange le code contre tokens et les stocke en cookies HTTPOnly."""
-    redirect_url = redis_connector.get(f"oauth2:state:{state}")
+    redirect_url = await redis_connector.get(f"oauth2:state:{state}")
     if not redirect_url:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="State invalide ou expiré",
         )
     # Supprimer le state après l'avoir utilisé
-    redis_connector.delete(f"oauth2:state:{state}")
+    await redis_connector.delete(f"oauth2:state:{state}")
 
     try:
         # Échange le code contre les tokens

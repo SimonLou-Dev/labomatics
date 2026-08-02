@@ -41,7 +41,9 @@ class StudentImportService:
                     if column_name in row:
                         row_data[field] = (row[column_name] or "").strip()
                     else:
-                        errors.append(f"Ligne {idx}: colonne '{column_name}' non trouvée")
+                        errors.append(
+                            f"Ligne {idx}: colonne '{column_name}' non trouvée"
+                        )
 
                 # Valider les champs requis
                 if row_data.get("id") and row_data.get("email"):
@@ -59,12 +61,12 @@ class StudentImportService:
     async def preview_import(
         self, csv_content: bytes, column_mapping: dict[str, str]
     ) -> StudentImportDiffDTO:
-        """Fait un preview de l'import (diff) sans modifier la DB. L'ID est utilisé pour le matching."""
+        """Fait un preview de l'import (diff) sans modifier la DB. Matching par external_id."""
         data, parse_errors = self.parse_csv(csv_content, column_mapping)
 
-        # Récupérer les étudiants existants et indexer par external_id (login)
+        # Récupérer les étudiants existants et indexer par external_id (ID numérique)
         existing_students = await self.repo.list()
-        existing_by_login = {s.login: s for s in existing_students}
+        existing_by_id = {s.external_id: s for s in existing_students}
 
         added = []
         modified = []
@@ -72,13 +74,18 @@ class StudentImportService:
 
         # Parcourir les données du CSV
         for item in data:
-            student_id = item.get("id", "")
-            if not student_id:
+            student_id_str = item.get("id", "")
+            if not student_id_str:
                 continue
 
-            if student_id in existing_by_login:
+            try:
+                student_id = int(student_id_str)
+            except (ValueError, TypeError):
+                continue
+
+            if student_id in existing_by_id:
                 # Vérifier si modifié
-                existing = existing_by_login[student_id]
+                existing = existing_by_id[student_id]
                 if (
                     existing.first_name != item.get("first_name")
                     or existing.last_name != item.get("last_name")
@@ -86,19 +93,19 @@ class StudentImportService:
                 ):
                     modified.append(
                         StudentImportItemDTO(
-                            login=student_id,
+                            id=student_id_str,
                             first_name=item.get("first_name", ""),
                             last_name=item.get("last_name", ""),
                             email=item.get("email", ""),
                             cohort_name=item.get("cohort_name", ""),
-                            notes=f"Modifié",
+                            notes="Modifié",
                         )
                     )
             else:
                 # Nouveau
                 added.append(
                     StudentImportItemDTO(
-                        login=student_id,
+                        id=student_id_str,
                         first_name=item.get("first_name", ""),
                         last_name=item.get("last_name", ""),
                         email=item.get("email", ""),
@@ -108,12 +115,16 @@ class StudentImportService:
                 )
 
         # Trouver les supprimés (dans DB mais pas dans CSV)
-        csv_ids = {item.get("id") for item in data if item.get("id")}
-        for login, student in existing_by_login.items():
-            if login not in csv_ids:
+        csv_ids = {
+            int(item.get("id"))
+            for item in data
+            if item.get("id") and str(item.get("id")).isdigit()
+        }
+        for student_id, student in existing_by_id.items():
+            if student_id not in csv_ids:
                 deleted.append(
                     StudentImportItemDTO(
-                        login=login,
+                        id=str(student.external_id),
                         first_name=student.first_name,
                         last_name=student.last_name,
                         email=student.email,
@@ -137,7 +148,9 @@ class StudentImportService:
         """Applique l'import (crée, met à jour, supprime)."""
         preview = await self.preview_import(csv_content, column_mapping)
 
-        # TODO: Implémenter la sauvegarde en DB
-        # Pour l'instant, on retourne juste le preview
+        # Import lazy pour éviter les boucles circulaires
+        from labomatics.services.job_service import JobService
+
+        JobService.enqueue_apply_students(preview)
 
         return preview
