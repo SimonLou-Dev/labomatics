@@ -90,20 +90,20 @@ async def apply_import(
     return await service.apply(rows, mapping, year)
 
 
-@router.post("/import-xml/preview")
-async def preview_import_xml(
+@router.post("/import-csv/preview")
+async def preview_import_csv(
     _user: RequireManageUser,
     file: UploadFile = File(...),
-    login: str = Form(...),
+    id: str = Form(...),
     first_name: str = Form(...),
     last_name: str = Form(...),
     email: str = Form(...),
     cohort_name: str = Form(...),
 ) -> StudentImportDiffDTOXML:
-    """Pré-visualise l'import XML sans rien modifier."""
+    """Pré-visualise l'import CSV sans rien modifier. L'ID est l'identifiant stable pour le matching."""
     content = await file.read()
     column_mapping = {
-        "login": login,
+        "id": id,
         "first_name": first_name,
         "last_name": last_name,
         "email": email,
@@ -113,20 +113,20 @@ async def preview_import_xml(
     return await service.preview_import(content, column_mapping)
 
 
-@router.post("/import-xml/apply")
-async def apply_import_xml(
+@router.post("/import-csv/apply")
+async def apply_import_csv(
     _user: RequireManageUser,
     file: UploadFile = File(...),
-    login: str = Form(...),
+    id: str = Form(...),
     first_name: str = Form(...),
     last_name: str = Form(...),
     email: str = Form(...),
     cohort_name: str = Form(...),
 ) -> StudentImportDiffDTOXML:
-    """Applique l'import XML (création/modification/suppression d'étudiants)."""
+    """Applique l'import CSV. L'ID est utilisé pour le matching stable."""
     content = await file.read()
     column_mapping = {
-        "login": login,
+        "id": id,
         "first_name": first_name,
         "last_name": last_name,
         "email": email,
