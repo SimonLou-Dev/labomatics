@@ -15,6 +15,10 @@ class VxlanRangeDTO(BaseModel):
     base_network: str
     mtu: int
     exclusions: list | None = None
+    total_vnis: int = 0
+    used_count: int = 0
+    free_count: int = 0
+    utilization_percent: int = 0
 
 
 class VxlanRangeCreateDTO(BaseModel):

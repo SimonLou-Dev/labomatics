@@ -206,22 +206,25 @@ async function fetchRange() {
   loading.value = true
   try {
     const rangeId = route.params.rangeId as string
-    // Note: This assumes a getIpRange method exists in the API
-    // For now, we'll fetch all ranges and find the one matching
-    const response = await ipRangeApi.listIpRanges(1, 100)
-    const found = response.items.find((r) => r.id === rangeId)
-    if (found) {
-      range.value = found
-      await fetchAllocations()
-    } else {
-      toast.add({
-        severity: 'error',
-        summary: 'Erreur',
-        detail: 'Plage IP non trouvée',
-        life: 3000,
+    await ipRangeApi
+      .getIpRange(rangeId)
+      .then(async (r) => {
+        range.value = r
+        await fetchAllocations()
       })
-      goBack()
-    }
+      .catch((error) => {
+        if (error.response?.status === 404) {
+          toast.add({
+            severity: 'error',
+            summary: 'Erreur',
+            detail: 'Plage IP non trouvée',
+            life: 3000,
+          })
+        } else {
+          throw error
+        }
+        goBack()
+      })
   } catch (error) {
     toast.add({
       severity: 'error',
