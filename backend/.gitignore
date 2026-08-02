@@ -4,6 +4,9 @@
 .env.*.local
 !.env.example
 
+# Cluster configuration (contains sensitive tokens)
+clusterconfig.yaml
+
 # Python
 __pycache__/
 *.py[cod]
