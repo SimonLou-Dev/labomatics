@@ -32,6 +32,8 @@ class VnetConfig(BaseModel):
     name: str = Field(..., description="Nom de la zone (ex: esgilab)")
     network: str = Field(..., description="CIDR du réseau VXLAN (ex: 10.100.0.0/12)")
     mtu: int = Field(1350, description="MTU du réseau VXLAN")
+    vni_min: int = Field(1000, description="VNI min")
+    vni_max: int = Field(4000, description="VNI max")
 
     class Config:
         json_schema_extra = {
@@ -39,6 +41,8 @@ class VnetConfig(BaseModel):
                 "name": "esgilab",
                 "network": "10.100.0.0/12",
                 "mtu": 1350,
+                "vni_min": 1000,
+                "vni_max": 4000,
             }
         }
 
@@ -51,6 +55,7 @@ class ClusterEntry(BaseModel):
     token_secret: str = Field(..., description="Secret du token (sensible)")
     url: str = Field(..., description="URL Proxmox (ex: https://192.168.1.10:8006)")
     storage: str = Field(..., description="Storage par défaut (ex: local-lvm)")
+    sdn_zone: str = Field(..., description="SDN zone name")
 
     wan: dict = Field(
         ...,
@@ -69,6 +74,7 @@ class ClusterEntry(BaseModel):
                 "token_secret": "xxxxxxxxxxxx",
                 "url": "https://192.168.1.10:8006",
                 "storage": "local-lvm",
+                "sdn_zone": "esgilab",
                 "wan": {"name": "esgilabs", "iface": "vmbr0"},
                 "vnets": {"name": "esgilab"},
             }
@@ -103,6 +109,7 @@ class ClusterConfigFile(BaseModel):
                         "token_secret": "xxxx",
                         "url": "https://192.168.1.10:8006",
                         "storage": "local-lvm",
+                        "sdn_zone": "esgilab",
                         "wan": {"name": "esgilabs", "iface": "vmbr0"},
                         "vnets": {"name": "esgilab"},
                     }
@@ -120,6 +127,8 @@ class ClusterConfigFile(BaseModel):
                         "name": "esgilab",
                         "network": "10.100.0.0/12",
                         "mtu": 1350,
+                        "vni_min": 1000,
+                        "vni_max": 4000,
                     }
                 ],
             }

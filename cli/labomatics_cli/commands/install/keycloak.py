@@ -46,6 +46,11 @@ class KeycloakSetup:
             "manage_user",
             "Gestion des utilisateurs (CRUD compte, changement de groupe)",
         )
+        kc.create_realm_role(
+            "labomatics",
+            "manage_cluster",
+            "Gestion des clusters Proxmox (admin des plages IP/VXLAN, credentials)",
+        )
 
         try:
             kc.add_all_client_roles_to_role("labomatics", "admin")
@@ -54,6 +59,7 @@ class KeycloakSetup:
 
         kc.add_realm_role_to_group("labomatics", superadmin_gid, "admin")
         kc.add_realm_role_to_group("labomatics", superadmin_gid, "manage_user")
+        kc.add_realm_role_to_group("labomatics", superadmin_gid, "manage_cluster")
         kc.add_realm_role_to_group("labomatics", prof_gid, "teacher")
         kc.add_realm_role_to_group("labomatics", student_gid, "student")
 
@@ -66,29 +72,41 @@ class KeycloakSetup:
         username = f"{admin_first_name.lower()}.{admin_last_name.lower()}".replace(
             " ", "-"
         )
-        user_password = secrets.token_urlsafe(16)
-        user_id = kc.create_user(
-            "labomatics",
-            username,
-            first_name=admin_first_name,
-            last_name=admin_last_name,
-            email=admin_email,
-        )
-        kc.set_user_password("labomatics", user_id, user_password, temporary=True)
+        existing_user = kc.get_user_by_username("labomatics", username)
+        if existing_user:
+            info(f"User {username} existe déjà, credentials conservés")
+            user_id = existing_user["id"]
+            user_password = None
+        else:
+            user_password = secrets.token_urlsafe(16)
+            user_id = kc.create_user(
+                "labomatics",
+                username,
+                first_name=admin_first_name,
+                last_name=admin_last_name,
+                email=admin_email,
+            )
+            kc.set_user_password("labomatics", user_id, user_password, temporary=True)
         kc.add_user_to_group("labomatics", user_id, superadmin_gid)
 
         # Create labomatics-admin service account (non-temporary password)
-        admin_svc_password = secrets.token_urlsafe(16)
-        admin_svc_id = kc.create_user(
-            "labomatics",
-            "labomatics-admin",
-            first_name="Labomatics",
-            last_name="Admin",
-            email=f"admin@labomatics.{self.domain}",
-        )
-        kc.set_user_password(
-            "labomatics", admin_svc_id, admin_svc_password, temporary=False
-        )
+        existing_admin_svc = kc.get_user_by_username("labomatics", "labomatics-admin")
+        if existing_admin_svc:
+            info("User labomatics-admin existe déjà, credentials conservés")
+            admin_svc_id = existing_admin_svc["id"]
+            admin_svc_password = None
+        else:
+            admin_svc_password = secrets.token_urlsafe(16)
+            admin_svc_id = kc.create_user(
+                "labomatics",
+                "labomatics-admin",
+                first_name="Labomatics",
+                last_name="Admin",
+                email=f"admin@labomatics.{self.domain}",
+            )
+            kc.set_user_password(
+                "labomatics", admin_svc_id, admin_svc_password, temporary=False
+            )
         # Assign realm-management client roles (no group)
         for role_name in (
             "manage-users",
@@ -147,5 +165,10 @@ class KeycloakSetup:
         self.state.set("proxmox_oidc_secret", client_secret)
         self.state.set("admin_first_name", admin_first_name)
         self.state.set("admin_last_name", admin_last_name)
+
+        if user_password is None:
+            warning(f"L'utilisateur {username} existe déjà. Utilisez ses credentials existants.")
+        if admin_svc_password is None:
+            warning("Le compte labomatics-admin existe déjà. Utilisez ses credentials existants.")
 
         success("Keycloak configuré")

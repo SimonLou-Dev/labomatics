@@ -29,6 +29,9 @@ class ClusterConfigGenerator:
         vxlan_name: str,
         vxlan_network: str,
         vxlan_mtu: int = 1350,
+        sdn_zone: str = None,
+        vni_min: int = 1000,
+        vni_max: int = 4000,
     ) -> str:
         """Générer le contenu YAML de la config avec validation Pydantic."""
 
@@ -55,28 +58,37 @@ class ClusterConfigGenerator:
             name=vxlan_name,
             network=vxlan_network,
             mtu=vxlan_mtu,
+            vni_min=vni_min,
+            vni_max=vni_max,
         )
 
-        cluster_entry = ClusterEntry(
-            name=cluster_name,
-            token_id=f"root@pam!{token_id}",
-            token_secret=token_secret,
-            url=proxmox_url,
-            storage=storage,
-            wan={"name": wan_name, "iface": wan_iface},
-            vnets={"name": vxlan_name},
-        )
+        # Format backend pour bootstrap
+        cluster_data = {
+            "cluster_id": None,  # Généré par la DB
+            "name": cluster_name,
+            "url": proxmox_url,
+            "sdn_zone": sdn_zone,
+            "wan_configs": [
+                {
+                    "ip_range_id": None,  # Généré par la DB
+                    "name": wan_name,
+                }
+            ],
+            "vnet_config": {
+                "vxlan_range_id": None,  # Généré par la DB
+                "name": vxlan_name,
+            } if vxlan_name else None,
+        }
 
-        config = ClusterConfigFile(
-            kind="clusterconfig/v1",
-            clusters=[cluster_entry],
-            wan=[wan_config],
-            vnets=[vnet_config],
-        )
+        config_data = {
+            "clusters": [cluster_data],
+            "wan": [wan_config.model_dump(exclude_none=True)],
+            "vnets": [vnet_config.model_dump(exclude_none=True)],
+        }
 
         # Sérialiser en YAML
         return yaml.dump(
-            config.model_dump(exclude_none=True),
+            config_data,
             default_flow_style=False,
             sort_keys=False,
         )

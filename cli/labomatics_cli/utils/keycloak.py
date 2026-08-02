@@ -200,6 +200,14 @@ class KeycloakClient:
                 f"create_user failed: {resp.status_code} - {resp.text}"
             ) from e
 
+    def get_user_by_username(self, realm_name: str, username: str) -> dict | None:
+        """Récupérer un user par username. Retourne None si pas trouvé."""
+        url = f"{self.base_url}/admin/realms/{realm_name}/users?username={username}"
+        resp = requests.get(url, headers=self._headers(), verify=False)
+        resp.raise_for_status()
+        users = resp.json()
+        return users[0] if users else None
+
     def add_user_to_group(self, realm_name: str, user_id: str, group_id: str) -> None:
         """Ajouter un user à un groupe."""
         url = f"{self.base_url}/admin/realms/{realm_name}/users/{user_id}/groups/{group_id}"
