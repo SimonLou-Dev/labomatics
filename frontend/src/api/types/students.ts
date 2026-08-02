@@ -2,6 +2,17 @@
  * Students types
  */
 
+export interface StudentListItem {
+  id: string
+  login: string
+  email: string
+  first_name: string
+  last_name: string
+  cohort_name: string
+  wan_ip: string | null
+  vxlan_tag: number | null
+}
+
 export interface StudentImportRow {
   external_id: number
   first_name: string
@@ -46,4 +57,39 @@ export interface StudentImportError {
   row_index: number
   external_id?: string
   reason: string
+}
+
+export interface StudentDetailDTO {
+  id: string
+  login: string
+  email: string
+  first_name: string
+  last_name: string
+  cohort_name: string
+  wan_ip: string | null
+  vxlan_tag: number | null
+  created_at: string
+  updated_at: string
+}
+
+export interface LabVmDTO {
+  id: string
+  name: string
+  cluster_name: string
+  state: string
+  cores: number
+  memory_mb: number
+  disk_gb: number
+  created_at: string
+}
+
+export interface LabAllocationDTO {
+  type: 'wan' | 'vxlan'
+  value: string | number
+}
+
+export interface LabDataDTO {
+  student: StudentDetailDTO
+  vms: LabVmDTO[]
+  allocations: LabAllocationDTO[]
 }

@@ -2,7 +2,10 @@
  * Students API endpoints
  */
 import http from './http'
-import type { StudentImportDiff, StudentImportMapping } from './types'
+import type { StudentImportDiff, StudentImportMapping, StudentListItem, StudentDetailDTO, LabDataDTO } from './types'
+import type { PaginatedResponse } from './types'
+
+export type { StudentListItem } from './types'
 
 export async function importPreview(
   file: File,
@@ -37,5 +40,30 @@ export async function importApply(
   formData.append('year', String(year))
 
   const res = await http.post<StudentImportDiff>('/students/import/apply', formData)
+  return res.data
+}
+
+export async function listStudents(
+  page: number,
+  perPage: number
+): Promise<PaginatedResponse<StudentListItem>> {
+  const res = await http.get<PaginatedResponse<StudentListItem>>('/students', {
+    params: { page, size: perPage },
+  })
+  return res.data
+}
+
+export async function getStudentDetail(studentId: string): Promise<StudentDetailDTO> {
+  const res = await http.get<StudentDetailDTO>(`/students/${studentId}`)
+  return res.data
+}
+
+export async function getLabData(studentId: string): Promise<LabDataDTO> {
+  const res = await http.get<LabDataDTO>(`/students/${studentId}/lab`)
+  return res.data
+}
+
+export async function getLabDataForMe(): Promise<LabDataDTO> {
+  const res = await http.get<LabDataDTO>('/me/lab')
   return res.data
 }
