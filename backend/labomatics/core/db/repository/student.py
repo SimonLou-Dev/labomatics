@@ -56,8 +56,7 @@ class StudentRepository(BaseRepository[Student]):
         self, page: int = 1, size: int = 20
     ) -> tuple[list[Student], int]:
         """Liste les étudiants avec pagination (jointure SQL simple)."""
-        from sqlalchemy import func, join, outerjoin
-        from sqlalchemy.orm import contains_eager
+        from sqlalchemy import func
 
         from labomatics.core.db.models import (
             Cohort,
@@ -73,9 +72,7 @@ class StudentRepository(BaseRepository[Student]):
                 .where(self.model.is_active)
                 .outerjoin(Enrollment, Enrollment.student_id == self.model.id)
                 .outerjoin(Cohort, Cohort.id == Enrollment.cohort_id)
-                .outerjoin(
-                    LabProvisioning, LabProvisioning.student_id == self.model.id
-                )
+                .outerjoin(LabProvisioning, LabProvisioning.student_id == self.model.id)
                 .outerjoin(
                     IpAllocation, IpAllocation.id == LabProvisioning.ip_allocation_id
                 )
@@ -92,10 +89,39 @@ class StudentRepository(BaseRepository[Student]):
             result = await session.execute(stmt)
             students = result.scalars().unique().all()
 
-            count_stmt = select(func.count(self.model.id)).where(
-                self.model.is_active
-            )
+            count_stmt = select(func.count(self.model.id)).where(self.model.is_active)
             count_result = await session.execute(count_stmt)
             total = count_result.scalar() or 0
 
             return students, total
+
+    async def get_by_id_for_lab(self, student_id: UUID) -> Student | None:
+        """Récupère un étudiant avec toutes les relations pour afficher le lab."""
+        from labomatics.core.db.models import (
+            Cohort,
+            Enrollment,
+            IpAllocation,
+            LabProvisioning,
+            LabVm,
+            VxlanAllocation,
+        )
+
+        async with async_session_local() as session:
+            stmt = (
+                select(self.model)
+                .where(self.model.id == student_id)
+                .outerjoin(Enrollment, Enrollment.student_id == self.model.id)
+                .outerjoin(Cohort, Cohort.id == Enrollment.cohort_id)
+                .outerjoin(LabProvisioning, LabProvisioning.student_id == self.model.id)
+                .outerjoin(LabVm, LabVm.lab_provisioning_id == LabProvisioning.id)
+                .outerjoin(
+                    IpAllocation, IpAllocation.id == LabProvisioning.ip_allocation_id
+                )
+                .outerjoin(
+                    VxlanAllocation,
+                    VxlanAllocation.id == LabProvisioning.vxlan_allocation_id,
+                )
+                .distinct()
+            )
+            result = await session.execute(stmt)
+            return result.scalars().unique().one_or_none()
