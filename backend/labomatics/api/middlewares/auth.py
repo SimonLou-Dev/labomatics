@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import Request, status
+from fastapi import HTTPException, Request, status
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from labomatics.core.config.settings import settings
 from labomatics.services.auth_service import AuthService
 
 logger = logging.getLogger(__name__)
@@ -60,11 +61,12 @@ class AuthMiddleware(BaseHTTPMiddleware):
             user = AuthService.authenticate(access_token)
             request.state.user = user
             logger.info("Authentication successful for user: %s", user.username)
-        except Exception as e:
-            logger.error("Authentication failed: %s", str(e), exc_info=True)
-            # Si le token est expiré, essayer de le rafraîchir
-            if "Token invalide" in str(e) and refresh_token:
+        except HTTPException as http_exc:
+            logger.debug("Authentication failed with 401: %s", http_exc.detail)
+            # Si le token est invalide et on a un refresh token, essayer le refresh
+            if http_exc.status_code == 401 and refresh_token:
                 try:
+                    logger.info("Attempting token refresh...")
                     token_data = AuthService.refresh_access_token(refresh_token)
                     new_access_token = token_data.get("access_token")
                     if new_access_token:
@@ -72,6 +74,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
                         request.state.user = user
                         # Le nouveau token sera défini dans la réponse
                         request.state.new_access_token = new_access_token
+                        logger.info("Token refreshed successfully")
                     else:
                         raise Exception("Pas d'access token dans la réponse refresh")
                 except Exception as refresh_err:
@@ -84,20 +87,27 @@ class AuthMiddleware(BaseHTTPMiddleware):
                     )
             else:
                 return JSONResponse(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    content={"detail": str(e)},
+                    status_code=http_exc.status_code,
+                    content={"detail": http_exc.detail},
                 )
+        except Exception as e:
+            logger.error("Unexpected authentication error: %s", str(e), exc_info=True)
+            return JSONResponse(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                content={"detail": "Erreur d'authentification"},
+            )
 
         response = await call_next(request)
 
         # Si on a généré un nouveau access token, le mettre dans un cookie
         if hasattr(request.state, "new_access_token"):
+            is_secure = settings.environment != "development"
             response.set_cookie(
                 "access_token",
                 request.state.new_access_token,
                 max_age=3600,
                 httponly=True,
-                secure=True,
+                secure=is_secure,
                 samesite="lax",
                 path="/",
             )

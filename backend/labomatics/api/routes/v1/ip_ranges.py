@@ -51,6 +51,16 @@ async def update_ip_range(
     return await service.update_ip_range(ip_range_id, dto)
 
 
+@router.get("/{ip_range_id}")
+async def get_ip_range(
+    _user: CurrentUser,
+    service: IpRangeServiceDep,
+    ip_range_id: UUID,
+) -> IpRangeDTO:
+    """Récupère les détails d'une plage d'IP WAN."""
+    return await service.get_ip_range(ip_range_id)
+
+
 @router.delete("/{ip_range_id}")
 async def delete_ip_range(
     _user: RequireManageCluster,

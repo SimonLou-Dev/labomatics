@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import MainLayout from '@/layouts/MainLayout.vue'
 import LoginPage from '@/pages/Login.vue'
+import ForbiddenPage from '@/pages/Forbidden.vue'
 import DashboardPage from '@/pages/Dashboard.vue'
 import StudentsAdminPage from '@/pages/admin/Students.vue'
 import ClustersPage from '@/pages/admin/Clusters.vue'
@@ -16,6 +17,12 @@ const routes = [
     path: '/login',
     name: 'Login',
     component: LoginPage,
+    meta: { requiresAuth: false, layout: 'blank' },
+  },
+  {
+    path: '/forbidden',
+    name: 'Forbidden',
+    component: ForbiddenPage,
     meta: { requiresAuth: false, layout: 'blank' },
   },
   {

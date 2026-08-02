@@ -68,12 +68,13 @@ async def callback(code: str = Query(...), state: str = Query(...)):
 
         # Redirige avec les cookies HTTPOnly
         response = RedirectResponse(url=redirect_url, status_code=status.HTTP_302_FOUND)
+        is_secure = settings.environment != "development"
         response.set_cookie(
             "access_token",
             access_token,
             max_age=expires_in,
             httponly=True,
-            secure=True,
+            secure=is_secure,
             samesite="lax",
             path="/",
         )
@@ -83,7 +84,7 @@ async def callback(code: str = Query(...), state: str = Query(...)):
                 refresh_token,
                 max_age=30 * 24 * 3600,  # 30 jours
                 httponly=True,
-                secure=True,
+                secure=is_secure,
                 samesite="lax",
                 path="/",
             )

@@ -13,6 +13,7 @@ from labomatics.api.dto.cluster import (
     ClusterCredentialWriteDTO,
     ClusterDTO,
     ClusterUpdateDTO,
+    RangeRef,
 )
 from labomatics.core.db.models.cluster import Cluster
 from labomatics.core.db.models.cluster_credential import ClusterCredential
@@ -274,8 +275,8 @@ class ClusterService:
         """Convertit un modèle Cluster en DTO."""
         token_id = None
         has_credential = False
-        ip_range_names: list[str] = []
-        vxlan_range_names: list[str] = []
+        ip_ranges: list[RangeRef] = []
+        vxlan_ranges: list[RangeRef] = []
 
         # Charger la credential si elle existe
         try:
@@ -286,15 +287,17 @@ class ClusterService:
         except Exception as e:
             logger.warning(f"Failed to load credential for cluster {cluster.id}: {e}")
 
-        # Charger les noms des plages
+        # Charger les plages avec id et name
         try:
             if cluster.ip_range_clusters:
-                ip_range_names = [
-                    rel.ip_range.name for rel in cluster.ip_range_clusters
+                ip_ranges = [
+                    RangeRef(id=str(rel.ip_range.id), name=rel.ip_range.name)
+                    for rel in cluster.ip_range_clusters
                 ]
             if cluster.vxlan_range_clusters:
-                vxlan_range_names = [
-                    rel.vxlan_range.name for rel in cluster.vxlan_range_clusters
+                vxlan_ranges = [
+                    RangeRef(id=str(rel.vxlan_range.id), name=rel.vxlan_range.name)
+                    for rel in cluster.vxlan_range_clusters
                 ]
         except DetachedInstanceError:
             # Relations pas chargées
@@ -311,6 +314,6 @@ class ClusterService:
             is_default_for_new_cohorts=cluster.is_default_for_new_cohorts,
             has_credential=has_credential,
             token_id=token_id,
-            ip_range_names=ip_range_names,
-            vxlan_range_names=vxlan_range_names,
+            ip_ranges=ip_ranges,
+            vxlan_ranges=vxlan_ranges,
         )

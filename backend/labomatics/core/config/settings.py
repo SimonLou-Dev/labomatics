@@ -60,7 +60,7 @@ class Settings(BaseSettings):
     cluster_config_path: str | None = Field(default=None, alias="CLUSTER_CONFIG_PATH")
 
     # --- Misc ---
-    environment: str = "development"
+    environment: str = Field(default="development", alias="ENVIRONMENT")
 
 
 settings = Settings()
