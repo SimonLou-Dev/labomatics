@@ -2248,6 +2248,18 @@ files = [
 ]
 
 [[package]]
+name = "proxmoxer"
+version = "2.3.0"
+description = "Python Wrapper for the Proxmox 2.x API (HTTP and SSH)"
+optional = false
+python-versions = "*"
+groups = ["main"]
+files = [
+    {file = "proxmoxer-2.3.0-py3-none-any.whl", hash = "sha256:1c03445e95cf9c53b6e50614dbaf561e0e1eb3ec878cf45ddde4bc4421c56743"},
+    {file = "proxmoxer-2.3.0.tar.gz", hash = "sha256:0b0b2067187af1fc6d4257a46ac68c8fd79cc25d2813637cdae7a9a98fbfd11f"},
+]
+
+[[package]]
 name = "psycopg2-binary"
 version = "2.9.12"
 description = "psycopg2 - Python-PostgreSQL Database Adapter"
@@ -3704,4 +3716,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.11"
-content-hash = "4f581df5f2586c7b2e6ca4e3bc8840152cfdf879e9d41b59c30802902386f8b4"
+content-hash = "fe8c5de87fc07a8b09748f37a04f3416a2b2758dfa22cde7d44b9f8e686f9d0f"
