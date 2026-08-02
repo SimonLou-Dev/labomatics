@@ -9,12 +9,16 @@ from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile, sta
 
 from labomatics.api.deps.auth import CurrentUser, RequireManageUser
 from labomatics.api.dto.lab import LabDataDTO
-from labomatics.api.dto.student import StudentListResponseDTO
+from labomatics.api.dto.student import (
+    StudentListResponseDTO,
+    StudentImportDiffDTO as StudentImportDiffDTOXML,
+)
 from labomatics.api.dto.student_import import (
     StudentImportDiffDTO,
     StudentImportMappingDTO,
 )
 from labomatics.services import StudentImportServiceDep, StudentServiceDep
+from labomatics.services.student_import_service import StudentImportService
 
 router = APIRouter(prefix="/students", tags=["students"])
 
@@ -84,6 +88,52 @@ async def apply_import(
     )
 
     return await service.apply(rows, mapping, year)
+
+
+@router.post("/import-xml/preview")
+async def preview_import_xml(
+    _user: RequireManageUser,
+    file: UploadFile = File(...),
+    login: str = Form(...),
+    first_name: str = Form(...),
+    last_name: str = Form(...),
+    email: str = Form(...),
+    cohort_name: str = Form(...),
+) -> StudentImportDiffDTOXML:
+    """Pré-visualise l'import XML sans rien modifier."""
+    content = await file.read()
+    column_mapping = {
+        "login": login,
+        "first_name": first_name,
+        "last_name": last_name,
+        "email": email,
+        "cohort_name": cohort_name,
+    }
+    service = StudentImportService()
+    return await service.preview_import(content, column_mapping)
+
+
+@router.post("/import-xml/apply")
+async def apply_import_xml(
+    _user: RequireManageUser,
+    file: UploadFile = File(...),
+    login: str = Form(...),
+    first_name: str = Form(...),
+    last_name: str = Form(...),
+    email: str = Form(...),
+    cohort_name: str = Form(...),
+) -> StudentImportDiffDTOXML:
+    """Applique l'import XML (création/modification/suppression d'étudiants)."""
+    content = await file.read()
+    column_mapping = {
+        "login": login,
+        "first_name": first_name,
+        "last_name": last_name,
+        "email": email,
+        "cohort_name": cohort_name,
+    }
+    service = StudentImportService()
+    return await service.apply_import(content, column_mapping)
 
 
 @router.get("/me/lab")

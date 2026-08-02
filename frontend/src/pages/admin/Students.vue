@@ -1,5 +1,15 @@
 <template>
   <div class="min-h-screen bg-surface-900 dark:bg-surface-50 p-6">
+    <div class="mb-6 flex justify-between items-center">
+      <h1 class="text-3xl font-bold">Étudiants</h1>
+      <Button
+        label="Importer XML"
+        icon="pi pi-upload"
+        severity="info"
+        @click="openImportDialog"
+      />
+    </div>
+
     <div class="mb-3 flex justify-end">
       <IconField>
         <InputIcon>
@@ -85,6 +95,12 @@
         </template>
       </Column>
     </DataTable>
+
+    <StudentImportDialog
+      ref="importDialog"
+      @imported="onImportSuccess"
+      @close="onImportClose"
+    />
   </div>
 </template>
 
@@ -95,6 +111,7 @@ import { DataTable, Column, IconField, InputIcon, InputText, Badge, Button } fro
 import { Search } from '@primeicons/vue'
 import { listStudents, type StudentListItem } from '@/api/students'
 import { getCohortColor } from '@/utils/colors'
+import StudentImportDialog from './StudentImportDialog.vue'
 
 const toast = useToast()
 
@@ -104,6 +121,7 @@ const loading = ref(false)
 const currentPage = ref(1)
 const pageSize = ref(20)
 const searchQuery = ref('')
+const importDialog = ref<InstanceType<typeof StudentImportDialog>>()
 
 async function fetchStudents(page: number = 1) {
   loading.value = true
@@ -132,6 +150,18 @@ function onPageChange(event: any) {
 
 function onSearch() {
   fetchStudents(1)
+}
+
+function openImportDialog() {
+  importDialog.value?.open()
+}
+
+function onImportSuccess() {
+  fetchStudents(1)
+}
+
+function onImportClose() {
+  // Nothing to do on close
 }
 
 onMounted(() => {
