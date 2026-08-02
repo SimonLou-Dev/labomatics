@@ -29,9 +29,6 @@ class IpAllocation(Base, UUIDPkMixin, TimestampMixin):
     released_at: Mapped[datetime | None] = None
 
     # Relationships
-    ip_range: Mapped["IpRange"] = relationship(
-        back_populates="allocations",
-    )
     student: Mapped["Student"] = relationship(  # type: ignore
         back_populates="ip_allocations",
     )
@@ -55,5 +52,4 @@ class IpAllocation(Base, UUIDPkMixin, TimestampMixin):
 
 
 # Forward references for circular imports
-from labomatics.core.db.models.ip_range import IpRange  # noqa: E402
 from labomatics.core.db.models.student import Student  # noqa: E402

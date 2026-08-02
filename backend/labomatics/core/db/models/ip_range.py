@@ -29,9 +29,6 @@ class IpRange(Base, UUIDPkMixin, TimestampMixin):
     range_clusters: Mapped[list["IpRangeCluster"]] = relationship(
         back_populates="ip_range",
     )
-    allocations: Mapped[list["IpAllocation"]] = relationship(
-        back_populates="ip_range",
-    )
 
     __table_args__ = (UniqueConstraint("name"),)
 
