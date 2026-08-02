@@ -3,9 +3,10 @@
 from rich.prompt import Confirm
 from rich.table import Table
 
-from ...utils.theme import console, title, success
+from ...utils.theme import console, title, success, info
 from ...utils.proxmox import ProxmoxClient
 from ...utils.state import InstallState
+from ...utils.configgen import ClusterConfigGenerator
 
 from .steps import (
     collect_step_1_basic_config,
@@ -19,6 +20,7 @@ from .steps import (
 )
 from .vm import VMDeployer
 from .network import NetworkSetup
+from .ssh_manager import SSHManager
 from .keycloak import KeycloakSetup
 from .proxmox_oidc import ProxmoxOIDCSetup
 
@@ -104,6 +106,13 @@ def run_installation(state: InstallState) -> int:
     oidc_setup = ProxmoxOIDCSetup(pve, domain, state)
     oidc_setup.setup(admin_first_name, admin_last_name, admin_email)
 
+    # Generate and deploy clusterconfig.yaml
+    _generate_and_deploy_clusterconfig(
+        state, vm_ip, ssh_privkey_path,
+        vm_name, proxmox_url, labomatics_token_secret,
+        vm_storage, wan_config, vxlan_config, node, wan_iface
+    )
+
     # Done
     _display_completion_summary(state, domain)
     state.mark_completed()
@@ -152,5 +161,59 @@ def _display_completion_summary(state, domain):
         "[bold]Backend Keycloak Password[/bold]",
         f"[yellow]{state.get('labomatics_admin_password')}[/yellow]",
     )
+    if state.get('clusterconfig_path'):
+        table.add_row(
+            "[bold]Cluster Config[/bold]",
+            state.get('clusterconfig_path'),
+        )
     console.print(table)
     console.print("\n[bold cyan]════════════════════════════════════════[/bold cyan]\n")
+
+
+def _generate_and_deploy_clusterconfig(
+    state, vm_ip, ssh_privkey_path,
+    cluster_name, proxmox_url, token_secret,
+    storage, wan_config, vxlan_config, node, wan_iface
+):
+    """Générer et déployer le clusterconfig.yaml sur la VM."""
+    info("Génération configuration cluster...")
+
+    # Generate YAML content
+    # wan_exclusions peut être une liste ou une string (utilisateur peut fournir "172.29.20.1-172.29.20.199" ou ["..."])
+    wan_exclusions = wan_config.get("exclude", [])
+    if isinstance(wan_exclusions, list):
+        exclusions_str = ",".join(wan_exclusions) if wan_exclusions else ""
+    else:
+        # Si déjà une string, l'utiliser directement
+        exclusions_str = wan_exclusions if wan_exclusions else ""
+
+    yaml_content = ClusterConfigGenerator.generate(
+        cluster_name=cluster_name,
+        proxmox_url=proxmox_url,
+        token_id=f"{cluster_name}-cli",
+        token_secret=token_secret,
+        storage=storage,
+        wan_name=wan_config.get("name", "wan"),
+        wan_iface=wan_iface,
+        wan_network=wan_config.get("network", ""),
+        wan_gateway=wan_config.get("gateway", ""),
+        wan_exclusions=exclusions_str,
+        vxlan_name=vxlan_config.get("name", "vxlan"),
+        vxlan_network=vxlan_config.get("network", ""),
+        sdn_zone="labs",  # Hardcoded in network.py setup
+    )
+
+    # Deploy to VM
+    ssh_client = SSHManager.connect_to_host(vm_ip, user="labomatics", key_filename=ssh_privkey_path)
+    try:
+        # Write YAML directly to /tmp with user permissions
+        ssh_client.put_file_content("/tmp/clusterconfig.yaml", yaml_content)
+        # Move to /etc/labomatics with sudo
+        stdout, stderr, rc = ssh_client.exec_command("sudo mv /tmp/clusterconfig.yaml /etc/labomatics/clusterconfig.yaml")
+        if rc != 0:
+            raise RuntimeError(f"Failed to deploy clusterconfig: {stderr}")
+        ssh_client.exec_command("sudo chmod 600 /etc/labomatics/clusterconfig.yaml")
+        success("✓ clusterconfig.yaml déployé dans /etc/labomatics/")
+        state.set("clusterconfig_path", "/etc/labomatics/clusterconfig.yaml")
+    finally:
+        ssh_client.disconnect()
