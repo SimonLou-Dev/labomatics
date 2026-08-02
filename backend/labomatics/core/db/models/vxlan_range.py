@@ -28,17 +28,11 @@ class VxlanRange(Base, UUIDPkMixin, TimestampMixin):
     range_clusters: Mapped[list["VxlanRangeCluster"]] = relationship(
         back_populates="vxlan_range",
     )
-    allocations: Mapped[list["VxlanAllocation"]] = relationship(
-        back_populates="vxlan_range",
-    )
 
     __table_args__ = (UniqueConstraint("name"),)
 
 
 # Forward references for circular imports
-from labomatics.core.db.models.vxlan_allocation import (  # noqa: E402
-    VxlanAllocation,
-)
 from labomatics.core.db.models.vxlan_range_cluster import (  # noqa: E402
     VxlanRangeCluster,
 )

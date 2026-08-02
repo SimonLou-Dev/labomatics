@@ -51,3 +51,51 @@ class StudentRepository(BaseRepository[Student]):
             stmt = select(self.model).where(self.model.is_active)
             result = await session.execute(stmt)
             return result.scalars().all()
+
+    async def list_with_pagination(
+        self, page: int = 1, size: int = 20
+    ) -> tuple[list[Student], int]:
+        """Liste les étudiants avec pagination (jointure SQL simple)."""
+        from sqlalchemy import func, join, outerjoin
+        from sqlalchemy.orm import contains_eager
+
+        from labomatics.core.db.models import (
+            Cohort,
+            Enrollment,
+            IpAllocation,
+            LabProvisioning,
+            VxlanAllocation,
+        )
+
+        async with async_session_local() as session:
+            stmt = (
+                select(self.model)
+                .where(self.model.is_active)
+                .outerjoin(Enrollment, Enrollment.student_id == self.model.id)
+                .outerjoin(Cohort, Cohort.id == Enrollment.cohort_id)
+                .outerjoin(
+                    LabProvisioning, LabProvisioning.student_id == self.model.id
+                )
+                .outerjoin(
+                    IpAllocation, IpAllocation.id == LabProvisioning.ip_allocation_id
+                )
+                .outerjoin(
+                    VxlanAllocation,
+                    VxlanAllocation.id == LabProvisioning.vxlan_allocation_id,
+                )
+                .distinct()
+                .order_by(self.model.created_at.desc())
+                .offset((page - 1) * size)
+                .limit(size)
+            )
+
+            result = await session.execute(stmt)
+            students = result.scalars().unique().all()
+
+            count_stmt = select(func.count(self.model.id)).where(
+                self.model.is_active
+            )
+            count_result = await session.execute(count_stmt)
+            total = count_result.scalar() or 0
+
+            return students, total

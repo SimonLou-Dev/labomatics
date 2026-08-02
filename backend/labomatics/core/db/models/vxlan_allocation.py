@@ -30,9 +30,6 @@ class VxlanAllocation(Base, UUIDPkMixin, TimestampMixin):
     released_at: Mapped[datetime | None] = None
 
     # Relationships
-    vxlan_range: Mapped["VxlanRange"] = relationship(
-        back_populates="allocations",
-    )
     student: Mapped["Student"] = relationship(  # type: ignore
         back_populates="vxlan_allocations",
     )
@@ -57,4 +54,3 @@ class VxlanAllocation(Base, UUIDPkMixin, TimestampMixin):
 
 # Forward references for circular imports
 from labomatics.core.db.models.student import Student  # noqa: E402
-from labomatics.core.db.models.vxlan_range import VxlanRange  # noqa: E402

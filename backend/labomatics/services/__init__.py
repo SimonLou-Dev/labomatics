@@ -9,12 +9,15 @@ from fastapi import Depends
 from labomatics.services.auth_service import AuthService
 from labomatics.services.mail_service import MailService
 from labomatics.services.student_import_service import StudentImportService
+from labomatics.services.student_service import StudentService
 
 __all__ = [
     "AuthService",
     "AuthServiceDep",
     "MailService",
     "MailServiceDep",
+    "StudentService",
+    "StudentServiceDep",
     "StudentImportService",
     "StudentImportServiceDep",
 ]
@@ -30,6 +33,11 @@ def get_mail_service() -> MailService:
     return MailService()
 
 
+def get_student_service() -> StudentService:
+    """Factory pour StudentService."""
+    return StudentService()
+
+
 def get_student_import_service() -> StudentImportService:
     """Factory pour StudentImportService."""
     return StudentImportService()
@@ -37,6 +45,7 @@ def get_student_import_service() -> StudentImportService:
 
 AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
 MailServiceDep = Annotated[MailService, Depends(get_mail_service)]
+StudentServiceDep = Annotated[StudentService, Depends(get_student_service)]
 StudentImportServiceDep = Annotated[
     StudentImportService, Depends(get_student_import_service)
 ]
