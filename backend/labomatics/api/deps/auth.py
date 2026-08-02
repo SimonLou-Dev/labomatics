@@ -40,3 +40,4 @@ def require_role(required_role: str):
 
 CurrentUser = Annotated[AuthUser, Depends(current_user)]
 RequireManageUser = require_role("manage_user")
+RequireManageCluster = require_role("manage_cluster")

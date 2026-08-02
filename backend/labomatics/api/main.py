@@ -11,6 +11,7 @@ from labomatics.api.middlewares.auth import AuthMiddleware
 from labomatics.api.middlewares.csrf import CSRFMiddleware
 from labomatics.api.routes.router_v1 import router_v1
 from labomatics.core.config.settings import settings
+from labomatics.services import ClusterConfigService
 
 # Configure logging to stdout
 logging.basicConfig(
@@ -41,13 +42,12 @@ async def lifespan(app: FastAPI):
         logger.error("⚠️  Migration error: %s", e, exc_info=True)
         raise
 
-    logger.info("⏰ Scheduler — synchronisation médicaments planifiée via Celery Beat")
+    logger.info("🔧 Bootstrap cluster config if empty...")
     try:
-        logger.info("✅ Sync médicaments envoyée à la queue Celery")
+        await ClusterConfigService().apply_bootstrap_if_empty()
+        logger.info("✅ Cluster config applied")
     except Exception as e:
-        logger.warning(
-            "⚠️  Impossible d'envoyer la tâche de sync : %s", e, exc_info=True
-        )
+        logger.warning("⚠️  Cluster config bootstrap failed: %s", e, exc_info=True)
 
     yield
 
