@@ -32,6 +32,11 @@ export async function deleteIpRange(id: string): Promise<void> {
   await http.delete(`/ip-ranges/${id}`)
 }
 
+export async function getIpRange(rangeId: string): Promise<IpRangeDTO> {
+  const res = await http.get<IpRangeDTO>(`/ip-ranges/${rangeId}`)
+  return res.data
+}
+
 export async function getIpRangeAllocations(rangeId: string): Promise<IpAllocationDTO[]> {
   const res = await http.get<IpAllocationDTO[]>(`/ip-ranges/${rangeId}/allocations`)
   return res.data

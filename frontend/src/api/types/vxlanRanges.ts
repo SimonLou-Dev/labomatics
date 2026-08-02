@@ -10,8 +10,10 @@ export interface VxlanRangeDTO {
   vni_min: number
   vni_max: number
   exclusions: string[]
-  created_at: string
-  updated_at: string
+  total_vnis: number
+  used_count: number
+  free_count: number
+  utilization_percent: number
 }
 
 export interface VxlanRangeCreateDTO {

@@ -8,8 +8,10 @@ export interface IpRangeDTO {
   network: string
   gateway: string
   exclusions: string[]
-  created_at: string
-  updated_at: string
+  total_ips: number
+  used_count: number
+  free_count: number
+  utilization_percent: number
 }
 
 export interface IpRangeCreateDTO {

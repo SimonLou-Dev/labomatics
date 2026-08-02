@@ -20,13 +20,17 @@ http.interceptors.response.use(
   },
   (error) => {
     if (error.response?.status === 401) {
-      // Session expired or invalid — clear auth and redirect to login
-      const auth = useAuthStore()
-      auth.$patch({ user: null })
-      window.location.href = '/login'
+      // Session expired or invalid — clear auth and redirect to login (avoid loop)
+      if (!window.location.href.includes('/login')) {
+        const auth = useAuthStore()
+        auth.$patch({ user: null })
+        window.location.href = '/login'
+      }
     } else if (error.response?.status === 403) {
-      // Permission denied — redirect to forbidden page
-      window.location.href = '/forbidden'
+      // Permission denied — redirect to forbidden page (avoid loop)
+      if (!window.location.href.includes('/forbidden')) {
+        window.location.href = '/forbidden'
+      }
     }
     return Promise.reject(error)
   }
