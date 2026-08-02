@@ -32,6 +32,11 @@ export async function deleteVxlanRange(id: string): Promise<void> {
   await http.delete(`/vxlan-ranges/${id}`)
 }
 
+export async function getVxlanRange(rangeId: string): Promise<VxlanRangeDTO> {
+  const res = await http.get<VxlanRangeDTO>(`/vxlan-ranges/${rangeId}`)
+  return res.data
+}
+
 export async function getVxlanRangeAllocations(rangeId: string): Promise<VxlanAllocationDTO[]> {
   const res = await http.get<VxlanAllocationDTO[]>(`/vxlan-ranges/${rangeId}/allocations`)
   return res.data
