@@ -35,7 +35,7 @@
       </Column>
       <Column field="url" header="URL" style="width: 15%">
         <template #body="{ data }">
-          <span class="font-mono text-sm">{{ data.url }}</span>
+          <span class="font-mono text-sm"><a :href="data.url" target="_blanck">Console proxmox</a></span>
         </template>
       </Column>
       <Column field="default_storage" header="Stockage" style="width: 10%">
@@ -61,27 +61,29 @@
           />
         </template>
       </Column>
-      <Column field="ip_range_names" header="Plages IP" style="width: 12%">
+      <Column field="ip_ranges" header="Plages IP" style="width: 12%">
         <template #body="{ data }">
-          <div v-if="data.ip_range_names.length > 0" class="flex flex-wrap gap-1">
+          <div v-if="data.ip_ranges.length > 0" class="flex flex-wrap gap-1">
             <Chip
-              v-for="name in data.ip_range_names"
-              :key="name"
-              :label="name"
-              class="text-xs"
+              v-for="range in data.ip_ranges"
+              :key="range.id"
+              :label="range.name"
+              class="text-xs cursor-pointer"
+              @click="() => goToVxlanDetails(range.id)"
             />
           </div>
           <span v-else class="text-surface-400">—</span>
         </template>
       </Column>
-      <Column field="vxlan_range_names" header="Plages VXLAN" style="width: 12%">
+      <Column field="vxlan_ranges" header="Plages VXLAN" style="width: 12%">
         <template #body="{ data }">
-          <div v-if="data.vxlan_range_names.length > 0" class="flex flex-wrap gap-1">
+          <div v-if="data.vxlan_ranges.length > 0" class="flex flex-wrap gap-1">
             <Chip
-              v-for="name in data.vxlan_range_names"
-              :key="name"
-              :label="name"
-              class="text-xs"
+              v-for="range in data.vxlan_ranges"
+              :key="range.id"
+              :label="range.name"
+              class="text-xs cursor-pointer"
+               @click="() => goToWanDetails(range.id)"
             />
           </div>
           <span v-else class="text-surface-400">—</span>
@@ -284,7 +286,7 @@
                 @click="goToWanRangeDetails(ipRange.id)"
               />
               <Button
-                v-if="rangesCluster?.ip_range_names.includes(ipRange.name)"
+                v-if="rangesCluster?.ip_ranges.some((r) => r.id === ipRange.id)"
                 icon="pi pi-times"
                 size="small"
                 text
@@ -324,7 +326,7 @@
                 @click="goToNetworkRangeDetails(vxlanRange.id)"
               />
               <Button
-                v-if="rangesCluster?.vxlan_range_names.includes(vxlanRange.name)"
+                v-if="rangesCluster?.vxlan_ranges.some((r) => r.id === vxlanRange.id)"
                 icon="pi pi-times"
                 size="small"
                 text
@@ -417,9 +419,11 @@ import type {
 import * as clusterApi from '@/api/clusters'
 import * as ipRangeApi from '@/api/ipRanges'
 import * as vxlanRangeApi from '@/api/vxlanRanges'
+import { useRouter } from 'vue-router'
 
 const toast = useToast()
 const confirm = useConfirm()
+const router = useRouter()
 
 const apiUrl = import.meta.env.VITE_API_URL ?? '/api'
 
@@ -782,6 +786,14 @@ function onFileSelect(event: any) {
   if (file) {
     selectedFile.value = file
   }
+}
+
+function goToVxlanDetails(id: string) {
+  router.push(`/admin/networks/${id}`)
+}
+
+function goToWanDetails(id: string) {
+  router.push(`/admin/wan/${id}`)
 }
 
 async function importClusterConfig() {

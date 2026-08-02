@@ -13,6 +13,10 @@ class IpRangeDTO(BaseModel):
     network: str
     gateway: str
     exclusions: list | None = None
+    total_ips: int = 0
+    used_count: int = 0
+    free_count: int = 0
+    utilization_percent: int = 0
 
 
 class IpRangeCreateDTO(BaseModel):
@@ -36,7 +40,7 @@ class IpRangeUpdateDTO(BaseModel):
 class IpAllocationDTO(BaseModel):
     """Allocation d'IP publique à un étudiant."""
 
-    ip: str | None
+    ip_address: str | None
     student_login: str | None
     student_first_name: str | None
     student_last_name: str | None

@@ -36,7 +36,7 @@ class IpRangeService:
         return [self._to_dto(r) for r in ranges]
 
     async def list_ip_ranges_paginated(self, page: int, per_page: int):
-        """Liste les plages d'IP (paginées)."""
+        """Liste les plages d'IP (paginées) avec % d'utilisation."""
         result = await self.repo.paginate(filters={}, page=page, per_page=per_page)
         result.items = [self._to_dto(r) for r in result.items]
         return result
@@ -46,7 +46,8 @@ class IpRangeService:
         ip_range = await self.repo.get(ip_range_id)
         if not ip_range:
             raise HTTPException(404, "IP Range not found")
-        return self._to_dto(ip_range)
+        allocations = await self.alloc_repo.list_by_ip_range(ip_range_id)
+        return self._to_dto(ip_range, used_count=len(allocations))
 
     async def create_ip_range(self, dto: IpRangeCreateDTO) -> IpRangeDTO:
         """Crée une nouvelle plage d'IP."""
@@ -101,21 +102,32 @@ class IpRangeService:
     # Helpers
     # -------------------------------------------------------------------------
 
-    def _to_dto(self, ip_range: IpRange) -> IpRangeDTO:
-        """Convertit un modèle IpRange en DTO."""
+    def _to_dto(self, ip_range: IpRange, used_count: int = 0) -> IpRangeDTO:
+        """Convertit un modèle IpRange en DTO avec stats d'utilisation."""
+        network = IPv4Network(ip_range.network, strict=False)
+        total_ips = max(1, network.num_addresses - 2)  # Exclude network and broadcast
+        free_count = max(0, total_ips - used_count)
+        utilization_percent = (
+            int((used_count / total_ips) * 100) if total_ips > 0 else 0
+        )
+
         return IpRangeDTO(
             id=str(ip_range.id),
             name=ip_range.name,
             network=str(ip_range.network),
             gateway=str(ip_range.gateway),
             exclusions=ip_range.exclusions,
+            total_ips=total_ips,
+            used_count=used_count,
+            free_count=free_count,
+            utilization_percent=utilization_percent,
         )
 
     def _allocation_to_dto(self, allocation: IpAllocation) -> IpAllocationDTO:
         """Convertit une allocation IP en DTO."""
         student = allocation.student
         return IpAllocationDTO(
-            ip=str(allocation.ip_address),
+            ip_address=str(allocation.ip_address),
             student_login=student.login if student else None,
             student_first_name=student.first_name if student else None,
             student_last_name=student.last_name if student else None,

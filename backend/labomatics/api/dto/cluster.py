@@ -5,6 +5,13 @@ from __future__ import annotations
 from pydantic import BaseModel
 
 
+class RangeRef(BaseModel):
+    """Référence à une plage (ID et nom)."""
+
+    id: str
+    name: str
+
+
 class ClusterCredentialWriteDTO(BaseModel):
     """Credentials à écrire (token + secret)."""
 
@@ -25,8 +32,8 @@ class ClusterDTO(BaseModel):
     is_default_for_new_cohorts: bool
     has_credential: bool
     token_id: str | None = None
-    ip_range_names: list[str] = []
-    vxlan_range_names: list[str] = []
+    ip_ranges: list[RangeRef] = []
+    vxlan_ranges: list[RangeRef] = []
 
 
 class ClusterCreateDTO(BaseModel):

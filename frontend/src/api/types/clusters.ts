@@ -2,6 +2,11 @@
  * Clusters types
  */
 
+export interface RangeRef {
+  id: string
+  name: string
+}
+
 export interface ClusterDTO {
   id: string
   name: string
@@ -13,8 +18,8 @@ export interface ClusterDTO {
   is_default_for_new_cohorts: boolean
   has_credential: boolean
   token_id: string | null
-  ip_range_names: string[]
-  vxlan_range_names: string[]
+  ip_ranges: RangeRef[]
+  vxlan_ranges: RangeRef[]
 }
 
 export interface ClusterCreateDTO {

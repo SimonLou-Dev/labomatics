@@ -61,6 +61,16 @@ async def delete_vxlan_range(
     await service.delete_vxlan_range(vxlan_range_id)
 
 
+@router.get("/{vxlan_range_id}")
+async def get_vxlan_range(
+    _user: CurrentUser,
+    service: VxlanRangeServiceDep,
+    vxlan_range_id: UUID,
+) -> VxlanRangeDTO:
+    """Récupère les détails d'une plage VXLAN."""
+    return await service.get_vxlan_range(vxlan_range_id)
+
+
 @router.get("/{vxlan_range_id}/allocations")
 async def get_vxlan_range_allocations(
     _user: CurrentUser,

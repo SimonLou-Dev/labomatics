@@ -36,7 +36,7 @@ class VxlanRangeService:
         return [self._to_dto(r) for r in ranges]
 
     async def list_vxlan_ranges_paginated(self, page: int, per_page: int):
-        """Liste les plages VXLAN (paginées)."""
+        """Liste les plages VXLAN (paginées) avec % d'utilisation."""
         result = await self.repo.paginate(filters={}, page=page, per_page=per_page)
         result.items = [self._to_dto(r) for r in result.items]
         return result
@@ -46,7 +46,8 @@ class VxlanRangeService:
         vxlan_range = await self.repo.get(vxlan_range_id)
         if not vxlan_range:
             raise HTTPException(404, "VXLAN Range not found")
-        return self._to_dto(vxlan_range)
+        allocations = await self.alloc_repo.list_by_vxlan_range(vxlan_range_id)
+        return self._to_dto(vxlan_range, used_count=len(allocations))
 
     async def create_vxlan_range(self, dto: VxlanRangeCreateDTO) -> VxlanRangeDTO:
         """Crée une nouvelle plage VXLAN."""
@@ -106,8 +107,14 @@ class VxlanRangeService:
     # Helpers
     # -------------------------------------------------------------------------
 
-    def _to_dto(self, vxlan_range: VxlanRange) -> VxlanRangeDTO:
-        """Convertit un modèle VxlanRange en DTO."""
+    def _to_dto(self, vxlan_range: VxlanRange, used_count: int = 0) -> VxlanRangeDTO:
+        """Convertit un modèle VxlanRange en DTO avec stats d'utilisation."""
+        total_vnis = vxlan_range.vni_max - vxlan_range.vni_min + 1
+        free_count = max(0, total_vnis - used_count)
+        utilization_percent = (
+            int((used_count / total_vnis) * 100) if total_vnis > 0 else 0
+        )
+
         return VxlanRangeDTO(
             id=str(vxlan_range.id),
             name=vxlan_range.name,
@@ -116,6 +123,10 @@ class VxlanRangeService:
             base_network=str(vxlan_range.base_network),
             mtu=vxlan_range.mtu,
             exclusions=vxlan_range.exclusions,
+            total_vnis=total_vnis,
+            used_count=used_count,
+            free_count=free_count,
+            utilization_percent=utilization_percent,
         )
 
     def _allocation_to_dto(self, allocation: VxlanAllocation) -> VxlanAllocationDTO:
