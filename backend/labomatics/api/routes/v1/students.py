@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import csv
+from uuid import UUID
 
-from fastapi import APIRouter, File, Form, Query, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile, status
 
 from labomatics.api.deps.auth import CurrentUser, RequireManageUser
+from labomatics.api.dto.lab import LabDataDTO
 from labomatics.api.dto.student import StudentListResponseDTO
 from labomatics.api.dto.student_import import (
     StudentImportDiffDTO,
@@ -82,3 +84,80 @@ async def apply_import(
     )
 
     return await service.apply(rows, mapping, year)
+
+
+@router.get("/me/lab")
+async def get_current_lab(
+    user: CurrentUser,
+    service: StudentServiceDep,
+) -> LabDataDTO:
+    """Récupère les données du lab du student courant."""
+    # Essayer de récupérer le student depuis le subject (keycloak_user_id)
+    try:
+        keycloak_id = UUID(user.subject)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Subject invalide",
+        ) from e
+
+    student = await service.repo.get_by_keycloak_id(keycloak_id)
+    if not student:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Étudiant non trouvé",
+        )
+
+    lab_data = await service.get_lab_data(student.id)
+    if not lab_data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Données du lab non trouvées",
+        )
+
+    return lab_data
+
+
+@router.get("/{student_id}/lab")
+async def get_student_lab(
+    user: CurrentUser,
+    student_id: str,
+    service: StudentServiceDep,
+) -> LabDataDTO:
+    """Récupère les données du lab d'un étudiant (admin ou l'étudiant lui-même)."""
+    try:
+        target_id = UUID(student_id)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="ID d'étudiant invalide",
+        ) from e
+
+    # Vérifier l'authentification: l'user est admin OU c'est son propre lab
+    is_admin = "manage_user" in user.roles or "admin" in user.roles
+    if not is_admin:
+        # Vérifier que c'est le student lui-même
+        try:
+            current_subject = UUID(user.subject)
+        except ValueError as e:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Accès refusé",
+            ) from e
+
+        current_student = await service.repo.get_by_keycloak_id(current_subject)
+        if not current_student or current_student.id != target_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Accès refusé",
+            )
+
+    # Récupérer les données du lab
+    lab_data = await service.get_lab_data(target_id)
+    if not lab_data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Données du lab non trouvées",
+        )
+
+    return lab_data

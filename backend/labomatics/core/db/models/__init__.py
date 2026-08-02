@@ -13,6 +13,7 @@ from labomatics.core.db.models.ip_allocation import IpAllocation
 from labomatics.core.db.models.ip_range import IpRange
 from labomatics.core.db.models.ip_range_cluster import IpRangeCluster
 from labomatics.core.db.models.lab_provisioning import LabProvisioning
+from labomatics.core.db.models.lab_vm import LabVm
 from labomatics.core.db.models.student import Student
 
 # Provisioning models
@@ -34,6 +35,7 @@ __all__ = [
     "IpRange",
     "IpRangeCluster",
     "LabProvisioning",
+    "LabVm",
     "Student",
     "StudentClusterExtra",
     "TeacherCohort",
