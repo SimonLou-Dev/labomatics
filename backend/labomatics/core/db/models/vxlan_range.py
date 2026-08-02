@@ -23,6 +23,7 @@ class VxlanRange(Base, UUIDPkMixin, TimestampMixin):
         JSON,
         nullable=True,
     )
+    mtu: Mapped[int] = mapped_column(default=1350)
 
     # Relationships
     range_clusters: Mapped[list["VxlanRangeCluster"]] = relationship(

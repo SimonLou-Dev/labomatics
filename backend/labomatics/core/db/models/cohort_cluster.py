@@ -20,7 +20,7 @@ class CohortCluster(Base, UUIDPkMixin, TimestampMixin):
         ForeignKey("cluster.id", ondelete="RESTRICT"),
     )
     added_at: Mapped[datetime] = mapped_column(
-        default=datetime.utcnow,
+        default=lambda: datetime.utcnow().replace(tzinfo=None),
     )
 
     # Relationships

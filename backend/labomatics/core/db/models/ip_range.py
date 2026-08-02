@@ -34,9 +34,6 @@ class IpRange(Base, UUIDPkMixin, TimestampMixin):
 
 
 # Forward references for circular imports
-from labomatics.core.db.models.ip_allocation import (  # noqa: E402
-    IpAllocation,
-)
 from labomatics.core.db.models.ip_range_cluster import (  # noqa: E402
     IpRangeCluster,
 )

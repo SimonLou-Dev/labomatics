@@ -25,7 +25,7 @@ class VxlanAllocation(Base, UUIDPkMixin, TimestampMixin):
         CIDR,
     )
     allocated_at: Mapped[datetime] = mapped_column(
-        default=datetime.utcnow,
+        default=lambda: datetime.utcnow().replace(tzinfo=None),
     )
     released_at: Mapped[datetime | None] = None
 

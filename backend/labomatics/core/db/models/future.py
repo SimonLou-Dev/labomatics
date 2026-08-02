@@ -43,7 +43,7 @@ class ExerciseVersion(Base, UUIDPkMixin, TimestampMixin):
     )
     duration_hours: Mapped[int | None] = None
     created_at: Mapped[datetime] = mapped_column(
-        default=datetime.utcnow,
+        default=lambda: datetime.utcnow().replace(tzinfo=None),
     )
 
     # Relationships
@@ -94,7 +94,7 @@ class ExerciseDeploymentCampaign(Base, UUIDPkMixin, TimestampMixin):
     triggered_by_role: Mapped[str] = mapped_column()
     status: Mapped[str] = mapped_column()
     requested_at: Mapped[datetime] = mapped_column(
-        default=datetime.utcnow,
+        default=lambda: datetime.utcnow().replace(tzinfo=None),
     )
     expected_end_at: Mapped[datetime | None] = None
     completed_at: Mapped[datetime | None] = None
@@ -172,7 +172,7 @@ class QuotaOverride(Base, UUIDPkMixin, TimestampMixin):
     ram_limit_mb: Mapped[int | None] = None
     disk_limit_gb: Mapped[int | None] = None
     locked_at: Mapped[datetime] = mapped_column(
-        default=datetime.utcnow,
+        default=lambda: datetime.utcnow().replace(tzinfo=None),
     )
 
     # Relationships
@@ -188,13 +188,13 @@ class QuotaMeasurement(Base, UUIDPkMixin):
         ForeignKey("student.id", ondelete="RESTRICT"),
     )
     measured_at: Mapped[datetime] = mapped_column(
-        default=datetime.utcnow,
+        default=lambda: datetime.utcnow().replace(tzinfo=None),
     )
     cpu_used: Mapped[int]
     ram_used_mb: Mapped[int]
     disk_used_gb: Mapped[int]
     created_at: Mapped[datetime] = mapped_column(
-        default=datetime.utcnow,
+        default=lambda: datetime.utcnow().replace(tzinfo=None),
     )
 
     # Relationships
