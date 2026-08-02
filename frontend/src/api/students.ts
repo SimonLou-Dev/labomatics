@@ -52,10 +52,17 @@ export async function importApply(
 
 export async function listStudents(
   page: number,
-  perPage: number
+  perPage: number,
+  search?: string,
+  cohort?: string
 ): Promise<PaginatedResponse<StudentListItem>> {
   const res = await http.get<PaginatedResponse<StudentListItem>>('/students', {
-    params: { page, size: perPage },
+    params: {
+      page,
+      size: perPage,
+      ...(search && { search }),
+      ...(cohort && { cohort }),
+    },
   })
   return res.data
 }

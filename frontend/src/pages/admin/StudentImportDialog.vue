@@ -68,6 +68,25 @@
     <div v-if="step === 3" class="space-y-4 h-full overflow-auto">
       <h2 class="text-lg font-semibold">Étape 3: Vérifier les changements</h2>
 
+      <div class="grid grid-cols-4 gap-2 text-sm mb-4">
+        <Panel class="p-4 bg-green-500/20 border-2 border-green-500">
+          <div class="text-white text-xs font-medium mb-2">Ajoutés</div>
+          <div class="text-3xl font-bold text-green-400">{{ diffResult?.added?.length || 0 }}</div>
+        </Panel>
+        <Panel class="p-4 bg-blue-500/20 border-2 border-blue-500">
+          <div class="text-white text-xs font-medium mb-2">Modifiés</div>
+          <div class="text-3xl font-bold text-blue-400">{{ diffResult?.modified?.length || 0 }}</div>
+        </Panel>
+        <Panel class="p-4 bg-red-500/20 border-2 border-red-500">
+          <div class="text-white text-xs font-medium mb-2">Supprimés</div>
+          <div class="text-3xl font-bold text-red-400">{{ diffResult?.deleted?.length || 0 }}</div>
+        </Panel>
+        <Panel class="p-4 bg-surface-700 border-2 border-surface-600">
+          <div class="text-white text-xs font-medium mb-2">Total</div>
+          <div class="text-3xl font-bold text-surface-300">{{ filteredChanges.length }}</div>
+        </Panel>
+      </div>
+
       <div class="flex gap-2 mb-4">
         <InputText
           v-model="searchQuery"
@@ -90,31 +109,14 @@
         />
       </div>
 
-      <div class="grid grid-cols-4 gap-2 text-sm mb-4">
-        <Card class="p-3">
-          <div class="text-surface-400 text-xs">Ajoutés</div>
-          <div class="text-2xl font-bold text-green-500">{{ diffResult?.added?.length || 0 }}</div>
-        </Card>
-        <Card class="p-3">
-          <div class="text-surface-400 text-xs">Modifiés</div>
-          <div class="text-2xl font-bold text-blue-500">{{ diffResult?.modified?.length || 0 }}</div>
-        </Card>
-        <Card class="p-3">
-          <div class="text-surface-400 text-xs">Supprimés</div>
-          <div class="text-2xl font-bold text-red-500">{{ diffResult?.deleted?.length || 0 }}</div>
-        </Card>
-        <Card class="p-3">
-          <div class="text-surface-400 text-xs">Total</div>
-          <div class="text-2xl font-bold">{{ filteredChanges.length }}</div>
-        </Card>
-      </div>
+      
 
       <DataTable
         :value="filteredChanges"
         paginator
         :rows="10"
         :rowsPerPageOptions="[5, 10, 20]"
-        dataKey="login"
+        dataKey="id"
         class="text-sm"
       >
         <template #empty>Aucun changement</template>
@@ -126,9 +128,9 @@
             />
           </template>
         </Column>
-        <Column field="login" header="Login" style="width: 12%">
+        <Column field="id" header="Login" style="width: 12%">
           <template #body="{ data }">
-            <span class="font-semibold">{{ data.login }}</span>
+            <span class="font-semibold">{{ data.id }}</span>
           </template>
         </Column>
         <Column field="first_name" header="Prénom" style="width: 15%">
@@ -165,34 +167,30 @@
       <p class="text-sm text-surface-500">Vérifiez les informations avant de procéder à l'import.</p>
 
       <div class="grid grid-cols-4 gap-2 text-sm">
-        <Card class="p-3 bg-green-500/10 border border-green-500">
-          <div class="text-surface-400 text-xs">Ajoutés</div>
-          <div class="text-2xl font-bold text-green-500">{{ diffResult?.added?.length || 0 }}</div>
-        </Card>
-        <Card class="p-3 bg-blue-500/10 border border-blue-500">
-          <div class="text-surface-400 text-xs">Modifiés</div>
-          <div class="text-2xl font-bold text-blue-500">{{ diffResult?.modified?.length || 0 }}</div>
-        </Card>
-        <Card class="p-3 bg-red-500/10 border border-red-500">
-          <div class="text-surface-400 text-xs">Supprimés</div>
-          <div class="text-2xl font-bold text-red-500">{{ diffResult?.deleted?.length || 0 }}</div>
-        </Card>
-        <Card class="p-3">
-          <div class="text-surface-400 text-xs">Total changements</div>
-          <div class="text-2xl font-bold">{{ (diffResult?.added?.length || 0) + (diffResult?.modified?.length || 0) + (diffResult?.deleted?.length || 0) }}</div>
-        </Card>
+        <Panel class="p-4 bg-green-500/20 border-2 border-green-500">
+          <div class="text-white text-xs font-medium mb-2">Ajoutés</div>
+          <div class="text-3xl font-bold text-green-400">{{ diffResult?.added?.length || 0 }}</div>
+        </Panel>
+        <Panel class="p-4 bg-blue-500/20 border-2 border-blue-500">
+          <div class="text-white text-xs font-medium mb-2">Modifiés</div>
+          <div class="text-3xl font-bold text-blue-400">{{ diffResult?.modified?.length || 0 }}</div>
+        </Panel>
+        <Panel class="p-4 bg-red-500/20 border-2 border-red-500">
+          <div class="text-white text-xs font-medium mb-2">Supprimés</div>
+          <div class="text-3xl font-bold text-red-400">{{ diffResult?.deleted?.length || 0 }}</div>
+        </Panel>
+        <Panel class="p-4 bg-surface-700 border-2 border-surface-600">
+          <div class="text-white text-xs font-medium mb-2">Total changements</div>
+          <div class="text-3xl font-bold text-surface-300">{{ (diffResult?.added?.length || 0) + (diffResult?.modified?.length || 0) + (diffResult?.deleted?.length || 0) }}</div>
+        </Panel>
       </div>
+       <div class="flex items-center gap-2">
+        <Checkbox v-model="confirmImport" binary inputId="config-checkbox" />
+        <Label for="config-checkbox">Je confirme l'import de ces changements</Label>
 
-      <div class="p-4 bg-surface-800 rounded border border-surface-700">
-        <h3 class="font-semibold mb-2">Résumé</h3>
-        <ul class="text-sm space-y-1 text-surface-300">
-          <li>✓ {{ diffResult?.added?.length || 0 }} nouvel(les) étudiant(s)</li>
-          <li>◇ {{ diffResult?.modified?.length || 0 }} étudiant(s) modifiés</li>
-          <li>✗ {{ diffResult?.deleted?.length || 0 }} étudiant(s) à supprimer</li>
-        </ul>
-      </div>
+       </div>
 
-      <Checkbox v-model="confirmImport" binary label="Je confirme l'import de ces changements" />
+      
     </div>
 
     <!-- Footer -->
@@ -240,7 +238,7 @@ import {
   Select,
   InputText,
   Badge,
-  Card,
+  Panel,
   Checkbox,
 } from 'primevue'
 import * as studentsApi from '@/api/students'

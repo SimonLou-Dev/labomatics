@@ -55,32 +55,24 @@ class StudentRepository(BaseRepository[Student]):
     async def list_with_pagination(
         self, page: int = 1, size: int = 20
     ) -> tuple[list[Student], int]:
-        """Liste les étudiants avec pagination (jointure SQL simple)."""
+        """Liste les étudiants avec pagination (eager load relations)."""
         from sqlalchemy import func
+        from sqlalchemy.orm import selectinload
 
         from labomatics.core.db.models import (
-            Cohort,
             Enrollment,
-            IpAllocation,
-            LabProvisioning,
-            VxlanAllocation,
         )
 
         async with async_session_local() as session:
             stmt = (
                 select(self.model)
                 .where(self.model.is_active)
-                .outerjoin(Enrollment, Enrollment.student_id == self.model.id)
-                .outerjoin(Cohort, Cohort.id == Enrollment.cohort_id)
-                .outerjoin(LabProvisioning, LabProvisioning.student_id == self.model.id)
-                .outerjoin(
-                    IpAllocation, IpAllocation.id == LabProvisioning.ip_allocation_id
+                .options(
+                    selectinload(self.model.enrollments).selectinload(
+                        Enrollment.cohort
+                    ),
+                    selectinload(self.model.lab_provisioning),
                 )
-                .outerjoin(
-                    VxlanAllocation,
-                    VxlanAllocation.id == LabProvisioning.vxlan_allocation_id,
-                )
-                .distinct()
                 .order_by(self.model.created_at.desc())
                 .offset((page - 1) * size)
                 .limit(size)

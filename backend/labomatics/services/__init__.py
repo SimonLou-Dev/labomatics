@@ -10,7 +10,9 @@ from labomatics.services.auth_service import AuthService
 from labomatics.services.cluster_config_service import ClusterConfigService
 from labomatics.services.cluster_service import ClusterService
 from labomatics.services.ip_range_service import IpRangeService
+from labomatics.services.keycloak_service import KeycloakService
 from labomatics.services.mail_service import MailService
+from labomatics.services.proxmox_service import ProxmoxService
 from labomatics.services.student_import_service import StudentImportService
 from labomatics.services.student_service import StudentService
 from labomatics.services.vxlan_range_service import VxlanRangeService
@@ -24,8 +26,12 @@ __all__ = [
     "ClusterServiceDep",
     "IpRangeService",
     "IpRangeServiceDep",
+    "KeycloakService",
+    "KeycloakServiceDep",
     "MailService",
     "MailServiceDep",
+    "ProxmoxService",
+    "ProxmoxServiceDep",
     "StudentImportService",
     "StudentImportServiceDep",
     "StudentService",
@@ -75,6 +81,16 @@ def get_cluster_config_service() -> ClusterConfigService:
     return ClusterConfigService()
 
 
+def get_keycloak_service() -> KeycloakService:
+    """Factory pour KeycloakService."""
+    return KeycloakService()
+
+
+def get_proxmox_service() -> ProxmoxService:
+    """Factory pour ProxmoxService."""
+    return ProxmoxService()
+
+
 AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
 MailServiceDep = Annotated[MailService, Depends(get_mail_service)]
 StudentServiceDep = Annotated[StudentService, Depends(get_student_service)]
@@ -87,3 +103,5 @@ VxlanRangeServiceDep = Annotated[VxlanRangeService, Depends(get_vxlan_range_serv
 ClusterConfigServiceDep = Annotated[
     ClusterConfigService, Depends(get_cluster_config_service)
 ]
+KeycloakServiceDep = Annotated[KeycloakService, Depends(get_keycloak_service)]
+ProxmoxServiceDep = Annotated[ProxmoxService, Depends(get_proxmox_service)]

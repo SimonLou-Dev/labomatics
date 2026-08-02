@@ -10,15 +10,16 @@ from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile, sta
 from labomatics.api.deps.auth import CurrentUser, RequireManageUser
 from labomatics.api.dto.lab import LabDataDTO
 from labomatics.api.dto.student import (
-    StudentListResponseDTO,
     StudentImportDiffDTO as StudentImportDiffDTOXML,
+)
+from labomatics.api.dto.student import (
+    StudentListResponseDTO,
 )
 from labomatics.api.dto.student_import import (
     StudentImportDiffDTO,
     StudentImportMappingDTO,
 )
 from labomatics.services import StudentImportServiceDep, StudentServiceDep
-from labomatics.services.student_import_service import StudentImportService
 
 router = APIRouter(prefix="/students", tags=["students"])
 
@@ -29,9 +30,11 @@ async def list_students(
     service: StudentServiceDep,
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
+    search: str | None = Query(None),
+    cohort: str | None = Query(None),
 ) -> StudentListResponseDTO:
-    """Liste les étudiants actifs avec pagination."""
-    return await service.list_students(page, size)
+    """Liste les étudiants actifs avec pagination et filtres."""
+    return await service.list_students(page, size, search=search, cohort=cohort)
 
 
 @router.post("/import/preview")
@@ -93,6 +96,7 @@ async def apply_import(
 @router.post("/import-csv/preview")
 async def preview_import_csv(
     _user: RequireManageUser,
+    service: StudentImportServiceDep,
     file: UploadFile = File(...),
     id: str = Form(...),
     first_name: str = Form(...),
@@ -109,13 +113,13 @@ async def preview_import_csv(
         "email": email,
         "cohort_name": cohort_name,
     }
-    service = StudentImportService()
     return await service.preview_import(content, column_mapping)
 
 
 @router.post("/import-csv/apply")
 async def apply_import_csv(
     _user: RequireManageUser,
+    service: StudentImportServiceDep,
     file: UploadFile = File(...),
     id: str = Form(...),
     first_name: str = Form(...),
@@ -132,7 +136,6 @@ async def apply_import_csv(
         "email": email,
         "cohort_name": cohort_name,
     }
-    service = StudentImportService()
     return await service.apply_import(content, column_mapping)
 
 
