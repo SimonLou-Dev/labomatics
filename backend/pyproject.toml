@@ -9,6 +9,8 @@ packages = [{ include = "labomatics" }]
 python = "^3.11"
 
 requests = "^2.32"
+pyyaml = "^6.0"
+proxmoxer = "^2.0"
 
 # Core API
 fastapi = "^0.115"

@@ -142,8 +142,12 @@ class BaseRepository(Generic[ModelType]):
             if not obj:
                 return False
 
-            await session.delete(obj)
-            await session.commit()
+            try:
+                await session.delete(obj)
+                await session.commit()
+            except IntegrityError as exc:
+                await session.rollback()
+                raise HTTPException(409, "Cannot delete: object is referenced") from exc
             return True
 
     async def where(
@@ -350,6 +354,7 @@ class BaseRepository(Generic[ModelType]):
         page: int = 1,
         per_page: int = 20,
         relations: Iterable[str] | None = None,
+        order_by: Any | None = None,
     ) -> Page[ModelType]:
         """Renvoie une page d'objets.
 
@@ -363,6 +368,8 @@ class BaseRepository(Generic[ModelType]):
             Nombre d'éléments par page.
         relations : Iterable[str], optional
             Liste des relations à charger.
+        order_by : Any, optional
+            Clause de tri (ex: self.model.name).
 
         Returns
         -------
@@ -388,6 +395,10 @@ class BaseRepository(Generic[ModelType]):
 
             # Charger les relations
             stmt = self._apply_relations(stmt, relations)
+
+            # Ajouter le tri si fourni
+            if order_by is not None:
+                stmt = stmt.order_by(order_by)
 
             # Exécuter la requête paginée
             stmt_paginated = stmt.offset(offset).limit(per_page)
