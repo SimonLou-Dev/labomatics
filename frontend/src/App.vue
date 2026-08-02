@@ -1,5 +1,7 @@
 <template>
   <div class="min-h-screen bg-surface-color text-text-color">
+    <Toast />
+    <ConfirmDialog />
     <router-view />
   </div>
 </template>
@@ -9,6 +11,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useTheme } from '@/composables/useTheme'
 import { onMounted } from 'vue'
+import { Toast, ConfirmDialog } from 'primevue'
 
 const router = useRouter()
 const auth = useAuthStore()

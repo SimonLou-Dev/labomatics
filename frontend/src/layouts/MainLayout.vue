@@ -72,6 +72,7 @@
             <SidebarTrigger severity="secondary" target="labomatics-sidebar" :text="true" size="small">
               <SidebarIcon />
             </SidebarTrigger>
+            <Breadcrumb :model="breadcrumbs" class="ml-4" />
           </template>
 
           <template #end>
@@ -114,18 +115,9 @@ import SidebarPanel from 'primevue/sidebarpanel';
 import SidebarRail from 'primevue/sidebarrail';
 import SidebarSpacer from 'primevue/sidebarspacer';
 import SidebarTrigger from 'primevue/sidebartrigger';
+import Breadcrumb from 'primevue/breadcrumb';
 
-import Home from '@primeicons/vue/home';
-import User from '@primeicons/vue/user';
-import Users from '@primeicons/vue/users';
-import Book from '@primeicons/vue/book';
-import Pencil from '@primeicons/vue/pencil';
-import Cog from '@primeicons/vue/cog';
-import Server from '@primeicons/vue/server';
-import Sun from '@primeicons/vue/sun';
-import Moon from '@primeicons/vue/moon';
-import Palette from '@primeicons/vue/palette';
-import SignOut from '@primeicons/vue/sign-out';
+import {Home, User, Users, Book, Pencil, Cog, Server, Sun, Moon, Palette, SignOut, Globe, Wrench, SlidersH}  from '@primeicons/vue'
 
 
 const router = useRouter()
@@ -167,6 +159,51 @@ const handleLogout = async () => {
 }
 
 const topBarItems = ref([])
+
+const breadcrumbs = computed(() => {
+  const route = router.currentRoute.value
+  const path = route.path
+  const routeName = route.name
+
+  const breadcrumbMap: Record<string, Array<{ label: string; to?: string }>> = {
+    '/': [{ label: 'Dashboard' }],
+    '/account': [{ label: 'Mon compte' }],
+    '/lab': [{ label: 'Mon lab' }],
+    '/admin/students': [{ label: 'Admin', to: '/' }, { label: 'Étudiants' }],
+    '/admin/cluster': [{ label: 'Admin', to: '/' }, { label: 'Clusters' }],
+    '/admin/wan': [{ label: 'Admin', to: '/' }, { label: 'Réseaux WAN' }],
+    '/admin/networks': [{ label: 'Admin', to: '/' }, { label: 'Réseaux étudiants' }],
+    '/admin/settings': [{ label: 'Admin', to: '/' }, { label: 'Paramètres' }],
+    '/admin/cohorts': [{ label: 'Admin', to: '/' }, { label: 'Classes' }],
+    '/admin/quotas': [{ label: 'Admin', to: '/' }, { label: 'Quotas' }],
+  }
+
+  if (path.match(/^\/admin\/wan\/[^/]+$/)) {
+    return [
+      { label: 'Admin', to: '/' },
+      { label: 'Réseaux WAN', to: '/admin/wan' },
+      { label: 'Détails' }
+    ]
+  }
+
+  if (path.match(/^\/admin\/networks\/[^/]+$/)) {
+    return [
+      { label: 'Admin', to: '/' },
+      { label: 'Réseaux étudiants', to: '/admin/networks' },
+      { label: 'Détails' }
+    ]
+  }
+
+  if (path.match(/^\/lab\/[^/]+$/)) {
+    return [
+      { label: 'Admin', to: '/' },
+      { label: 'Étudiants', to: '/admin/students' },
+      { label: 'Lab' }
+    ]
+  }
+
+  return breadcrumbMap[path] || [{ label: routeName || 'Page' }]
+})
 
 // Menu items organized by role
 const menuItems = computed(() => {
@@ -237,7 +274,7 @@ const menuItems = computed(() => {
         {
           label: 'Étudiants',
           icon: Users,
-          command: () => router.push('/students'),
+          command: () => router.push('/admin/students'),
         },
         {
           label: 'Paramètres',
@@ -245,10 +282,30 @@ const menuItems = computed(() => {
           command: () => router.push('/admin/settings'),
         },
         {
-          label: 'Cluster',
+          label: 'Clusters',
           icon: Server,
-          command: () => router.push('/cluster'),
-        }
+          command: () => router.push('/admin/cluster'),
+        },
+        {
+          label: 'Réseaux WAN',
+          icon: Globe,
+          command: () => router.push('/admin/wan'),
+        },
+        {
+          label: 'Réseaux étudiants',
+          icon: Wrench,
+          command: () => router.push('/admin/networks'),
+        },
+        {
+          label: 'Classes',
+          icon: Book,
+          command: () => router.push('/admin/cohorts'),
+        },
+        {
+          label: 'Quotas',
+          icon: SlidersH,
+          command: () => router.push('/admin/quotas'),
+        },
       ],
     })
   }

@@ -3,7 +3,13 @@ import { useAuthStore } from '@/stores/auth'
 import MainLayout from '@/layouts/MainLayout.vue'
 import LoginPage from '@/pages/Login.vue'
 import DashboardPage from '@/pages/Dashboard.vue'
-import StudentsPage from '@/pages/Students.vue'
+import StudentsAdminPage from '@/pages/admin/Students.vue'
+import ClustersPage from '@/pages/admin/Clusters.vue'
+import WanRangesPage from '@/pages/admin/WanRanges.vue'
+import NetworkRangesPage from '@/pages/admin/NetworkRanges.vue'
+import WanRangeDetailsPage from '@/pages/admin/WanRangeDetails.vue'
+import NetworkRangeDetailsPage from '@/pages/admin/NetworkRangeDetails.vue'
+import LabPage from '@/pages/Lab.vue'
 
 const routes = [
   {
@@ -23,9 +29,39 @@ const routes = [
         component: DashboardPage,
       },
       {
-        path: 'students',
+        path: 'admin/students',
         name: 'Students',
-        component: StudentsPage,
+        component: StudentsAdminPage,
+      },
+      {
+        path: 'admin/cluster',
+        name: 'Clusters',
+        component: ClustersPage,
+      },
+      {
+        path: 'admin/wan',
+        name: 'WanRanges',
+        component: WanRangesPage,
+      },
+      {
+        path: 'admin/wan/:rangeId',
+        name: 'WanRangeDetails',
+        component: WanRangeDetailsPage,
+      },
+      {
+        path: 'admin/networks',
+        name: 'NetworkRanges',
+        component: NetworkRangesPage,
+      },
+      {
+        path: 'admin/networks/:rangeId',
+        name: 'NetworkRangeDetails',
+        component: NetworkRangeDetailsPage,
+      },
+      {
+        path: 'lab/:userId?',
+        name: 'Lab',
+        component: LabPage,
       },
       {
         path: 'cohorts',
