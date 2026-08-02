@@ -25,7 +25,7 @@ class AuditLog(Base, UUIDPkMixin):
         nullable=True,
     )
     created_at: Mapped[datetime] = mapped_column(
-        default=datetime.utcnow,
+        default=lambda: datetime.utcnow().replace(tzinfo=None),
     )
 
     __table_args__ = (

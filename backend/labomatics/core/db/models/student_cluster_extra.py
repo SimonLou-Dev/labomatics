@@ -21,7 +21,7 @@ class StudentClusterExtra(Base, UUIDPkMixin, TimestampMixin):
     )
     granted_by: Mapped[UUID | None] = None
     granted_at: Mapped[datetime] = mapped_column(
-        default=datetime.utcnow,
+        default=lambda: datetime.utcnow().replace(tzinfo=None),
     )
     revoked_at: Mapped[datetime | None] = None
 

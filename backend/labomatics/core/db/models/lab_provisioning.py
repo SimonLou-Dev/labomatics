@@ -48,6 +48,10 @@ class LabProvisioning(Base, UUIDPkMixin, TimestampMixin):
     vxlan_allocation: Mapped["VxlanAllocation | None"] = relationship(  # type: ignore
         foreign_keys=[vxlan_allocation_id],
     )
+    vms: Mapped[list["LabVm"]] = relationship(  # type: ignore
+        back_populates="lab_provisioning",
+        cascade="all, delete-orphan",
+    )
 
     __table_args__ = (
         UniqueConstraint("student_id", "cluster_id"),
@@ -59,5 +63,6 @@ class LabProvisioning(Base, UUIDPkMixin, TimestampMixin):
 # Forward references for circular imports
 from labomatics.core.db.models.cluster import Cluster  # noqa: E402
 from labomatics.core.db.models.ip_allocation import IpAllocation  # noqa: E402
+from labomatics.core.db.models.lab_vm import LabVm  # noqa: E402
 from labomatics.core.db.models.student import Student  # noqa: E402
 from labomatics.core.db.models.vxlan_allocation import VxlanAllocation  # noqa: E402
