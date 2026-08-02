@@ -76,11 +76,11 @@ export async function getLabDataForMe(): Promise<LabDataDTO> {
 }
 
 export async function previewStudentImport(formData: FormData): Promise<StudentImportDiffXML> {
-  const res = await http.post<StudentImportDiffXML>('/students/import-xml/preview', formData)
+  const res = await http.post<StudentImportDiffXML>('/students/import-csv/preview', formData)
   return res.data
 }
 
 export async function applyStudentImport(formData: FormData): Promise<StudentImportDiffXML> {
-  const res = await http.post<StudentImportDiffXML>('/students/import-xml/apply', formData)
+  const res = await http.post<StudentImportDiffXML>('/students/import-csv/apply', formData)
   return res.data
 }

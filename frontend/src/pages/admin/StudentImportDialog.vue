@@ -2,18 +2,18 @@
   <Dialog v-model:visible="isOpen" :style="{ width: '95vw', height: '95vh' }" modal header="Importer des étudiants" :closable="false">
     <!-- Étape 1: Upload XML -->
     <div v-if="step === 1" class="space-y-4">
-      <h2 class="text-lg font-semibold">Étape 1: Importer le fichier XML</h2>
+      <h2 class="text-lg font-semibold">Étape 1: Importer le fichier CSV</h2>
       <p class="text-sm text-surface-500">Le fichier doit contenir tous les étudiants de toutes les promos.</p>
 
       <FileUpload
         v-model="uploadedFile"
         name="file"
         :multiple="false"
-        accept=".xml"
+        accept=".csv"
         :auto="false"
         :show-upload-button="false"
         @select="onFileSelected"
-        choose-label="Sélectionner un fichier XML"
+        choose-label="Sélectionner un fichier CSV"
         class="w-full"
       />
 
@@ -270,7 +270,7 @@ const uploadedFile = ref<File | null>(null)
 const parseError = ref('')
 
 // Étape 2
-const requiredFields = ['login', 'first_name', 'last_name', 'email', 'cohort_name']
+const requiredFields = ['id', 'first_name', 'last_name', 'email', 'cohort_name']
 const columnMapping = ref<Record<string, string>>({})
 const availableColumns = ref<ColumnOption[]>([])
 const previewRows = ref<any[]>([])
@@ -331,33 +331,34 @@ async function onFileSelected(event: any) {
     try {
       parseError.value = ''
       const text = await file.text()
-      const parser = new DOMParser()
-      const xmlDoc = parser.parseFromString(text, 'text/xml')
 
-      if (xmlDoc.getElementsByTagName('parsererror').length > 0) {
-        parseError.value = 'Erreur: le fichier XML est invalide'
+      // Parser CSV simple
+      const lines = text.split('\n').filter((l: string) => l.trim())
+      if (lines.length < 2) {
+        parseError.value = 'Le fichier doit contenir au moins un en-tête et une ligne de données'
         uploadedFile.value = null
         return
       }
 
-      // Extraire les colonnes du XML
-      const rows = xmlDoc.getElementsByTagName('row')
-      const columns = new Set<string>()
+      // Première ligne = en-tête
+      const headers = lines[0].split(',').map((h: string) => h.trim())
+      const columns = new Set(headers)
       const data: any[] = []
 
-      for (let i = 0; i < Math.min(rows.length, 100); i++) {
-        const row = rows[i]
+      // Parcourir les lignes de données
+      for (let i = 1; i < Math.min(lines.length, 100); i++) {
+        const values = lines[i].split(',').map((v: string) => v.trim())
         const rowData: Record<string, string> = {}
-        for (let j = 0; j < row.children.length; j++) {
-          const cell = row.children[j]
-          const colName = cell.getAttribute('name') || `col_${j}`
-          columns.add(colName)
-          rowData[colName] = cell.textContent || ''
+        headers.forEach((header: string, idx: number) => {
+          rowData[header] = values[idx] || ''
+        })
+        if (rowData[headers[0]]) {
+          // S'assurer qu'il y a au moins une valeur
+          data.push(rowData)
         }
-        data.push(rowData)
       }
 
-      availableColumns.value = Array.from(columns).map(c => ({ label: c, value: c }))
+      availableColumns.value = Array.from(columns).map((c) => ({ label: String(c), value: String(c) }))
       previewRows.value = data
       uploadedFile.value = file
     } catch (error) {
@@ -377,7 +378,9 @@ async function nextStep() {
       const formData = new FormData()
       formData.append('file', file)
       for (const [field, col] of Object.entries(columnMapping.value)) {
-        formData.append(field, col)
+        if (col) {
+          formData.append(field, col)
+        }
       }
 
       diffResult.value = await studentsApi.previewStudentImport(formData)
@@ -402,7 +405,9 @@ async function performImport() {
     const formData = new FormData()
     formData.append('file', uploadedFile.value)
     for (const [field, col] of Object.entries(columnMapping.value)) {
-      formData.append(field, col)
+      if (col) {
+        formData.append(field, col)
+      }
     }
 
     await studentsApi.applyStudentImport(formData)
