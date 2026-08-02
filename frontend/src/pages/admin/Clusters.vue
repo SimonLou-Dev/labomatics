@@ -69,7 +69,7 @@
               :key="range.id"
               :label="range.name"
               class="text-xs cursor-pointer"
-              @click="() => goToVxlanDetails(range.id)"
+              @click="() => goToWanDetails(range.id)"
             />
           </div>
           <span v-else class="text-surface-400">—</span>
@@ -83,7 +83,7 @@
               :key="range.id"
               :label="range.name"
               class="text-xs cursor-pointer"
-               @click="() => goToWanDetails(range.id)"
+               @click="() => goToVxlanDetails(range.id)"
             />
           </div>
           <span v-else class="text-surface-400">—</span>
@@ -490,7 +490,7 @@ function openCreateDialog() {
   formData.value = {
     name: '',
     url: '',
-    storage: '',
+    default_storage: '',
     sdn_zone: '',
     wan_bridge: '',
   }

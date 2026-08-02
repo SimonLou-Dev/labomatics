@@ -33,22 +33,11 @@
       <Column field="utilization" header="Utilisation" style="width: 18%">
         <template #body="{ data }">
           <div class="flex items-center gap-2">
-            <ProgressBar
-              :value="getUtilizationPercent(data)"
-              class="flex-1 h-6 border border-surface-400"
-              :style="{ backgroundColor: 'var(--surface-700)' }"
-            >
-              <template #default="{ value }">
-                <div
-                  :style="{
-                    width: value + '%',
-                    height: '100%',
-                    backgroundColor: getProgressBarColor(data),
-                    transition: 'width 0.3s ease',
-                  }"
-                />
-              </template>
-            </ProgressBar>
+            <div class="flex-1 h-6 border border-surface-400 bg-surface-700 rounded"
+              :style="{
+                background: `linear-gradient(90deg, ${getProgressBarColor(data)} 0%, ${getProgressBarColor(data)} ${getUtilizationPercent(data)}%, var(--surface-700) ${getUtilizationPercent(data)}%, var(--surface-700) 100%)`
+              }"
+            />
             <span class="text-xs font-medium w-12 text-right">
               {{ getUtilizationPercent(data) }}%
             </span>
@@ -188,7 +177,6 @@ const totalRecords = ref(0)
 const loading = ref(false)
 const currentPage = ref(1)
 const pageSize = ref(10)
-const allocationCounts = ref<Record<string, number>>({})
 
 const showFormDialog = ref(false)
 const editingRange = ref<IpRangeDTO | null>(null)
@@ -201,20 +189,8 @@ const formData = ref<IpRangeCreateDTO>({
   exclusions: [],
 })
 
-function getTotalIps(network: string): number {
-  const parts = network.split('/')
-  if (parts.length === 2) {
-    const maskBits = parseInt(parts[1])
-    return Math.max(1, Math.pow(2, 32 - maskBits) - 2)
-  }
-  return 1
-}
-
 function getUtilizationPercent(range: IpRangeDTO): number {
-  const total = getTotalIps(range.network)
-  const used = allocationCounts.value[range.id] || 0
-  if (total === 0) return 0
-  return Math.round((used / total) * 100)
+  return range.utilization_percent
 }
 
 function getProgressBarColor(range: IpRangeDTO): string {
@@ -231,17 +207,6 @@ async function fetchIpRanges(page: number = 1) {
     ipRanges.value = response.items
     totalRecords.value = response.total
     currentPage.value = page
-
-    // Load allocation counts for each range
-    for (const range of response.items) {
-      try {
-        const allocations = await ipRangeApi.getIpRangeAllocations(range.id)
-        allocationCounts.value[range.id] = allocations.length
-      } catch (error) {
-        console.error(`Failed to load allocations for range ${range.id}:`, error)
-        allocationCounts.value[range.id] = 0
-      }
-    }
   } catch (error) {
     toast.add({
       severity: 'error',

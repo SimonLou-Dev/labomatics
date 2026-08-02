@@ -33,22 +33,11 @@
       <Column field="utilization" header="Utilisation" style="width: 15%">
         <template #body="{ data }">
           <div class="flex items-center gap-2">
-            <ProgressBar
-              :value="getUtilizationPercent(data)"
-              class="flex-1 h-6 border border-surface-400"
-              :style="{ backgroundColor: 'var(--surface-700)' }"
-            >
-              <template #default="{ value }">
-                <div
-                  :style="{
-                    width: value + '%',
-                    height: '100%',
-                    backgroundColor: getProgressBarColor(data),
-                    transition: 'width 0.3s ease',
-                  }"
-                />
-              </template>
-            </ProgressBar>
+            <div class="flex-1 h-6 border border-surface-400 bg-surface-700 rounded"
+              :style="{
+                background: `linear-gradient(90deg, ${getProgressBarColor(data)} 0%, ${getProgressBarColor(data)} ${getUtilizationPercent(data)}%, var(--surface-700) ${getUtilizationPercent(data)}%, var(--surface-700) 100%)`
+              }"
+            />
             <span class="text-xs font-medium w-12 text-right">
               {{ getUtilizationPercent(data) }}%
             </span>
@@ -215,7 +204,6 @@ const totalRecords = ref(0)
 const loading = ref(false)
 const currentPage = ref(1)
 const pageSize = ref(10)
-const allocationCounts = ref<Record<string, number>>({})
 
 const showFormDialog = ref(false)
 const editingRange = ref<VxlanRangeDTO | null>(null)
@@ -231,10 +219,7 @@ const formData = ref<VxlanRangeCreateDTO>({
 })
 
 function getUtilizationPercent(range: VxlanRangeDTO): number {
-  const total = range.vni_max - range.vni_min + 1
-  const used = allocationCounts.value[range.id] || 0
-  if (total === 0) return 0
-  return Math.round((used / total) * 100)
+  return range.utilization_percent
 }
 
 function getProgressBarColor(range: VxlanRangeDTO): string {
@@ -251,17 +236,6 @@ async function fetchVxlanRanges(page: number = 1) {
     vxlanRanges.value = response.items
     totalRecords.value = response.total
     currentPage.value = page
-
-    // Load allocation counts for each range
-    for (const range of response.items) {
-      try {
-        const allocations = await vxlanRangeApi.getVxlanRangeAllocations(range.id)
-        allocationCounts.value[range.id] = allocations.length
-      } catch (error) {
-        console.error(`Failed to load allocations for range ${range.id}:`, error)
-        allocationCounts.value[range.id] = 0
-      }
-    }
   } catch (error) {
     toast.add({
       severity: 'error',
