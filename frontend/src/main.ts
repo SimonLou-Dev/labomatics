@@ -10,6 +10,8 @@ import './style.css'
 import './assets/theme-variables.css'
 import 'primeicons/primeicons.css'
 
+
+
 // Import des directives globales
 import Tooltip from 'primevue/tooltip'
 
