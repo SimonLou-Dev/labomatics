@@ -3,6 +3,8 @@
 from rich.prompt import Confirm
 from rich.table import Table
 
+from ...commands.install.t_openwrt import OpenWRTBuilder
+
 from ...utils.theme import console, title, success, info
 from ...utils.proxmox import ProxmoxClient
 from ...utils.state import InstallState
@@ -46,7 +48,7 @@ def run_installation(state: InstallState) -> int:
         proxmox_url, proxmox_user, proxmox_token_id, proxmox_token_secret
     )
 
-    wan_config, vxlan_config, dns_servers = collect_step_3_network_config(state)
+    wan_config, vxlan_config, dns_servers, storage = collect_step_3_network_config(state)
     labomatics_user, labomatics_token_secret = collect_step_4_proxmox_user(
         state, pve, domain
     )
@@ -54,12 +56,11 @@ def run_installation(state: InstallState) -> int:
         vm_name,
         vm_memory,
         vm_cores,
-        vm_storage,
         vm_password,
         ssh_pubkeys,
         ssh_privkey_path,
     ) = collect_step_5_vm_config(state)
-    image_filename = collect_step_6_download_image(state, pve, node, vm_storage)
+    image_filename = collect_step_6_download_image(state, pve, node, storage)
     (
         pg_root_password,
         labomatics_db_password,
@@ -82,13 +83,18 @@ def run_installation(state: InstallState) -> int:
     if not Confirm.ask("[bold]Continuer?[/bold]", default=True):
         return 1
 
+    # Deploy openWRT template
+    openwrt_template = OpenWRTBuilder(pve, state)
+    openwrt_template.cmd_build_openwrt(storage, domain)
+
+
     # Deploy VM and infrastructure
     vm_deployer = VMDeployer(pve, node, state)
     vm_ip = vm_deployer.deploy(
         vm_name,
         vm_memory,
         vm_cores,
-        vm_storage,
+        storage,
         image_filename,
         wan_config,
         vm_password,
@@ -110,7 +116,7 @@ def run_installation(state: InstallState) -> int:
     _generate_and_deploy_clusterconfig(
         state, vm_ip, ssh_privkey_path,
         vm_name, proxmox_url, labomatics_token_secret,
-        vm_storage, wan_config, vxlan_config, node, wan_iface
+        wan_config, vxlan_config, node, wan_iface
     )
 
     # Done

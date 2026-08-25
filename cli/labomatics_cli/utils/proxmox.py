@@ -486,3 +486,13 @@ class ProxmoxClient:
                 self.proxmox.access.domains(realm_name).put(**data_update)
             else:
                 raise
+
+    def create_pool(self, pool_name: str) -> None:
+
+        try:
+            self.proxmox.pools(pool_name).get()
+        except Exception:
+            self.proxmox.pools.post(poolid=pool_name)
+
+    def moove_vm_to_pool(self, pool_name: str, vmid: int) -> None:
+        self.proxmox.pools(pool_name).put(vms=str(vmid))

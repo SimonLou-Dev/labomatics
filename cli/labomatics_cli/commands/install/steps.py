@@ -88,6 +88,7 @@ def collect_step_3_network_config(state: InstallState) -> tuple[dict, dict, str]
             step_data["wan_config"],
             step_data["vxlan_config"],
             step_data.get("dns_servers", "8.8.8.8 8.8.4.4"),
+            step_data.get("storage")
         )
 
     step(3, 8, "Configuration du cluster - Réseau WAN")
@@ -111,16 +112,22 @@ def collect_step_3_network_config(state: InstallState) -> tuple[dict, dict, str]
         "Serveurs DNS (espace-séparé)", default="8.8.8.8 8.8.4.4"
     )
 
+    step(3, 8, "Stoquage partagé")
+    storage = prompt_with_retry(
+        "Nom du volume de stoquage partagé", default=""
+    )
+
     state.set_step(
         3,
         {
             "wan_config": wan_config,
             "vxlan_config": vxlan_config,
             "dns_servers": dns_servers,
+            "storage": storage
         },
     )
 
-    return wan_config, vxlan_config, dns_servers
+    return wan_config, vxlan_config, dns_servers, storage
 
 
 def collect_step_4_proxmox_user(
@@ -163,7 +170,6 @@ def collect_step_5_vm_config(state: InstallState) -> tuple:
             step_data["vm_name"],
             step_data["vm_memory"],
             step_data["vm_cores"],
-            step_data["vm_storage"],
             step_data["vm_password"],
             step_data["ssh_pubkeys"],
             step_data["ssh_privkey_path"],
@@ -173,7 +179,7 @@ def collect_step_5_vm_config(state: InstallState) -> tuple:
     vm_name = prompt_with_retry("Nom de la VM", default="labomatics")
     vm_memory = int(prompt_with_retry("Mémoire (MB)", default="8192"))
     vm_cores = int(prompt_with_retry("Cores CPU", default="4"))
-    vm_storage = prompt_with_retry("Storage (ex: local-lvm)", default="local-lvm")
+    vm_storage = state.get_step(3)['storage']
     vm_password = Prompt.ask("  Password labomatics", password=True)
 
     ssh_pubkeys = SSHManager.collect_ssh_keys()
