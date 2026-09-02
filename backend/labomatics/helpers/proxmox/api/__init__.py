@@ -1,0 +1,62 @@
+"""API Proxmox async avec httpx, typage Pydantic et gestion d'erreur complète."""
+
+from . import urls
+from .client import AsyncProxmoxClient, ProxmoxClientPool
+from .errors import (
+    ProxmoxAPIError,
+    ProxmoxAuthError,
+    ProxmoxConflictError,
+    ProxmoxConnectionError,
+    ProxmoxNotFoundError,
+    ProxmoxServerError,
+    ProxmoxTimeoutError,
+    ProxmoxValidationError,
+)
+from .types import (
+    AclEntry,
+    ClusterResource,
+    ClusterResourcesResponse,
+    NodeInfo,
+    Pool,
+    PoolMember,
+    QemuConfig,
+    SdnZone,
+    Subnet,
+    TaskLog,
+    TaskStatus,
+    Token,
+    TokenCreateResponse,
+    User,
+    VersionResponse,
+    Vnet,
+)
+
+__all__ = [
+    "AclEntry",
+    "AsyncProxmoxClient",
+    "ClusterResource",
+    "ClusterResourcesResponse",
+    "NodeInfo",
+    "Pool",
+    "PoolMember",
+    "ProxmoxAPIError",
+    "ProxmoxAuthError",
+    "ProxmoxClientPool",
+    "ProxmoxConflictError",
+    "ProxmoxConnectionError",
+    "ProxmoxNotFoundError",
+    "ProxmoxServerError",
+    "ProxmoxTimeoutError",
+    "ProxmoxValidationError",
+    "QemuConfig",
+    "SdnZone",
+    "Subnet",
+    "TaskLog",
+    "TaskStatus",
+    "Token",
+    "TokenCreateResponse",
+    "User",
+    "VersionResponse",
+    "Vnet",
+    "urls",
+]
