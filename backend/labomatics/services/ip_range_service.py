@@ -123,6 +123,122 @@ class IpRangeService:
             utilization_percent=utilization_percent,
         )
 
+    async def get_first_available_ip(
+        self, ip_range_id: UUID, cluster_id: UUID | None = None
+    ) -> IPv4Address:
+        """
+        Récupère la première IP WAN disponible d'une plage.
+
+        Args:
+            ip_range_id: ID de la plage IP
+            cluster_id: ID du cluster (optionnel, si None cherche dans tous les clusters)
+
+        Returns:
+            La première IPv4Address disponible
+
+        Raises:
+            HTTPException: Si la plage n'existe pas ou aucune IP n'est disponible
+        """
+
+        ip_range = await self.repo.get(ip_range_id)
+        if not ip_range:
+            raise HTTPException(404, "IP Range not found")
+
+        network = IPv4Network(ip_range.network, strict=False)
+        usable_addresses = list(network.hosts())
+
+        if cluster_id:
+            from labomatics.core.db.repository.ip_range_cluster import (
+                IpRangeClusterRepository,
+            )
+
+            range_cluster_repo = IpRangeClusterRepository()
+            range_cluster = await range_cluster_repo.get_by_range_cluster(
+                ip_range_id, cluster_id
+            )
+            if not range_cluster:
+                raise HTTPException(
+                    404,
+                    f"IP Range {ip_range_id} not assigned to cluster {cluster_id}",
+                )
+            allocations = await self.alloc_repo.list_by_cluster(cluster_id)
+        else:
+            allocations = await self.alloc_repo.list_by_ip_range(ip_range_id)
+
+        used_addresses = {IPv4Address(str(alloc.ip_address)) for alloc in allocations}
+
+        exclusions = ip_range.exclusions or []
+        excluded_addresses = {IPv4Address(ex) for ex in exclusions}
+
+        for addr in usable_addresses:
+            if addr not in used_addresses and addr not in excluded_addresses:
+                return addr
+
+        raise HTTPException(409, f"No available IP addresses in range {ip_range.name}")
+
+    async def get_first_available_ips(
+        self, ip_range_id: UUID, count: int, cluster_id: UUID | None = None
+    ) -> list[IPv4Address]:
+        """
+        Récupère les N premières IPs WAN disponibles d'une plage.
+
+        Args:
+            ip_range_id: ID de la plage IP
+            count: Nombre d'IPs à obtenir
+            cluster_id: ID du cluster (optionnel)
+
+        Returns:
+            Liste des N premières IPv4Address disponibles
+
+        Raises:
+            HTTPException: Si pas assez d'IPs disponibles
+        """
+        ip_range = await self.repo.get(ip_range_id)
+        if not ip_range:
+            raise HTTPException(404, "IP Range not found")
+
+        network = IPv4Network(ip_range.network, strict=False)
+        usable_addresses = list(network.hosts())
+
+        if cluster_id:
+            from labomatics.core.db.repository.ip_range_cluster import (
+                IpRangeClusterRepository,
+            )
+
+            range_cluster_repo = IpRangeClusterRepository()
+            range_cluster = await range_cluster_repo.get_by_range_cluster(
+                ip_range_id, cluster_id
+            )
+            if not range_cluster:
+                raise HTTPException(
+                    404,
+                    f"IP Range {ip_range_id} not assigned to cluster {cluster_id}",
+                )
+            allocations = await self.alloc_repo.list_by_cluster(cluster_id)
+        else:
+            allocations = await self.alloc_repo.list_by_ip_range(ip_range_id)
+
+        used_addresses = {IPv4Address(str(alloc.ip_address)) for alloc in allocations}
+
+        exclusions = ip_range.exclusions or []
+        excluded_addresses = {IPv4Address(ex) for ex in exclusions}
+
+        available = []
+        for addr in usable_addresses:
+            if addr not in used_addresses and addr not in excluded_addresses:
+                available.append(addr)
+                if len(available) == count:
+                    break
+
+        if len(available) < count:
+            raise HTTPException(
+                409,
+                f"Not enough available IP addresses in range {ip_range.name} "
+                f"(need {count}, found {len(available)})",
+            )
+
+        return available
+
     def _allocation_to_dto(self, allocation: IpAllocation) -> IpAllocationDTO:
         """Convertit une allocation IP en DTO."""
         student = allocation.student
