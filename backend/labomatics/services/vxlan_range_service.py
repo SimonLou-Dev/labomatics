@@ -129,6 +129,107 @@ class VxlanRangeService:
             utilization_percent=utilization_percent,
         )
 
+    async def get_first_available_vni(
+        self, vxlan_range_id: UUID, cluster_id: UUID | None = None
+    ) -> int:
+        """
+        Récupère le premier VNI disponible d'une plage.
+
+        Args:
+            vxlan_range_id: ID de la plage VXLAN
+            cluster_id: ID du cluster (optionnel, si None cherche dans tous les clusters)
+
+        Returns:
+            Le premier VNI disponible
+
+        Raises:
+            HTTPException: Si la plage n'existe pas ou aucun VNI n'est disponible
+        """
+        vxlan_range = await self.repo.get(vxlan_range_id)
+        if not vxlan_range:
+            raise HTTPException(404, "VXLAN Range not found")
+
+        if cluster_id:
+            range_cluster = await self.range_cluster_repo.get_by_range_cluster(
+                vxlan_range_id, cluster_id
+            )
+            if not range_cluster:
+                raise HTTPException(
+                    404,
+                    f"VXLAN Range {vxlan_range_id} not assigned to cluster "
+                    f"{cluster_id}",
+                )
+            allocations = await self.alloc_repo.list_by_cluster(cluster_id)
+        else:
+            allocations = await self.alloc_repo.list_by_vxlan_range(vxlan_range_id)
+
+        used_vnis = {alloc.vni for alloc in allocations}
+
+        exclusions = vxlan_range.exclusions or []
+        excluded_vnis = set(exclusions) if exclusions else set()
+
+        for vni in range(vxlan_range.vni_min, vxlan_range.vni_max + 1):
+            if vni not in used_vnis and vni not in excluded_vnis:
+                return vni
+
+        raise HTTPException(409, f"No available VNI in range {vxlan_range.name}")
+
+    async def get_first_available_vnis(
+        self, vxlan_range_id: UUID, count: int, cluster_id: UUID | None = None
+    ) -> list[int]:
+        """
+        Récupère les N premiers VNIs disponibles d'une plage.
+
+        Args:
+            vxlan_range_id: ID de la plage VXLAN
+            count: Nombre de VNIs à obtenir
+            cluster_id: ID du cluster (optionnel)
+
+        Returns:
+            Liste des N premiers VNIs disponibles
+
+        Raises:
+            HTTPException: Si pas assez de VNIs disponibles
+        """
+        vxlan_range = await self.repo.get(vxlan_range_id)
+        if not vxlan_range:
+            raise HTTPException(404, "VXLAN Range not found")
+
+        if cluster_id:
+            range_cluster = await self.range_cluster_repo.get_by_range_cluster(
+                vxlan_range_id, cluster_id
+            )
+            if not range_cluster:
+                raise HTTPException(
+                    404,
+                    f"VXLAN Range {vxlan_range_id} not assigned to cluster "
+                    f"{cluster_id}",
+                )
+            allocations = await self.alloc_repo.list_by_cluster(cluster_id)
+        else:
+            allocations = await self.alloc_repo.list_by_vxlan_range(vxlan_range_id)
+
+        used_vnis = {alloc.vni for alloc in allocations}
+
+        exclusions = vxlan_range.exclusions or []
+        excluded_vnis = set(exclusions) if exclusions else set()
+
+        available = []
+        for vni in range(vxlan_range.vni_min, vxlan_range.vni_max + 1):
+            if vni not in used_vnis and vni not in excluded_vnis:
+                available.append(vni)
+                if len(available) == count:
+                    break
+
+        if len(available) < count:
+            raise HTTPException(
+                409,
+                f"Not enough available VNIs in range {vxlan_range.name} "
+                f"(need {count}, found {len(available)})",
+            )
+
+        return available
+
     def _allocation_to_dto(self, allocation: VxlanAllocation) -> VxlanAllocationDTO:
         """Convertit une allocation VXLAN en DTO."""
         student = allocation.student
