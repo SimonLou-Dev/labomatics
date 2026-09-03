@@ -26,9 +26,15 @@ class VxlanRangeService:
         self,
         repo: VxlanRangeRepository | None = None,
         alloc_repo: VxlanAllocationRepository | None = None,
+        range_cluster_repo: object | None = None,
     ) -> None:
         self.repo = repo or VxlanRangeRepository()
         self.alloc_repo = alloc_repo or VxlanAllocationRepository()
+        from labomatics.core.db.repository.vxlan_range_cluster import (
+            VxlanRangeClusterRepository,
+        )
+
+        self.range_cluster_repo = range_cluster_repo or VxlanRangeClusterRepository()
 
     async def list_vxlan_ranges(self) -> list[VxlanRangeDTO]:
         """Liste toutes les plages VXLAN."""

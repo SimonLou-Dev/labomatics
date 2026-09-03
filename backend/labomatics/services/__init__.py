@@ -6,11 +6,13 @@ from typing import Annotated
 
 from fastapi import Depends
 
+from labomatics.services.audit_service import AuditService
 from labomatics.services.auth_service import AuthService
 from labomatics.services.cluster_config_service import ClusterConfigService
 from labomatics.services.cluster_service import ClusterService
 from labomatics.services.ip_range_service import IpRangeService
 from labomatics.services.keycloak_service import KeycloakService
+from labomatics.services.lab_service import LabService
 from labomatics.services.mail_service import MailService
 from labomatics.services.network_range_service import NetworkRangeService
 from labomatics.services.proxmox_service import ProxmoxService
@@ -19,6 +21,8 @@ from labomatics.services.student_service import StudentService
 from labomatics.services.vxlan_range_service import VxlanRangeService
 
 __all__ = [
+    "AuditService",
+    "AuditServiceDep",
     "AuthService",
     "AuthServiceDep",
     "ClusterConfigService",
@@ -29,6 +33,8 @@ __all__ = [
     "IpRangeServiceDep",
     "KeycloakService",
     "KeycloakServiceDep",
+    "LabService",
+    "LabServiceDep",
     "MailService",
     "MailServiceDep",
     "NetworkRangeService",
@@ -42,6 +48,11 @@ __all__ = [
     "VxlanRangeService",
     "VxlanRangeServiceDep",
 ]
+
+
+def get_audit_service() -> AuditService:
+    """Factory pour AuditService."""
+    return AuditService()
 
 
 def get_auth_service() -> AuthService:
@@ -94,11 +105,17 @@ def get_keycloak_service() -> KeycloakService:
     return KeycloakService()
 
 
+def get_lab_service() -> LabService:
+    """Factory pour LabService."""
+    return LabService()
+
+
 def get_proxmox_service() -> ProxmoxService:
     """Factory pour ProxmoxService."""
     return ProxmoxService()
 
 
+AuditServiceDep = Annotated[AuditService, Depends(get_audit_service)]
 AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
 MailServiceDep = Annotated[MailService, Depends(get_mail_service)]
 StudentServiceDep = Annotated[StudentService, Depends(get_student_service)]
@@ -115,4 +132,5 @@ ClusterConfigServiceDep = Annotated[
     ClusterConfigService, Depends(get_cluster_config_service)
 ]
 KeycloakServiceDep = Annotated[KeycloakService, Depends(get_keycloak_service)]
+LabServiceDep = Annotated[LabService, Depends(get_lab_service)]
 ProxmoxServiceDep = Annotated[ProxmoxService, Depends(get_proxmox_service)]

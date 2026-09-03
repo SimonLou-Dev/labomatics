@@ -146,9 +146,11 @@ class ClusterService:
 
         # Créer la nouvelle credential chiffrée
         encrypted_secret = encrypt_secret(dto.token_secret)
+        user, token_id = dto.get_user_and_token_id()
         cred = ClusterCredential(
             cluster_id=cluster_id,
-            token_id=dto.token_id,
+            user=user,
+            token_id=token_id,
             encrypted_token_secret=encrypted_secret,
             encryption_key_version=1,
         )
