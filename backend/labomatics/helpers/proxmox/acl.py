@@ -1,7 +1,7 @@
 """
 Client Proxmox pour gérer les ACL (Access Control Lists).
 
-Chaque étudiant dispose d'un compte Proxmox local (realm "pve") avec des
+Chaque étudiant dispose d'un compte Proxmox (keycloak-realm) avec des
 droits strictement limités à ses ressources :
 
 +---------------------------------------+------------------+
@@ -20,7 +20,9 @@ droits strictement limités à ses ressources :
 +---------------------------------------+------------------+
 """
 
-from backend.labomatics.helpers.proxmox.api import (
+import contextlib
+
+from labomatics.helpers.proxmox.api import (
     ProxmoxClientPool,
     ProxmoxServerError,
     urls,
@@ -110,9 +112,9 @@ class ProxmoxAclClient:
         vnet: str,
         user_pool: str,
         user_id: str,
-        template_pool: str = "template",
+        template_pool: str = "templates",
     ) -> None:
-        """Configure toutes les ACL pour un étudiant.
+        """Configure toutes les ACL pour un étudiant (supprime avant de réappliquer).
 
         Args:
             zone: Nom de la zone SDN.
@@ -124,6 +126,11 @@ class ProxmoxAclClient:
         Raises:
             ProxmoxServerError: Problème API.
         """
+        # Supprimer les ACL existantes pour éviter les doublons
+        with contextlib.suppress(RuntimeError):
+            await self.delete_student(user_pool, zone, vnet, user_id, template_pool)
+
+        # Configurer les ACL
         acl_configs = [
             (f"/sdn/zones/{zone}/{vnet}", "PVESDNUser", 0),
             ("/storage", "PVEDatastoreUser", 1),

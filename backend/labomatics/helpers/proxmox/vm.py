@@ -1,8 +1,12 @@
 """Client Proxmox pour gérer les VMs QEMU."""
 
-import re
+from __future__ import annotations
 
-from backend.labomatics.helpers.proxmox.api import (
+import asyncio
+import re
+from collections.abc import Callable
+
+from labomatics.helpers.proxmox.api import (
     ProxmoxClientPool,
     ProxmoxNotFoundError,
     ProxmoxServerError,
@@ -13,13 +17,40 @@ from backend.labomatics.helpers.proxmox.api import (
 class ProxmoxVMClient:
     """Client Proxmox pour gérer les VMs QEMU et conteneurs."""
 
-    def __init__(self, proxmox_client: ProxmoxClientPool) -> None:
+    def __init__(
+        self,
+        proxmox_client: ProxmoxClientPool,
+        wait_for_task_fn: Callable[[str, str], None] | None = None,
+    ) -> None:
         """Initialise le client VM.
 
         Args:
             proxmox_client: Pool de connexions Proxmox partagée.
+            wait_for_task_fn: Fonction partagée pour attendre les tâches (optionnelle, pour fallback local).
         """
         self._proxmox_client: ProxmoxClientPool = proxmox_client
+        self._wait_for_task_fn = wait_for_task_fn
+
+    async def get_next_vmid(self) -> int:
+        """Obtient le prochain VMID disponible du cluster.
+
+        Returns:
+            Prochain VMID disponible.
+
+        Raises:
+            RuntimeError: Problème API.
+            ProxmoxServerError: Problème API.
+        """
+        async with self._proxmox_client.get_context_manager() as client:
+            try:
+                resp = await client.get(f"{urls.BASE}/cluster/nextid", cache=False)
+            except ProxmoxServerError as e:
+                raise RuntimeError(f"Failed to get next VMID: {e}") from e
+
+        data = resp.get("data")
+        if not data:
+            raise RuntimeError("No VMID returned from nextid endpoint")
+        return int(data)
 
     async def pick_node(self) -> str:
         """Sélectionne le nœud avec le plus de mémoire disponible.
@@ -121,6 +152,59 @@ class ProxmoxVMClient:
             if int(r.get("vmid", -1)) == vmid:
                 node = r.get("node")
                 return str(node) if node is not None else None
+        return None
+
+    async def find_node_by_name(self, vm_name: str) -> str | None:
+        """Trouve le nœud hébergeant une VM par son nom.
+
+        Args:
+            vm_name: Nom de la VM.
+
+        Returns:
+            Nom du nœud ou None si VM non trouvée.
+
+        Raises:
+            ProxmoxServerError: Problème API.
+        """
+        async with self._proxmox_client.get_context_manager() as client:
+            try:
+                resp = await client.get(
+                    urls.CLUSTER_RESOURCES, params={"type": "vm"}, cache=False
+                )
+            except ProxmoxServerError as e:
+                raise RuntimeError(f"Failed to fetch cluster resources: {e}") from e
+
+        resources = resp.get("data", [])
+        for r in resources:
+            if r.get("name") == vm_name:
+                node = r.get("node")
+                return str(node) if node is not None else None
+        return None
+
+    async def find_vmid_by_name(self, vm_name: str) -> int | None:
+        """Trouve l'ID d'une VM par son nom.
+
+        Args:
+            vm_name: Nom de la VM.
+
+        Returns:
+            VMID ou None si VM non trouvée.
+
+        Raises:
+            ProxmoxServerError: Problème API.
+        """
+        async with self._proxmox_client.get_context_manager() as client:
+            try:
+                resp = await client.get(
+                    urls.CLUSTER_RESOURCES, params={"type": "vm"}, cache=False
+                )
+            except ProxmoxServerError as e:
+                raise RuntimeError(f"Failed to fetch cluster resources: {e}") from e
+
+        resources = resp.get("data", [])
+        for r in resources:
+            if r.get("name") == vm_name:
+                return int(r.get("vmid", -1))
         return None
 
     async def get_wan_ip(self, node: str, vmid: int) -> str | None:
@@ -241,3 +325,161 @@ class ProxmoxVMClient:
                 elif unit == "M":
                     total += max(1, int(size // 1024))
         return total
+
+    async def clone(
+        self,
+        vm_name: str,
+        vm_storage: str,
+        source_id: int,
+        dest_node: str | None = None,
+        vmid: int | None = None,
+        pool: str | None = None,
+        full_clone: bool = True,
+    ) -> tuple[str, int]:
+        """Clone une VM à partir d'une template.
+
+        Args:
+            vm_name: Nom de la VM clonée.
+            vm_storage: Storage device de destination (ex: "local").
+            source_id: VMID de la template source.
+            dest_node: Nœud de destination (auto-sélectionné si absent).
+            vmid: ID de la VM (auto-assigné par Proxmox si absent).
+            pool: Pool de destination.
+            full_clone: Clonage complet (True) ou lié (False).
+
+        Returns:
+            Tuple (node, vmid) de la VM clonée.
+
+        Raises:
+            RuntimeError: Si la template n'est pas trouvée ou le clone échoue.
+        """
+        source_node = await self.find_node(source_id)
+        if source_node is None:
+            raise RuntimeError(f"Template VMID {source_id} not found on cluster")
+
+        if dest_node is None:
+            dest_node = await self.pick_node()
+
+        # Obtenir le prochain VMID si pas fourni (évite les collisions)
+        if vmid is None:
+            vmid = await self.get_next_vmid()
+
+        clone_args = {
+            "name": vm_name,
+            "full": 1 if full_clone else 0,
+            "storage": vm_storage,
+            "target": dest_node,
+            "newid": vmid,
+        }
+
+        if pool is not None:
+            clone_args["pool"] = pool
+
+        async with self._proxmox_client.get_context_manager() as client:
+            try:
+                resp = await client.post(
+                    urls.qemu_clone(source_node, source_id), data=clone_args
+                )
+            except ProxmoxServerError as e:
+                raise RuntimeError(f"Failed to clone VM {source_id}: {e}") from e
+
+        # Extraire l'UPID et attendre
+        # Proxmox retourne l'UPID comme string directement dans 'data'
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"Clone response: {resp}")
+
+        upid = resp.get("data")
+        if isinstance(upid, dict):
+            # Si c'est un dict, chercher l'UPID dedans
+            upid = upid.get("id") or upid.get("upid")
+        if not upid:
+            raise RuntimeError(f"No UPID returned from clone request. Response: {resp}")
+
+        logger.info(f"Extracted UPID: {upid} (type: {type(upid).__name__})")
+
+        if self._wait_for_task_fn:
+            await self._wait_for_task_fn(source_node, upid)
+        else:
+            raise RuntimeError("No wait_for_task function provided")
+
+        # Résoudre le vmid réel (rechercher par nom sur dest_node)
+        # Laisser le temps à Proxmox de mettre à jour l'index
+        await asyncio.sleep(1)
+
+        async with self._proxmox_client.get_context_manager() as client:
+            try:
+                resp = await client.get(
+                    urls.CLUSTER_RESOURCES, params={"type": "vm"}, cache=False
+                )
+            except ProxmoxServerError as e:
+                raise RuntimeError(f"Failed to find cloned VM: {e}") from e
+
+        resources = resp.get("data", [])
+        for r in resources:
+            if r.get("node") == dest_node and r.get("name") == vm_name:
+                return dest_node, int(r.get("vmid"))
+
+        raise RuntimeError(f"Cloned VM {vm_name} not found on {dest_node}")
+
+    async def config(self, node: str, vmid: int, **args) -> None:
+        """Configure une VM (cloud-init, hardware, etc.).
+
+        Args:
+            node: Nœud hébergeant la VM.
+            vmid: ID de la VM.
+            **args: Arguments de config (ex: cores=2, memory=512, ipconfig0=...).
+
+        Raises:
+            RuntimeError: Si la configuration échoue.
+        """
+        async with self._proxmox_client.get_context_manager() as client:
+            try:
+                await client.put(urls.qemu_config(node, vmid), data=args)
+            except ProxmoxServerError as e:
+                raise RuntimeError(
+                    f"Failed to configure VM {vmid} on {node}: {e}"
+                ) from e
+
+    async def start(self, node: str, vmid: int) -> None:
+        """Démarre une VM.
+
+        Args:
+            node: Nœud hébergeant la VM.
+            vmid: ID de la VM.
+
+        Raises:
+            RuntimeError: Si le démarrage échoue.
+        """
+        async with self._proxmox_client.get_context_manager() as client:
+            try:
+                resp = await client.post(urls.qemu_status_start(node, vmid))
+            except ProxmoxServerError as e:
+                raise RuntimeError(f"Failed to start VM {vmid} on {node}: {e}") from e
+
+        upid = resp.get("data")
+        if upid and self._wait_for_task_fn:
+            await self._wait_for_task_fn(node, upid)
+
+    async def get_config(self, node: str, vmid: int) -> dict:
+        """Récupère la configuration actuelle d'une VM.
+
+        Args:
+            node: Nœud hébergeant la VM.
+            vmid: ID de la VM.
+
+        Returns:
+            Dict de configuration Proxmox.
+
+        Raises:
+            RuntimeError: Si la récupération échoue.
+        """
+        async with self._proxmox_client.get_context_manager() as client:
+            try:
+                resp = await client.get(urls.qemu_config(node, vmid), cache=False)
+            except ProxmoxServerError as e:
+                raise RuntimeError(
+                    f"Failed to get VM {vmid} config on {node}: {e}"
+                ) from e
+
+        return resp.get("data", {})

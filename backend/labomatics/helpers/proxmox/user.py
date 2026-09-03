@@ -1,8 +1,7 @@
 """Client Proxmox pour gérer les utilisateurs."""
 
-from backend.labomatics.helpers.proxmox.api import (
+from labomatics.helpers.proxmox.api import (
     ProxmoxClientPool,
-    ProxmoxNotFoundError,
     ProxmoxServerError,
     urls,
 )
@@ -20,7 +19,7 @@ class ProxmoxUserClient:
         self._proxmox_client: ProxmoxClientPool = proxmox_client
 
     async def exists(self, userid: str) -> bool:
-        """Vérifie si un utilisateur existe.
+        """Vérifie si un utilisateur existe en listant tous les users.
 
         Args:
             userid: ID utilisateur au format user@realm.
@@ -33,24 +32,21 @@ class ProxmoxUserClient:
         """
         async with self._proxmox_client.get_context_manager() as client:
             try:
-                await client.get(urls.access_user(userid), cache=True)
-                return True
-            except ProxmoxNotFoundError:
-                return False
+                resp = await client.get(urls.ACCESS_USERS, cache=False)
+                users = resp.get("data", [])
+                return any(u.get("userid") == userid for u in users)
             except ProxmoxServerError as e:
                 raise RuntimeError(f"Failed to check user existence: {e}") from e
 
     async def create(
         self,
-        user_name: str,
-        realm: str,
+        userid: str,
         comment: str = "",
     ) -> None:
         """Crée un nouvel utilisateur Proxmox.
 
         Args:
-            user_name: Nom d'utilisateur (partie avant @).
-            realm: Realm Proxmox (ex: "pve", "ldap", "oidc").
+            userid: ID utilisateur au format user@realm (ex: "labomatics@pve").
             comment: Commentaire optionnel (défaut: "Créé par labomatics").
 
         Raises:
@@ -61,14 +57,13 @@ class ProxmoxUserClient:
                 await client.post(
                     urls.ACCESS_USERS,
                     data={
-                        "userid": f"{user_name}@{realm}",
-                        "realm": realm,
+                        "userid": userid,
                         "comment": comment or "Créé par labomatics",
                     },
                 )
             except ProxmoxServerError as e:
                 raise RuntimeError(
-                    f"Failed to create user {user_name}@{realm}: {e}"
+                    f"Failed to create user {userid}: {e}"
                 ) from e
 
     async def delete(self, userid: str) -> None:

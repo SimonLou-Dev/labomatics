@@ -1,6 +1,6 @@
 """Client Proxmox pour gérer les pools."""
 
-from backend.labomatics.helpers.proxmox.api import (
+from labomatics.helpers.proxmox.api import (
     ProxmoxClientPool,
     ProxmoxNotFoundError,
     ProxmoxServerError,

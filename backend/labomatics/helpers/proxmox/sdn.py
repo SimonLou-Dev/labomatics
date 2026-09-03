@@ -1,6 +1,6 @@
 """Client Proxmox pour gérer les réseaux SDN."""
 
-from backend.labomatics.helpers.proxmox.api import (
+from labomatics.helpers.proxmox.api import (
     ProxmoxClientPool,
     ProxmoxServerError,
     urls,
@@ -95,6 +95,7 @@ class ProxmoxSDNClient:
                         "zone": zone,
                         "tag": tag,
                         "alias": alias,
+                        "type": "vnet",
                     },
                 )
             except ProxmoxServerError as e:
@@ -103,20 +104,35 @@ class ProxmoxSDNClient:
                 ) from e
 
             if subnet:
+                # Vérifier si le subnet existe déjà
                 try:
-                    await client.post(
-                        urls.sdn_vnet_subnets(vnet_name),
-                        data={
-                            "subnet": subnet,
-                            "type": "subnet",
-                            "gateway": gateway,
-                            "vnet": vnet_name,
-                        },
-                    )
-                except ProxmoxServerError as e:
-                    raise RuntimeError(
-                        f"Failed to create subnet {subnet} for VNet {vnet_name}: {e}"
-                    ) from e
+                    resp = await client.get(urls.sdn_vnet_subnets(vnet_name), cache=False)
+                    existing_subnets = resp.get("data", [])
+                    subnet_exists = any(s.get("subnet") == subnet for s in existing_subnets)
+                except ProxmoxServerError:
+                    subnet_exists = False
+
+                if not subnet_exists:
+                    try:
+                        await client.post(
+                            urls.sdn_vnet_subnets(vnet_name),
+                            data={
+                                "subnet": subnet,
+                                "type": "subnet",
+                                "gateway": gateway,
+                                "vnet": vnet_name,
+                            },
+                        )
+                    except ProxmoxServerError as e:
+                        raise RuntimeError(
+                            f"Failed to create subnet {subnet} for VNet {vnet_name}: {e}"
+                        ) from e
+
+        # Appliquer les changements SDN
+        try:
+            await self.apply()
+        except RuntimeError as e:
+            raise RuntimeError(f"Failed to apply SDN changes: {e}") from e
 
     async def delete_vnet(self, vnet_name: str) -> None:
         """Supprime un VNet et tous ses subnets associés.
