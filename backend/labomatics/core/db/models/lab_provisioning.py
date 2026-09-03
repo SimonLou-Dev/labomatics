@@ -2,6 +2,7 @@ from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import ForeignKey, Index, UniqueConstraint
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from labomatics.core.db.base import Base
@@ -9,12 +10,15 @@ from labomatics.core.db.mixin import TimestampMixin, UUIDPkMixin
 
 
 class LabProvisioning(Base, UUIDPkMixin, TimestampMixin):
-    """État de provisioning du lab personnel par étudiant/cluster."""
+    """État de provisioning du lab personnel par étudiant/administrateur/cluster."""
 
     __tablename__ = "lab_provisioning"
 
-    student_id: Mapped[UUID] = mapped_column(
+    owner_keycloak_id: Mapped[UUID] = mapped_column(PGUUID)
+    owner_role: Mapped[str] = mapped_column()
+    student_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("student.id", ondelete="RESTRICT"),
+        nullable=True,
     )
     cluster_id: Mapped[UUID] = mapped_column(
         ForeignKey("cluster.id", ondelete="RESTRICT"),
@@ -36,7 +40,7 @@ class LabProvisioning(Base, UUIDPkMixin, TimestampMixin):
     last_error: Mapped[str | None] = None
 
     # Relationships
-    student: Mapped["Student"] = relationship(  # type: ignore
+    student: Mapped["Student | None"] = relationship(  # type: ignore
         back_populates="lab_provisioning",
     )
     cluster: Mapped["Cluster"] = relationship(  # type: ignore
@@ -55,6 +59,9 @@ class LabProvisioning(Base, UUIDPkMixin, TimestampMixin):
 
     __table_args__ = (
         UniqueConstraint("student_id", "cluster_id"),
+        UniqueConstraint(
+            "owner_keycloak_id", "cluster_id", name="uq_lab_prov_owner_cluster"
+        ),
         Index("idx_lab_prov_status", "status"),
         Index("idx_lab_prov_cluster", "cluster_id"),
     )

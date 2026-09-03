@@ -5,6 +5,7 @@ from __future__ import annotations
 from uuid import UUID
 
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 from labomatics.core.db.models import CohortCluster
 from labomatics.core.db.repository.base import BaseRepository
@@ -32,7 +33,11 @@ class CohortClusterRepository(BaseRepository[CohortCluster]):
     async def list_by_cohort(self, cohort_id: UUID) -> list[CohortCluster]:
         """Liste les clusters d'une promo."""
         async with async_session_local() as session:
-            stmt = select(self.model).where(self.model.cohort_id == cohort_id)
+            stmt = (
+                select(self.model)
+                .where(self.model.cohort_id == cohort_id)
+                .options(selectinload(self.model.cluster))
+            )
             result = await session.execute(stmt)
             return result.scalars().all()
 

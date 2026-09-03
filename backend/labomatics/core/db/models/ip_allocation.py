@@ -3,6 +3,7 @@ from uuid import UUID
 
 from sqlalchemy import ForeignKey, Index, text
 from sqlalchemy.dialects.postgresql import INET
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from labomatics.core.db.base import Base
@@ -10,15 +11,18 @@ from labomatics.core.db.mixin import TimestampMixin, UUIDPkMixin
 
 
 class IpAllocation(Base, UUIDPkMixin, TimestampMixin):
-    """Allocation d'IP publique à un étudiant sur un cluster."""
+    """Allocation d'IP publique à un étudiant/administrateur sur un cluster."""
 
     __tablename__ = "ip_allocation"
 
     ip_range_cluster_id: Mapped[UUID] = mapped_column(
         ForeignKey("ip_range_cluster.id", ondelete="RESTRICT"),
     )
-    student_id: Mapped[UUID] = mapped_column(
+    owner_keycloak_id: Mapped[UUID] = mapped_column(PGUUID)
+    owner_role: Mapped[str] = mapped_column()
+    student_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("student.id", ondelete="RESTRICT"),
+        nullable=True,
     )
     ip_address: Mapped[str] = mapped_column(
         INET,
@@ -29,7 +33,7 @@ class IpAllocation(Base, UUIDPkMixin, TimestampMixin):
     released_at: Mapped[datetime | None] = None
 
     # Relationships
-    student: Mapped["Student"] = relationship(  # type: ignore
+    student: Mapped["Student | None"] = relationship(  # type: ignore
         back_populates="ip_allocations",
     )
 
@@ -42,9 +46,9 @@ class IpAllocation(Base, UUIDPkMixin, TimestampMixin):
             unique=True,
         ),
         Index(
-            "idx_ip_alloc_student_active",
-            "ip_range_cluster_id",
-            "student_id",
+            "idx_ip_alloc_owner_active",
+            "owner_keycloak_id",
+            "ip_address",
             postgresql_where=text("released_at IS NULL"),
             unique=True,
         ),

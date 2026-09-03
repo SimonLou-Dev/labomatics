@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, Index, UniqueConstraint
+from sqlalchemy import ForeignKey, Index, UniqueConstraint, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from labomatics.core.db.base import Base
@@ -22,6 +22,7 @@ class CohortCluster(Base, UUIDPkMixin, TimestampMixin):
     added_at: Mapped[datetime] = mapped_column(
         default=lambda: datetime.utcnow().replace(tzinfo=None),
     )
+    is_default: Mapped[bool] = mapped_column(default=False)
 
     # Relationships
     cohort: Mapped["Cohort"] = relationship(
@@ -34,6 +35,11 @@ class CohortCluster(Base, UUIDPkMixin, TimestampMixin):
     __table_args__ = (
         UniqueConstraint("cohort_id", "cluster_id"),
         Index("idx_cohort_cluster_cluster_id", "cluster_id"),
+        Index(
+            "idx_cohort_cluster_is_default",
+            "is_default",
+            postgresql_where=text("is_default = true"),
+        ),
     )
 
 
