@@ -10,7 +10,7 @@
         class="mb-4"
       />
       <h1 v-if="labData?.student" class="text-3xl font-bold">
-        Laboratoire — {{ labData.student.first_name }} {{ labData.student.last_name }}
+        Mon Lab — {{ labData.student.first_name }} {{ labData.student.last_name }} (WAN: {{ labData.wan_ip }})
       </h1>
     </div>
 
@@ -30,11 +30,30 @@
       </div>
     </div>
 
+    <!-- No Lab State -->
+    <div v-if="!labData?.student" class="flex flex-col items-center justify-center h-96 gap-4">
+      <i class="pi pi-inbox text-6xl text-surface-400"></i>
+      <h2 class="text-2xl font-semibold">Pas de lab créé</h2>
+      <p class="text-surface-600 dark:text-surface-400 text-center max-w-md">
+        Vous n'avez pas encore créé de lab. Cliquez sur le bouton ci-dessous pour en demander la création.
+      </p>
+      <Button
+        label="Créer mon lab"
+        icon="pi pi-plus"
+        size="large"
+        class="bg-primary-lab-600 hover:bg-primary-lab-700 text-white"
+        @click="requestLabCreation"
+        :loading="creatingLab"
+      />
+    </div>
+
     <!-- Content -->
-    <div v-else-if="labData?.student">
+    <div v-if="labData?.student">
       <!-- Student Info Card -->
-      <Card class="mb-6 p-6">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <Card class="mb-6">
+        <template #title>Informations Étudiant</template>
+        <template #content>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <div class="text-sm text-surface-500 dark:text-surface-400 mb-1">Étudiant</div>
             <div class="text-lg font-semibold">{{ labData.student.first_name }} {{ labData.student.last_name }}</div>
@@ -53,20 +72,22 @@
             <div class="text-sm">{{ formatDate(labData.student.created_at) }}</div>
           </div>
         </div>
+        </template>
       </Card>
 
       <!-- Allocations Network -->
-      <Card class="mb-6 p-6">
-        <h2 class="text-xl font-bold mb-4">Allocations Réseau</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <Card class="mb-6">
+        <template #title>Allocations Réseau</template>
+        <template #content>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div class="border border-surface-200 dark:border-surface-700 rounded-lg p-4">
             <div class="text-sm text-surface-500 dark:text-surface-400 mb-2">Adresse IP WAN</div>
             <div class="flex items-center justify-between">
               <span class="text-lg font-mono font-bold">
-                {{ labData.student.wan_ip || 'Non allouée' }}
+                {{ labData.wan_ip || 'Non allouée' }}
               </span>
               <i
-                v-if="labData.student.wan_ip"
+                v-if="labData.wan_ip"
                 class="pi pi-check-circle"
                 style="color: var(--green-500)"
               ></i>
@@ -81,10 +102,10 @@
             <div class="text-sm text-surface-500 dark:text-surface-400 mb-2">Tag VXLAN</div>
             <div class="flex items-center justify-between">
               <span class="text-lg font-mono font-bold">
-                {{ labData.student.vxlan_tag !== null ? labData.student.vxlan_tag : 'Non alloué' }}
+                {{ labData.vxlan_tag !== null ? labData.vxlan_tag : 'Non alloué' }}
               </span>
               <i
-                v-if="labData.student.vxlan_tag !== null"
+                v-if="labData.vxlan_tag !== null"
                 class="pi pi-check-circle"
                 style="color: var(--green-500)"
               ></i>
@@ -95,12 +116,14 @@
             </div>
           </div>
         </div>
+        </template>
       </Card>
 
       <!-- VMs Table -->
-      <Card class="mb-6 p-6">
-        <h2 class="text-xl font-bold mb-4">Machines Virtuelles Provisionnées</h2>
-        <DataTable
+      <Card class="mb-6">
+        <template #title>Machines Virtuelles Provisionnées</template>
+        <template #content>
+          <DataTable
           :value="labData.vms"
           dataKey="id"
           :loading="loading"
@@ -129,14 +152,14 @@
               <span class="text-sm">{{ data.cores }}</span>
             </template>
           </Column>
-          <Column field="memory_mb" header="Mémoire" style="width: 15%">
+          <Column field="memory" header="Mémoire" style="width: 15%">
             <template #body="{ data }">
-              <span class="text-sm font-mono">{{ formatMemory(data.memory_mb) }}</span>
+              <span class="text-sm font-mono">{{ formatMemory(data.memory) }}</span>
             </template>
           </Column>
-          <Column field="disk_gb" header="Disque" style="width: 13%">
+          <Column field="disk" header="Disque" style="width: 13%">
             <template #body="{ data }">
-              <span class="text-sm font-mono">{{ data.disk_gb }} GB</span>
+              <span class="text-sm font-mono">{{ data.disk }} GB</span>
             </template>
           </Column>
           <Column field="created_at" header="Créée" style="width: 15%">
@@ -145,15 +168,14 @@
             </template>
           </Column>
         </DataTable>
+        </template>
       </Card>
 
       <!-- TODO Section -->
-      <Card class="p-6 bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-200 dark:border-amber-800">
-        <div class="flex gap-4">
-          <i class="pi pi-info-circle text-amber-600 dark:text-amber-400 text-2xl flex-shrink-0 mt-1"></i>
-          <div class="flex-1">
-            <h3 class="font-bold text-amber-900 dark:text-amber-100 mb-3">À compléter</h3>
-            <ul class="space-y-2 text-sm text-amber-800 dark:text-amber-200">
+      <Card class="bg-amber-900/20 border-2 border-amber-700">
+        <template #title>À compléter</template>
+        <template #content>
+          <ul class="space-y-2 text-sm text-amber-800 dark:text-amber-200">
               <li class="flex items-start gap-2">
                 <i class="pi pi-times-circle text-amber-500 text-xs mt-1 flex-shrink-0"></i>
                 <span>[ ] Affichage des VMs provisionnées depuis le backend</span>
@@ -174,12 +196,11 @@
                 <i class="pi pi-times-circle text-amber-500 text-xs mt-1 flex-shrink-0"></i>
                 <span>[ ] Logs de provisioning</span>
               </li>
-            </ul>
-            <p class="text-xs text-amber-700 dark:text-amber-300 mt-3 italic">
-              Cette page affiche le détail du lab étudiant. Les données seront complétées progressivement.
-            </p>
-          </div>
-        </div>
+          </ul>
+          <p class="text-xs text-amber-700 dark:text-amber-300 mt-3 italic">
+            Cette page affiche le détail du lab étudiant. Les données seront complétées progressivement.
+          </p>
+        </template>
       </Card>
     </div>
   </div>
@@ -199,6 +220,7 @@ import {
 } from 'primevue'
 import type { LabDataDTO } from '@/api/types'
 import * as studentsApi from '@/api/students'
+import * as labsApi from '@/api/labs'
 
 const router = useRouter()
 const route = useRoute()
@@ -206,6 +228,7 @@ const toast = useToast()
 
 const labData = ref<LabDataDTO | null>(null)
 const loading = ref(false)
+const creatingLab = ref(false)
 const error = ref<string | null>(null)
 
 function formatDate(dateString: string): string {
@@ -263,6 +286,36 @@ async function fetchLabData() {
     console.error('Failed to fetch lab data:', err)
   } finally {
     loading.value = false
+  }
+}
+
+async function requestLabCreation() {
+  creatingLab.value = true
+  error.value = null
+  try {
+    await labsApi.createLab()
+    toast.add({
+      severity: 'success',
+      summary: 'Succès',
+      detail: 'Création du lab en cours. Vous recevrez un email quand ce sera prêt.',
+      life: 5000,
+    })
+    // Refresh data after a short delay
+    setTimeout(() => {
+      fetchLabData()
+    }, 2000)
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Erreur inconnue'
+    error.value = `Impossible de créer le lab: ${message}`
+    toast.add({
+      severity: 'error',
+      summary: 'Erreur',
+      detail: error.value,
+      life: 3000,
+    })
+    console.error('Failed to create lab:', err)
+  } finally {
+    creatingLab.value = false
   }
 }
 
