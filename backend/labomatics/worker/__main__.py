@@ -6,7 +6,7 @@ import sys
 
 def run() -> None:
     """Lance celery worker sur la queue 'scheduler'."""
-    subprocess.run(  # noqa: S603
+    subprocess.run(
         [  # noqa: S607
             "celery",
             "-A",
@@ -24,7 +24,7 @@ def run() -> None:
 
 def run_beat() -> None:
     """Lance Celery Beat (planificateur des tâches périodiques)."""
-    subprocess.run(  # noqa: S603
+    subprocess.run(
         [  # noqa: S607
             "celery",
             "-A",

@@ -13,10 +13,24 @@ class RangeRef(BaseModel):
 
 
 class ClusterCredentialWriteDTO(BaseModel):
-    """Credentials à écrire (token + secret)."""
+    """Credentials à écrire (token + secret).
+
+    Accepte token_id au format Proxmox "user@realm!token_id"
+    ou juste "token_id" (par défaut user@realm="labomatics@pve").
+    """
 
     token_id: str
     token_secret: str
+
+    def get_user_and_token_id(self) -> tuple[str, str]:
+        """Extrait le user et token_id du format Proxmox."""
+        if "!" in self.token_id:
+            # Format complet: "labomatics@pve!labomatics"
+            user_part, token_id = self.token_id.rsplit("!", 1)
+            return user_part, token_id
+        else:
+            # Fallback: juste le token_id, assume user par défaut
+            return "labomatics@pve", self.token_id
 
 
 class ClusterDTO(BaseModel):

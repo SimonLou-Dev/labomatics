@@ -12,6 +12,7 @@ celery_app = Celery(
     backend=settings.celery_broker_url,
     include=[
         "labomatics.tasks.students",
+        "labomatics.tasks.lab",
     ],
 )
 
