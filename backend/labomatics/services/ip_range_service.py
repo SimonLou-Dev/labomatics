@@ -168,7 +168,18 @@ class IpRangeService:
         used_addresses = {IPv4Address(str(alloc.ip_address)) for alloc in allocations}
 
         exclusions = ip_range.exclusions or []
-        excluded_addresses = {IPv4Address(ex) for ex in exclusions}
+        excluded_addresses = set()
+        for ex in exclusions:
+            if isinstance(ex, str) and "-" in ex:
+                # Plage IP: "ip1-ip2"
+                start_str, end_str = ex.split("-", 1)
+                start = IPv4Address(start_str.strip())
+                end = IPv4Address(end_str.strip())
+                for addr in range(int(start), int(end) + 1):
+                    excluded_addresses.add(IPv4Address(addr))
+            else:
+                # IP individuelle
+                excluded_addresses.add(IPv4Address(str(ex)))
 
         for addr in usable_addresses:
             if addr not in used_addresses and addr not in excluded_addresses:
@@ -221,7 +232,18 @@ class IpRangeService:
         used_addresses = {IPv4Address(str(alloc.ip_address)) for alloc in allocations}
 
         exclusions = ip_range.exclusions or []
-        excluded_addresses = {IPv4Address(ex) for ex in exclusions}
+        excluded_addresses = set()
+        for ex in exclusions:
+            if isinstance(ex, str) and "-" in ex:
+                # Plage IP: "ip1-ip2"
+                start_str, end_str = ex.split("-", 1)
+                start = IPv4Address(start_str.strip())
+                end = IPv4Address(end_str.strip())
+                for addr in range(int(start), int(end) + 1):
+                    excluded_addresses.add(IPv4Address(addr))
+            else:
+                # IP individuelle
+                excluded_addresses.add(IPv4Address(str(ex)))
 
         available = []
         for addr in usable_addresses:
