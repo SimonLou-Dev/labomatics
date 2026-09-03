@@ -29,12 +29,7 @@ def new_job_id() -> str:
 
 def run_async(coro) -> Any:
     """Execute une coroutine dans une boucle dediee (contexte worker sync)."""
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    try:
-        return loop.run_until_complete(coro)
-    finally:
-        loop.close()
+    return asyncio.run(coro)
 
 
 async def emit(

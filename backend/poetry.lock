@@ -593,6 +593,18 @@ urllib3 = {version = ">=1.25.4,<2.2.0 || >2.2.0,<3", markers = "python_version >
 crt = ["awscrt (==0.27.6)"]
 
 [[package]]
+name = "cachetools"
+version = "7.1.8"
+description = "Extensible memoizing collections and decorators"
+optional = false
+python-versions = ">=3.10"
+groups = ["main"]
+files = [
+    {file = "cachetools-7.1.8-py3-none-any.whl", hash = "sha256:a81e3844acaa7355b6567f97bd67a94a14ec3a9bc2cbbdae45b9592cc036775b"},
+    {file = "cachetools-7.1.8.tar.gz", hash = "sha256:1221d547a0b24b7f26fa891d40d488b5258beab9aebd8ed68c729be3af849c43"},
+]
+
+[[package]]
 name = "celery"
 version = "5.6.3"
 description = "Distributed Task Queue."
@@ -3716,4 +3728,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.11"
-content-hash = "fe8c5de87fc07a8b09748f37a04f3416a2b2758dfa22cde7d44b9f8e686f9d0f"
+content-hash = "726ca1a055ac8e7036b3dea131d101019fd5a7bfbe55ba4ba21df6903000a120"
