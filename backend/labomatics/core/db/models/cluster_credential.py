@@ -17,7 +17,7 @@ class ClusterCredential(Base, UUIDPkMixin, TimestampMixin):
         ForeignKey("cluster.id", ondelete="RESTRICT"),
         unique=True,
     )
-    user: Mapped[str] = mapped_column()
+    user: Mapped[str | None] = mapped_column(nullable=True)
     token_id: Mapped[str] = mapped_column()
     encrypted_token_secret: Mapped[bytes] = mapped_column(
         BYTEA,

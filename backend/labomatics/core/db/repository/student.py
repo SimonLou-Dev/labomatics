@@ -87,33 +87,50 @@ class StudentRepository(BaseRepository[Student]):
 
             return students, total
 
+    async def get_by_id_with_enrollments(self, student_id: UUID) -> Student | None:
+        """Récupère un étudiant avec ses enrollments et cohorts."""
+        from sqlalchemy.orm import selectinload
+
+        from labomatics.core.db.models import Enrollment
+
+        async with async_session_local() as session:
+            stmt = (
+                select(self.model)
+                .where(self.model.id == student_id)
+                .options(
+                    selectinload(self.model.enrollments).selectinload(Enrollment.cohort)
+                )
+            )
+            result = await session.execute(stmt)
+            return result.scalars().unique().one_or_none()
+
     async def get_by_id_for_lab(self, student_id: UUID) -> Student | None:
         """Récupère un étudiant avec toutes les relations pour afficher le lab."""
+        from sqlalchemy.orm import selectinload
+
         from labomatics.core.db.models import (
-            Cohort,
             Enrollment,
-            IpAllocation,
             LabProvisioning,
-            LabVm,
-            VxlanAllocation,
         )
 
         async with async_session_local() as session:
             stmt = (
                 select(self.model)
                 .where(self.model.id == student_id)
-                .outerjoin(Enrollment, Enrollment.student_id == self.model.id)
-                .outerjoin(Cohort, Cohort.id == Enrollment.cohort_id)
-                .outerjoin(LabProvisioning, LabProvisioning.student_id == self.model.id)
-                .outerjoin(LabVm, LabVm.lab_provisioning_id == LabProvisioning.id)
-                .outerjoin(
-                    IpAllocation, IpAllocation.id == LabProvisioning.ip_allocation_id
+                .options(
+                    selectinload(self.model.enrollments).selectinload(
+                        Enrollment.cohort
+                    ),
+                    selectinload(self.model.lab_provisioning).selectinload(
+                        LabProvisioning.ip_allocation
+                    ),
+                    selectinload(self.model.lab_provisioning).selectinload(
+                        LabProvisioning.vxlan_allocation
+                    ),
+                    selectinload(self.model.lab_provisioning).selectinload(
+                        LabProvisioning.vms
+                    ),
                 )
-                .outerjoin(
-                    VxlanAllocation,
-                    VxlanAllocation.id == LabProvisioning.vxlan_allocation_id,
-                )
-                .distinct()
             )
             result = await session.execute(stmt)
             return result.scalars().unique().one_or_none()
