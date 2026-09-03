@@ -35,7 +35,7 @@
 
       <div class="grid grid-cols-2 gap-6">
         <div v-for="field in requiredFields" :key="field" class="space-y-2">
-          <label class="block text-sm font-medium">{{ field }}</label>
+          <div class="block text-sm font-medium">{{ field }}</div>
           <Select
             v-model="columnMapping[field]"
             :options="availableColumns"

@@ -78,7 +78,7 @@ export async function getLabData(studentId: string): Promise<LabDataDTO> {
 }
 
 export async function getLabDataForMe(): Promise<LabDataDTO> {
-  const res = await http.get<LabDataDTO>('/me/lab')
+  const res = await http.get<LabDataDTO>('/labs/me')
   return res.data
 }
 

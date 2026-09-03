@@ -11,6 +11,7 @@ import NetworkRangesPage from '@/pages/admin/NetworkRanges.vue'
 import WanRangeDetailsPage from '@/pages/admin/WanRangeDetails.vue'
 import NetworkRangeDetailsPage from '@/pages/admin/NetworkRangeDetails.vue'
 import LabPage from '@/pages/Lab.vue'
+import AdminCohortsPage from '@/pages/admin/Cohorts.vue'
 
 const routes = [
   {
@@ -66,6 +67,11 @@ const routes = [
         component: NetworkRangeDetailsPage,
       },
       {
+        path: 'admin/cohorts',
+        name: 'AdminCohorts',
+        component: AdminCohortsPage,
+      },
+      {
         path: 'lab/:userId?',
         name: 'Lab',
         component: LabPage,
@@ -73,12 +79,12 @@ const routes = [
       {
         path: 'cohorts',
         name: 'Cohorts',
-        component: { template: '<div class="p-6"><h1>Classes</h1></div>' },
+        component: AdminCohortsPage,
       },
       {
         path: 'labs',
         name: 'Labs',
-        component: { template: '<div class="p-6"><h1>Laboratoires</h1></div>' },
+        component: { template: '<div class="p-6"><h1>Labs</h1></div>' },
       },
       {
         path: 'admin/users',
