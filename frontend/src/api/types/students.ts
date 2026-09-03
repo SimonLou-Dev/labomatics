@@ -82,10 +82,7 @@ export interface StudentDetailDTO {
   first_name: string
   last_name: string
   cohort_name: string
-  wan_ip: string | null
-  vxlan_tag: number | null
   created_at: string
-  updated_at: string
 }
 
 export interface LabVmDTO {
@@ -94,9 +91,10 @@ export interface LabVmDTO {
   cluster_name: string
   state: string
   cores: number
-  memory_mb: number
-  disk_gb: number
+  memory: number
+  disk: number
   created_at: string
+  notes: string | null
 }
 
 export interface LabAllocationDTO {
@@ -107,5 +105,7 @@ export interface LabAllocationDTO {
 export interface LabDataDTO {
   student: StudentDetailDTO
   vms: LabVmDTO[]
-  allocations: LabAllocationDTO[]
+  wan_ip: string | null
+  vxlan_tag: number | null
+  openwrt_link: string | null
 }
