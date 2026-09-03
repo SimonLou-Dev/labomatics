@@ -78,7 +78,7 @@ class OpenWRTBuilder():
             version = "23.05.5"
 
         vmid: int = 90200
-        password: str = domain
+        password: str = "labomatics"
 
         OpenWRTBuilder._check_root()
         OpenWRTBuilder._check_deps()

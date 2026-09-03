@@ -47,7 +47,7 @@ supplémentaires se connectent sur ce réseau.
 
 ```bash
 ssh root@172.16.0.18       # Remplacez par votre IP WAN
-# Mot de passe initial : openwrt
+# Mot de passe initial : labomatics
 ```
 
 ### Via LuCI (interface web OpenWrt)

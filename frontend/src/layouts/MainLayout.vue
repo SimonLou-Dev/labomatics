@@ -218,9 +218,9 @@ const menuItems = computed(() => {
           command: () => router.push('/'),
         },
         {
-          label: 'Mon compte',
+          label: 'Mon lab',
           icon: User,
-          command: () => router.push('/'),
+          command: () => router.push('/lab'),
         }
       ]
     }
@@ -231,19 +231,9 @@ const menuItems = computed(() => {
       label: 'Étudiant',
       items: [
         {
-          label: 'Dashboard',
-          icon: Home,
-          command: () => router.push('/'),
-        },
-        {
           label: 'Mon compte',
           icon: User,
           command: () => router.push('/account'),
-        },
-        {
-          label: 'Mon lab',
-          icon: User,
-          command: () => router.push('/lab'),
         },
       ],
     })
