@@ -72,6 +72,42 @@ class QemuConfig(BaseModel):
         extra = "allow"  # Permet d'autres champs
 
 
+class CloudInitConfigDTO(BaseModel):
+    """Configuration cloud-init pour une VM OpenWRT."""
+
+    cores: int = Field(default=2)
+    memory: int = Field(default=512)
+    storage_device: str  # ex: "local"
+    wan_ip: str  # ex: "192.168.1.10"
+    wan_prefix: int  # ex: 24
+    wan_gateway: str  # ex: "192.168.1.1"
+    vxlan_gateway_ip: str  # ex: "10.100.18.254" (dernière IP utilisable du subnet)
+    wan_bridge: str = Field(default="vmbr0")
+    vnet_bridge: str  # ex: "labomatics_vn100"
+    tags: str = Field(default="labomatics-system")
+    onboot: bool = Field(default=True)
+
+    def to_proxmox_args(self) -> dict:
+        """Convertit vers les arguments Proxmox POST/PUT pour la config VM.
+
+        Retourne un dict prêt pour `proxmox.vm.config(node, vmid, **args)`.
+        """
+        return {
+            "cores": self.cores,
+            "memory": self.memory,
+            "ide2": f"{self.storage_device}:cloudinit",
+            "citype": "nocloud",
+            "ipconfig0": f"ip={self.wan_ip}/{self.wan_prefix},gw={self.wan_gateway}",
+            "ipconfig1": f"ip={self.vxlan_gateway_ip}/24",
+            "serial0": "socket",
+            "vga": "serial0",
+            "net0": f"virtio,bridge={self.wan_bridge}",
+            "net1": f"virtio,bridge={self.vnet_bridge}",
+            "onboot": 1 if self.onboot else 0,
+            "tags": self.tags,
+        }
+
+
 class User(BaseModel):
     """Utilisateur Proxmox."""
 

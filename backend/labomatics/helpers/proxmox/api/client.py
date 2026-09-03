@@ -56,8 +56,8 @@ class AsyncProxmoxClient:
         self._timeout = httpx.Timeout(timeout)
         self._cache: TTLCache = TTLCache(maxsize=5000, ttl=cache_ttl)
 
-        # Headers d'authentification
-        auth_header = f"PVEAPIToken={token_id}:{token_secret}"
+        # Headers d'authentification (format: PVEAPIToken=USER@REALM!TOKENID=UUID)
+        auth_header = f"PVEAPIToken={token_id}={token_secret}"
 
         # Client httpx avec connexion pooling
         self._client = httpx.AsyncClient(
