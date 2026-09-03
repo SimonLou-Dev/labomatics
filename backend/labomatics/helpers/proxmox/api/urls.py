@@ -40,6 +40,16 @@ def qemu_config(node: str, vmid: int) -> str:
     return f"{qemu_vm_path(node, vmid)}/config"
 
 
+def qemu_clone(node: str, vmid: int) -> str:
+    """Chemin pour cloner une VM QEMU."""
+    return f"{qemu_vm_path(node, vmid)}/clone"
+
+
+def qemu_status_start(node: str, vmid: int) -> str:
+    """Chemin pour démarrer une VM QEMU."""
+    return f"{qemu_vm_path(node, vmid)}/status/start"
+
+
 # ── Access (Users, Tokens, ACLs) ─────────────────────────────────────────────
 ACCESS = f"{BASE}/access"
 ACCESS_USERS = f"{ACCESS}/users"
@@ -49,6 +59,11 @@ ACCESS_ACL = f"{ACCESS}/acl"
 def access_user(userid: str) -> str:
     """Chemin d'un utilisateur."""
     return f"{ACCESS_USERS}/{userid}"
+
+
+def access_user_tokens(userid: str) -> str:
+    """Chemin de la liste des tokens d'un utilisateur."""
+    return f"{access_user(userid)}/token"
 
 
 def access_user_token(userid: str, token_name: str) -> str:
@@ -66,7 +81,7 @@ def pool_path(pool_name: str) -> str:
 
 
 # ── SDN (Software Defined Network) ───────────────────────────────────────────
-SDN = f"{CLUSTER_RESOURCES}/sdn"
+SDN = f"{BASE}/cluster/sdn"
 SDN_ZONES = f"{SDN}/zones"
 SDN_VNETS = f"{SDN}/vnets"
 
