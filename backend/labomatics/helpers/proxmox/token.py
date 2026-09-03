@@ -1,6 +1,6 @@
 """Client Proxmox pour gérer les tokens API."""
 
-from backend.labomatics.helpers.proxmox.api import (
+from labomatics.helpers.proxmox.api import (
     ProxmoxClientPool,
     ProxmoxNotFoundError,
     ProxmoxServerError,
@@ -20,7 +20,7 @@ class ProxmoxTokenClient:
         self._proxmox_client: ProxmoxClientPool = proxmox_client
 
     async def exists(self, userid: str, token_name: str = "labomatics") -> bool:  # noqa: S107
-        """Vérifie si un token API existe.
+        """Vérifie si un token API existe en listant tous les tokens de l'utilisateur.
 
         Args:
             userid: ID utilisateur au format user@realm.
@@ -34,21 +34,24 @@ class ProxmoxTokenClient:
         """
         async with self._proxmox_client.get_context_manager() as client:
             try:
-                await client.get(urls.access_user_token(userid, token_name), cache=True)
-                return True
+                resp = await client.get(urls.access_user_tokens(userid), cache=False)
             except ProxmoxNotFoundError:
                 return False
             except ProxmoxServerError as e:
                 raise RuntimeError(
-                    f"Failed to check token existence for {userid}: {e}"
+                    f"Failed to list tokens for {userid}: {e}"
                 ) from e
+
+        # Chercher le token par son nom
+        tokens = resp.get("data", [])
+        return any(t.get("tokenid", "").endswith(f"!{token_name}") for t in tokens)
 
     async def create_student(
         self,
         userid: str,
         token_name: str = "labomatics",  # noqa: S107
     ) -> tuple[str, str]:
-        """Crée un token API sans séparation de privilèges.
+        """Crée un token API sans séparation de privilèges (ou récupère si existe).
 
         Args:
             userid: ID utilisateur au format user@realm.
@@ -58,8 +61,28 @@ class ProxmoxTokenClient:
             (full_token_id, secret) — ex: ("jdupont@pve!labomatics", "xxxxxxxx-...")
 
         Raises:
-            ProxmoxServerError: Si le token existe déjà ou problème de création.
+            ProxmoxServerError: Problème de création ou de récupération.
         """
+        # Vérifier si le token existe déjà
+        if await self.exists(userid, token_name):
+            # Token existe, le récupérer
+            async with self._proxmox_client.get_context_manager() as client:
+                try:
+                    resp = await client.get(
+                        urls.access_user_token(userid, token_name), cache=False
+                    )
+                except ProxmoxServerError as e:
+                    raise RuntimeError(
+                        f"Failed to fetch existing token {token_name} for {userid}: {e}"
+                    ) from e
+
+            data = resp.get("data", {})
+            # Retourner le token existant (sans le secret puisqu'on ne peut pas le récupérer)
+            # Construire le full-tokenid
+            full_tokenid = f"{userid}!{token_name}"
+            return full_tokenid, data.get("value", "")
+
+        # Token n'existe pas, le créer
         async with self._proxmox_client.get_context_manager() as client:
             try:
                 resp = await client.post(
