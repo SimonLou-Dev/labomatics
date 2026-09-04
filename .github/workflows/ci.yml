@@ -7,8 +7,8 @@ on:
     branches: [main, dev]
 
 jobs:
-  lint:
-    name: Lint (ruff + mypy)
+  lint-backend:
+    name: Lint backend (ruff + mypy)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,57 +16,75 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-          cache: pip
+
+      - name: Install poetry
+        run: pip install poetry
 
       - name: Install dependencies
-        run: pip install -e backend/ ".[dev]"
+        working-directory: backend
+        run: poetry install
 
       - name: ruff check
-        run: ruff check backend/
+        working-directory: backend
+        run: poetry run ruff check .
 
       - name: ruff format check
-        run: ruff format --check backend/
+        working-directory: backend
+        run: poetry run ruff format --check .
 
       - name: mypy
-        run: mypy backend/ --ignore-missing-imports
+        working-directory: backend
+        run: poetry run mypy labomatics --ignore-missing-imports
 
-      - name: Install dependencies
-        run: pip install -e cli/ ".[dev]"
-
-      - name: ruff check
-        run: ruff check cli/
-
-      - name: ruff format check
-        run: ruff format --check cli/
-
-      - name: mypy
-        run: mypy cli/ --ignore-missing-imports
-
-  test:
-    name: Tests (Python ${{ matrix.python-version }})
+  lint-cli:
+    name: Lint CLI (ruff + mypy)
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.11", "3.12"]
-
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
-          cache: pip
+          python-version: "3.11"
+
+      - name: Install poetry
+        run: pip install poetry
 
       - name: Install dependencies
-        run: pip install -e backend/ ".[dev]"
+        working-directory: cli
+        run: poetry install
 
-      - name: Run tests
-        run: pytest backend/tests/ -v --tb=short --cov=labomatics --cov-report=xml
+      - name: ruff check
+        working-directory: cli
+        run: poetry run ruff check .
 
-      - name: Upload coverage
-        if: matrix.python-version == '3.11'
-        uses: actions/upload-artifact@v4
+      - name: ruff format check
+        working-directory: cli
+        run: poetry run ruff format --check .
+
+      - name: mypy
+        working-directory: cli
+        run: poetry run mypy labomatics_cli --ignore-missing-imports
+
+  lint-frontend:
+    name: Lint frontend (eslint + vue-tsc)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
         with:
-          name: coverage-report
-          path: coverage.xml
-          retention-days: 7
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: ESLint
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Type check
+        working-directory: frontend
+        run: npm run type-check

@@ -1,0 +1,14 @@
+FROM python:3.11-slim AS builder
+WORKDIR /app
+RUN pip install poetry poetry-plugin-export
+COPY pyproject.toml poetry.lock ./
+RUN poetry export -f requirements.txt --without-hashes -o requirements.txt
+COPY labomatics ./labomatics
+RUN pip install --user -r requirements.txt && pip install --user .
+
+FROM python:3.11-slim
+WORKDIR /app
+COPY --from=builder /root/.local /root/.local
+COPY --from=builder /app/labomatics ./labomatics
+ENV PATH=/root/.local/bin:$PATH
+CMD ["api"]
