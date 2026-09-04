@@ -1,0 +1,89 @@
+authorize {
+    preprocess
+    chap
+    mschap
+    digest
+    suffix
+    update control {
+        &Proxy-To-Realm := LOCAL
+    }
+    eap {
+        ok = return
+    }
+    files
+    -ldap
+    if ((ok || updated) && User-Password) {
+        update control {
+            Auth-Type := ldap
+        }
+    }
+    expiration
+    logintime
+    pap
+}
+
+authenticate {
+    Auth-Type LDAP {
+        ldap
+    }
+    Auth-Type CHAP {
+        chap
+    }
+    Auth-Type MS-CHAP {
+        mschap
+    }
+    digest
+    eap
+    pap
+}
+
+preacct {
+    preprocess
+    acct_unique
+    suffix
+    files
+}
+
+accounting {
+    detail
+    unix
+    -sql
+    exec
+    attr_filter.accounting_response
+}
+
+session {
+}
+
+post-auth {
+    update {
+        &reply: += "&session-state:"
+    }
+    -sql
+    exec
+    remove_reply_message_if_eap
+    Post-Auth-Type REJECT {
+        attr_filter.access_reject
+        eap
+        remove_reply_message_if_eap
+    }
+}
+
+pre-proxy {
+    realm_check
+    -sql
+    pre_proxy_log
+}
+
+post-proxy {
+    -sql
+    Post-Proxy-Type REJECT {
+        attr_filter.pre-proxy-REJECT
+        eap
+        remove_reply_message_if_eap
+    }
+    -eap
+    eap
+    remove_reply_message_if_eap
+    post_proxy_log
+}

@@ -56,6 +56,53 @@ services:
       - traefik.http.routers.keycloak-https.service=keycloak
       - traefik.http.services.keycloak.loadbalancer.server.port=8080
 
+  ldap:
+    image: bitnami/openldap:2.6
+    container_name: labomatics-ldap
+    user: "0:0"
+    environment:
+      LDAP_ROOT: "{{ LDAP_BASE_DN }}"
+      LDAP_ADMIN_USERNAME: admin
+      LDAP_ADMIN_PASSWORD: "{{ LDAP_ADMIN_PASSWORD }}"
+      LDAP_ENABLE_TLS: "yes"
+      LDAP_TLS_CERT_FILE: /opt/bitnami/openldap/certs/ldap.{{ DOMAIN }}.crt
+      LDAP_TLS_KEY_FILE: /opt/bitnami/openldap/certs/ldap.{{ DOMAIN }}.key
+      LDAP_TLS_CA_FILE: /opt/bitnami/openldap/certs/ca.crt
+      LDAP_CUSTOM_LDIF_DIR: /ldifs
+    volumes:
+      - ldap_data:/bitnami/openldap
+      - ./ldap/bootstrap.ldif:/ldifs/01-bootstrap.ldif:ro
+      - ./certs:/opt/bitnami/openldap/certs:ro
+    ports:
+      - "389:1389"
+      - "636:1636"
+    networks:
+      - labomatics
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "ldapsearch", "-x", "-H", "ldap://localhost:1389", "-b", "{{ LDAP_BASE_DN }}", "-s", "base"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  radius:
+    image: freeradius/freeradius-server:3.2.5
+    container_name: labomatics-radius
+    volumes:
+      - ./radius/clients.conf:/etc/raddb/clients.conf:ro
+      - ./radius/mods-enabled/ldap:/etc/raddb/mods-enabled/ldap:ro
+      - ./radius/sites-enabled/default:/etc/raddb/sites-enabled/default:ro
+      - ./certs/ca.crt:/etc/raddb/certs/ca.crt:ro
+    ports:
+      - "1812:1812/udp"
+      - "1813:1813/udp"
+    networks:
+      - labomatics
+    depends_on:
+      ldap:
+        condition: service_healthy
+    restart: unless-stopped
+
   traefik:
     image: traefik:v3.7.9
     container_name: labomatics-traefik
@@ -93,6 +140,8 @@ networks:
 
 volumes:
   postgres_data:
+    driver: local
+  ldap_data:
     driver: local
   traefik_acme:
     driver: local

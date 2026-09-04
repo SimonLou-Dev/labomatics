@@ -1,0 +1,16 @@
+ldap {
+    server = 'ldaps://ldap:636'
+    identity = 'cn=radius-bind,ou=svcaccounts,{{ LDAP_BASE_DN }}'
+    password = '{{ LDAP_RADIUS_BIND_PASSWORD }}'
+    base_dn = 'ou=users,{{ LDAP_BASE_DN }}'
+
+    user {
+        base_dn = "${..base_dn}"
+        filter = "(uid=%{%{Stripped-User-Name}:-%{User-Name}})"
+    }
+
+    tls {
+        ca_file = /etc/raddb/certs/ca.crt
+        require_cert = "demand"
+    }
+}

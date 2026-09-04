@@ -58,3 +58,22 @@ class ServiceVerifier:
         """Vérifier que Traefik répond."""
         url = f"http://{host}:{port}/api/overview"
         return ServiceVerifier.wait_for_http(url, timeout, verify_ssl=False)
+
+    @staticmethod
+    def wait_for_tcp_port(host: str, port: int, timeout: int = 120) -> bool:
+        """Attendre qu'un port TCP réponde."""
+        import socket
+        start = time.time()
+        attempt = 0
+        while time.time() - start < timeout:
+            attempt += 1
+            elapsed = int(time.time() - start)
+            try:
+                with socket.create_connection((host, port), timeout=3):
+                    success(f"Port {port} prêt [{elapsed}s]")
+                    return True
+            except (OSError, socket.timeout):
+                info(f"  Tentative {attempt}: Port {port} fermé [{elapsed}s]")
+            time.sleep(2)
+        warning(f"Timeout après {timeout}s sur port {port}")
+        return False

@@ -110,25 +110,6 @@ class SSHManager:
                 warning(f"  ✗ {node_name}: {e}")
 
     @staticmethod
-    def upload_cloud_init(
-        ssh: SSHClient, domain: str, vm_wan_ip: str, kc_password: str
-    ) -> None:
-        """Uploader et configurer cloud-init."""
-        from ...templates import render_template
-
-        info("Upload configuration cloud-init...")
-        userdata = render_template(
-            "cloud-init.yml",
-            {
-                "DOMAIN": domain,
-                "KEYCLOAK_ADMIN_PASSWORD": kc_password,
-                "VM_WAN_IP": vm_wan_ip,
-            },
-        )
-        ssh.put_file_content("/etc/labomatics/cloud-init.yml", userdata)
-        success("Cloud-init uploadé")
-
-    @staticmethod
     def upload_docker_compose(ssh: SSHClient, domain: str) -> None:
         """Uploader la configuration Docker Compose."""
         from ...templates import render_template
