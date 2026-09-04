@@ -19,12 +19,14 @@ from .steps import (
     collect_step_6_download_image,
     collect_step_7_secrets,
     collect_step_8_admin_account,
+    collect_step_9_ldap_radius,
 )
 from .vm import VMDeployer
 from .network import NetworkSetup
 from .ssh_manager import SSHManager
 from .keycloak import KeycloakSetup
 from .proxmox_oidc import ProxmoxOIDCSetup
+from .ldap_setup import LdapSetup
 
 
 def run_installation(state: InstallState) -> int:
@@ -48,7 +50,9 @@ def run_installation(state: InstallState) -> int:
         proxmox_url, proxmox_user, proxmox_token_id, proxmox_token_secret
     )
 
-    wan_config, vxlan_config, dns_servers, storage = collect_step_3_network_config(state)
+    wan_config, vxlan_config, dns_servers, storage = collect_step_3_network_config(
+        state
+    )
     labomatics_user, labomatics_token_secret = collect_step_4_proxmox_user(
         state, pve, domain
     )
@@ -68,6 +72,7 @@ def run_installation(state: InstallState) -> int:
         keycloak_admin_password,
     ) = collect_step_7_secrets(state)
     admin_email, admin_first_name, admin_last_name = collect_step_8_admin_account(state)
+    ldap_radius_secrets = collect_step_9_ldap_radius(state)
 
     # Display summary and confirm
     _display_summary(
@@ -87,7 +92,6 @@ def run_installation(state: InstallState) -> int:
     openwrt_template = OpenWRTBuilder(pve, state)
     openwrt_template.cmd_build_openwrt(storage, domain)
 
-
     # Deploy VM and infrastructure
     vm_deployer = VMDeployer(pve, node, state)
     vm_ip = vm_deployer.deploy(
@@ -103,10 +107,30 @@ def run_installation(state: InstallState) -> int:
 
     # Setup on VM
     network_setup = NetworkSetup(pve, domain, vm_ip, ssh_privkey_path, state)
-    network_setup.setup_all(wan_config, vxlan_config, dns_servers, node)
+    network_setup.setup_all(
+        wan_config,
+        vxlan_config,
+        dns_servers,
+        node,
+        pg_root_password,
+        labomatics_db_password,
+        keycloak_db_password,
+        keycloak_admin_password,
+        ldap_radius_secrets,
+    )
+
+    # Wait for LDAP to be ready
+    LdapSetup(vm_ip).wait_ready()
 
     # Configure services
-    kc_setup = KeycloakSetup(domain, keycloak_admin_password, state, pve)
+    kc_setup = KeycloakSetup(
+        domain,
+        keycloak_admin_password,
+        state,
+        pve,
+        ldap_radius_secrets.get("base_dn"),
+        ldap_radius_secrets,
+    )
     kc_setup.setup(admin_first_name, admin_last_name, admin_email)
 
     oidc_setup = ProxmoxOIDCSetup(pve, domain, state)
@@ -114,9 +138,16 @@ def run_installation(state: InstallState) -> int:
 
     # Generate and deploy clusterconfig.yaml
     _generate_and_deploy_clusterconfig(
-        state, vm_ip, ssh_privkey_path,
-        vm_name, proxmox_url, labomatics_token_secret,
-        wan_config, vxlan_config, node, wan_iface
+        state,
+        vm_ip,
+        ssh_privkey_path,
+        vm_name,
+        proxmox_url,
+        labomatics_token_secret,
+        wan_config,
+        vxlan_config,
+        node,
+        wan_iface,
     )
 
     # Done
@@ -161,25 +192,47 @@ def _display_completion_summary(state, domain):
     )
     table.add_row(
         "[bold]Backend Keycloak User[/bold]",
-        state.get('labomatics_admin_username'),
+        state.get("labomatics_admin_username"),
     )
     table.add_row(
         "[bold]Backend Keycloak Password[/bold]",
         f"[yellow]{state.get('labomatics_admin_password')}[/yellow]",
     )
-    if state.get('clusterconfig_path'):
+    ldap_step = state.get_step(9)
+    if ldap_step:
+        table.add_row(
+            "[bold]LDAP Base DN[/bold]",
+            ldap_step.get("base_dn", "N/A"),
+        )
+        table.add_row(
+            "[bold]LDAP Admin Password[/bold]",
+            f"[yellow]{ldap_step.get('ldap_admin_password', 'N/A')}[/yellow]",
+        )
+        table.add_row(
+            "[bold]RADIUS Shared Secret[/bold]",
+            f"[yellow]{ldap_step.get('radius_shared_secret', 'N/A')}[/yellow]",
+        )
+    if state.get("clusterconfig_path"):
         table.add_row(
             "[bold]Cluster Config[/bold]",
-            state.get('clusterconfig_path'),
+            state.get("clusterconfig_path"),
         )
     console.print(table)
     console.print("\n[bold cyan]════════════════════════════════════════[/bold cyan]\n")
 
 
 def _generate_and_deploy_clusterconfig(
-    state, vm_ip, ssh_privkey_path,
-    cluster_name, proxmox_url, token_secret,
-    storage, wan_config, vxlan_config, node, wan_iface
+    state,
+    vm_ip,
+    ssh_privkey_path,
+    cluster_name,
+    proxmox_url,
+    token_secret,
+    storage,
+    wan_config,
+    vxlan_config,
+    node,
+    wan_iface,
 ):
     """Générer et déployer le clusterconfig.yaml sur la VM."""
     info("Génération configuration cluster...")
@@ -210,12 +263,16 @@ def _generate_and_deploy_clusterconfig(
     )
 
     # Deploy to VM
-    ssh_client = SSHManager.connect_to_host(vm_ip, user="labomatics", key_filename=ssh_privkey_path)
+    ssh_client = SSHManager.connect_to_host(
+        vm_ip, user="labomatics", key_filename=ssh_privkey_path
+    )
     try:
         # Write YAML directly to /tmp with user permissions
         ssh_client.put_file_content("/tmp/clusterconfig.yaml", yaml_content)
         # Move to /etc/labomatics with sudo
-        stdout, stderr, rc = ssh_client.exec_command("sudo mv /tmp/clusterconfig.yaml /etc/labomatics/clusterconfig.yaml")
+        stdout, stderr, rc = ssh_client.exec_command(
+            "sudo mv /tmp/clusterconfig.yaml /etc/labomatics/clusterconfig.yaml"
+        )
         if rc != 0:
             raise RuntimeError(f"Failed to deploy clusterconfig: {stderr}")
         ssh_client.exec_command("sudo chmod 600 /etc/labomatics/clusterconfig.yaml")

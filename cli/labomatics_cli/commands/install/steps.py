@@ -8,6 +8,7 @@ from ...utils.proxmox import ProxmoxClient
 from ...utils.state import InstallState
 from ...utils.cloudimage import CloudInitImageManager
 from ...utils.theme import info, success, step
+from ...utils.ldap_utils import domain_to_base_dn
 from .ssh_manager import SSHManager
 
 console = Console()
@@ -23,7 +24,7 @@ def collect_step_1_basic_config(state: InstallState) -> tuple[str, str, str]:
             step_data.get("wan_iface", "vmbr0"),
         )
 
-    step(1, 8, "Configuration domaine et interfaces réseau")
+    step(1, 9, "Configuration domaine et interfaces réseau")
     domain = prompt_with_retry("Domaine root", default="esgi.local")
     network_iface = prompt_with_retry("Interface réseau (ex: vmbr0)", default="vmbr0")
     wan_iface = prompt_with_retry("Interface WAN (ex: vmbr0, vmbr1)", default="vmbr0")
@@ -48,7 +49,7 @@ def collect_step_2_proxmox_connection(state: InstallState) -> tuple:
             step_data["node"],
         )
 
-    step(2, 8, "Connexion Proxmox")
+    step(2, 9, "Connexion Proxmox")
     url = prompt_with_retry("URL Proxmox", default="https://192.168.1.1:8006")
     user = prompt_with_retry("User Proxmox", default="root@pam")
     token_id = prompt_with_retry("Token ID", default="labomatics-cli")
@@ -88,10 +89,10 @@ def collect_step_3_network_config(state: InstallState) -> tuple[dict, dict, str]
             step_data["wan_config"],
             step_data["vxlan_config"],
             step_data.get("dns_servers", "8.8.8.8 8.8.4.4"),
-            step_data.get("storage")
+            step_data.get("storage"),
         )
 
-    step(3, 8, "Configuration du cluster - Réseau WAN")
+    step(3, 9, "Configuration du cluster - Réseau WAN")
     wan_name = prompt_with_retry("Nom du réseau WAN", default="esgilabs")
     wan_network = prompt_with_retry("Réseau WAN (CIDR)", default="172.16.0.0/24")
     wan_gateway = prompt_with_retry("Gateway WAN", default="172.16.0.254")
@@ -102,20 +103,18 @@ def collect_step_3_network_config(state: InstallState) -> tuple[dict, dict, str]
         "exclude": [],
     }
 
-    step(3, 8, "Configuration du cluster - Réseau VXLAN")
+    step(3, 9, "Configuration du cluster - Réseau VXLAN")
     vxlan_name = prompt_with_retry("Nom de la zone VXLAN", default="esgilab")
     vxlan_network = prompt_with_retry("Réseau VXLAN (CIDR)", default="10.100.0.0/12")
     vxlan_config = {"name": vxlan_name, "network": vxlan_network, "exclude": []}
 
-    step(3, 8, "Configuration DNS")
+    step(3, 9, "Configuration DNS")
     dns_servers = prompt_with_retry(
         "Serveurs DNS (espace-séparé)", default="8.8.8.8 8.8.4.4"
     )
 
-    step(3, 8, "Stoquage partagé")
-    storage = prompt_with_retry(
-        "Nom du volume de stoquage partagé", default=""
-    )
+    step(3, 9, "Stoquage partagé")
+    storage = prompt_with_retry("Nom du volume de stoquage partagé", default="")
 
     state.set_step(
         3,
@@ -123,7 +122,7 @@ def collect_step_3_network_config(state: InstallState) -> tuple[dict, dict, str]
             "wan_config": wan_config,
             "vxlan_config": vxlan_config,
             "dns_servers": dns_servers,
-            "storage": storage
+            "storage": storage,
         },
     )
 
@@ -138,7 +137,7 @@ def collect_step_4_proxmox_user(
     if step_data:
         return step_data["labomatics_user"], step_data["labomatics_token_secret"]
 
-    step(4, 8, "Création user Proxmox et token")
+    step(4, 9, "Création user Proxmox et token")
     user_id = "labomatics-cli@pve"
     password = secrets.token_urlsafe(16)
 
@@ -175,11 +174,11 @@ def collect_step_5_vm_config(state: InstallState) -> tuple:
             step_data["ssh_privkey_path"],
         )
 
-    step(5, 8, "Configuration VM et clés SSH")
+    step(5, 9, "Configuration VM et clés SSH")
     vm_name = prompt_with_retry("Nom de la VM", default="labomatics")
     vm_memory = int(prompt_with_retry("Mémoire (MB)", default="8192"))
     vm_cores = int(prompt_with_retry("Cores CPU", default="4"))
-    vm_storage = state.get_step(3)['storage']
+    vm_storage = state.get_step(3)["storage"]
     vm_password = Prompt.ask("  Password labomatics", password=True)
 
     ssh_pubkeys = SSHManager.collect_ssh_keys()
@@ -213,7 +212,7 @@ def collect_step_6_download_image(
     state: InstallState, pve: ProxmoxClient, node: str, storage: str
 ) -> str:
     """Étape 6: Téléchargement image cloud-init."""
-    step(6, 8, "Téléchargement image cloud-init")
+    step(6, 9, "Téléchargement image cloud-init")
     image_type = "fedora-server"
     image_info = CloudInitImageManager.IMAGES[image_type]
     image_filename = image_info["filename"]
@@ -240,7 +239,7 @@ def collect_step_7_secrets(state: InstallState) -> tuple[str, str, str, str]:
             step_data["keycloak_admin_password"],
         )
 
-    step(7, 8, "Génération des secrets")
+    step(7, 9, "Génération des secrets")
     pg_root_password = secrets.token_urlsafe(16)
     labomatics_db_password = secrets.token_urlsafe(16)
     keycloak_db_password = secrets.token_urlsafe(16)
@@ -275,7 +274,7 @@ def collect_step_8_admin_account(state: InstallState) -> tuple[str, str, str]:
             step_data["admin_last_name"],
         )
 
-    step(8, 8, "Compte administrateur Keycloak")
+    step(8, 9, "Compte administrateur Keycloak")
     admin_email = prompt_with_retry("Email administrateur")
     admin_first_name = prompt_with_retry("Prénom")
     admin_last_name = prompt_with_retry("Nom")
@@ -290,6 +289,27 @@ def collect_step_8_admin_account(state: InstallState) -> tuple[str, str, str]:
     )
 
     return admin_email, admin_first_name, admin_last_name
+
+
+def collect_step_9_ldap_radius(state: InstallState) -> dict:
+    """Étape 9: Configuration LDAP / RADIUS."""
+    step_data = state.get_step(9)
+    if step_data:
+        return step_data
+
+    step(9, 9, "Configuration LDAP / RADIUS")
+    domain = state.get("domain")
+    base_dn = prompt_with_retry("Base DN LDAP", default=domain_to_base_dn(domain))
+
+    data = {
+        "base_dn": base_dn,
+        "ldap_admin_password": secrets.token_urlsafe(16),
+        "ldap_keycloak_bind_password": secrets.token_urlsafe(16),
+        "ldap_radius_bind_password": secrets.token_urlsafe(16),
+        "radius_shared_secret": secrets.token_urlsafe(16),
+    }
+    state.set_step(9, data)
+    return data
 
 
 def prompt_with_retry(

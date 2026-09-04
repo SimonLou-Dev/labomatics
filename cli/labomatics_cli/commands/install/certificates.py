@@ -61,7 +61,7 @@ class CertificateManager:
         # Build comprehensive script (all in one SSH call)
         san_list = (
             f"DNS:{domain},DNS:*.{domain},DNS:keycloak.{domain},"
-            f"DNS:api.{domain},DNS:traefik.{domain}"
+            f"DNS:api.{domain},DNS:traefik.{domain},DNS:ldap.{domain},DNS:ldap"
         )
 
         script = f"""
@@ -83,7 +83,7 @@ CN = *.{domain}
 subjectAltName = {san_list}
 SANEOF
 
-for DOMAIN in default keycloak.{domain} api.{domain} {domain}; do
+for DOMAIN in default keycloak.{domain} api.{domain} {domain} ldap.{domain}; do
   openssl req -new -newkey rsa:2048 -nodes -config san.conf -keyout $DOMAIN.key -out $DOMAIN.csr 2>/dev/null
   openssl x509 -req -days 365 -extensions v3_req -extfile san.conf -in $DOMAIN.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out $DOMAIN.crt 2>/dev/null
 done

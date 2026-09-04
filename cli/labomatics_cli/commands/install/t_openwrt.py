@@ -1,5 +1,3 @@
-
-
 import shutil
 import subprocess
 import sys
@@ -18,15 +16,16 @@ console = Console()
 _OPENWRT_INIT = Path(__file__).parent.parent.parent / "templates" / "OPENWRT_INIT"
 _OPENWRT_RELEASES_URL = "https://downloads.openwrt.org/releases/"
 
-class OpenWRTBuilder():
+
+class OpenWRTBuilder:
     def __init__(
-            self,
-            pve: ProxmoxClient,
-            state: InstallState,
-        ):
-            """Initialiser."""
-            self.pve = pve
-            self.state = state
+        self,
+        pve: ProxmoxClient,
+        state: InstallState,
+    ):
+        """Initialiser."""
+        self.pve = pve
+        self.state = state
 
     @staticmethod
     def _get_latest_openwrt_version() -> str:
@@ -40,8 +39,10 @@ class OpenWRTBuilder():
         if not versions:
             raise RuntimeError("Impossible de récupérer la liste des versions OpenWrt")
         # Trier par tuple numérique et retourner la plus récente
-        return str(sorted(versions, key=lambda v: tuple(int(x) for x in v.split(".")))[-1])
-    
+        return str(
+            sorted(versions, key=lambda v: tuple(int(x) for x in v.split(".")))[-1]
+        )
+
     @staticmethod
     def _check_root() -> None:
         import os
@@ -66,7 +67,6 @@ class OpenWRTBuilder():
     def cmd_build_openwrt(self, storage: str, domain: str) -> None:
         """Crée la template VM OpenWrt sur le nœud Proxmox local (root requis)."""
 
-
         console.print("[dim]Récupération de la dernière version OpenWrt...[/dim]")
         try:
             version = OpenWRTBuilder._get_latest_openwrt_version()
@@ -85,7 +85,9 @@ class OpenWRTBuilder():
 
         img_base = f"openwrt-{version}-x86-64-generic-ext4-combined"
         img_url = f"https://downloads.openwrt.org/releases/{version}/targets/x86/64/{img_base}.img.gz"
-        pkg_base = f"https://downloads.openwrt.org/releases/{version}/targets/x86/64/packages"
+        pkg_base = (
+            f"https://downloads.openwrt.org/releases/{version}/targets/x86/64/packages"
+        )
 
         # Vérification VM existante
         result = OpenWRTBuilder._run(["qm", "status", str(vmid)], check=False)
@@ -109,7 +111,9 @@ class OpenWRTBuilder():
                 check=False,
             )
             if ret.returncode != 0:
-                raise RuntimeError(f"wget a échoué (exit {ret.returncode})\nURL : {img_url}")
+                raise RuntimeError(
+                    f"wget a échoué (exit {ret.returncode})\nURL : {img_url}"
+                )
             if not img_gz.exists() or img_gz.stat().st_size < 1024:
                 raise RuntimeError(f"Fichier téléchargé vide ou absent : {img_gz}")
             with open(img_gz, "rb") as f:
@@ -129,7 +133,9 @@ class OpenWRTBuilder():
             console.print("[bold]==> Extraction...[/bold]")
             r = OpenWRTBuilder._run(["gzip", "-d", str(img_gz)], check=False)
             if r.returncode not in (0, 2):
-                raise RuntimeError(f"gzip -d a échoué (exit {r.returncode}) : {r.stderr.strip()}")
+                raise RuntimeError(
+                    f"gzip -d a échoué (exit {r.returncode}) : {r.stderr.strip()}"
+                )
             if not img.exists():
                 raise RuntimeError(f"Fichier extrait introuvable : {img}")
 
@@ -153,7 +159,9 @@ class OpenWRTBuilder():
                 for pfile in (shadow, passwd_f):
                     if pfile.exists():
                         content = pfile.read_text()
-                        content = re.sub(r"^(root):[^:]*:", f"root:{pwd_hash}:", content, flags=re.M)
+                        content = re.sub(
+                            r"^(root):[^:]*:", f"root:{pwd_hash}:", content, flags=re.M
+                        )
                         pfile.write_text(content)
                         break
 
@@ -161,7 +169,9 @@ class OpenWRTBuilder():
                 console.print("[bold]==> Configuration SSH (Dropbear)...[/bold]")
                 dropbear_dir = mnt / "etc" / "dropbear"
                 dropbear_dir.mkdir(parents=True, exist_ok=True)
-                (dropbear_dir / "dropbear.conf").write_text('DROPBEAR_EXTRA_ARGS="-p 22"\n')
+                (dropbear_dir / "dropbear.conf").write_text(
+                    'DROPBEAR_EXTRA_ARGS="-p 22"\n'
+                )
                 symlink = mnt / "etc" / "rc.d" / "S50dropbear"
                 if not symlink.exists():
                     try:
@@ -194,7 +204,9 @@ class OpenWRTBuilder():
                 # qemu-guest-agent
                 console.print("[bold]==> Installation qemu-guest-agent...[/bold]")
                 try:
-                    with urllib.request.urlopen(f"{pkg_base}/Packages.gz", timeout=30) as resp:
+                    with urllib.request.urlopen(
+                        f"{pkg_base}/Packages.gz", timeout=30
+                    ) as resp:
                         import gzip
                         import io
 
@@ -214,7 +226,9 @@ class OpenWRTBuilder():
                         OpenWRTBuilder._run(["ar", "x", str(ipk)], check=False)
                         data_tgz = Path("data.tar.gz")
                         if data_tgz.exists():
-                            OpenWRTBuilder._run(["tar", "-xzf", str(data_tgz), "-C", str(mnt)])
+                            OpenWRTBuilder._run(
+                                ["tar", "-xzf", str(data_tgz), "-C", str(mnt)]
+                            )
                             data_tgz.unlink(missing_ok=True)
                         for svc in ("qemu-guest-agent", "qemu-ga"):
                             init = mnt / "etc" / "init.d" / svc
@@ -232,7 +246,9 @@ class OpenWRTBuilder():
                     console.print(f"  [yellow]⚠  qemu-ga : {e}[/yellow]")
 
                 # Script uci-defaults
-                console.print("[bold]==> Injection script uci-defaults (cloud-init NoCloud)...[/bold]")
+                console.print(
+                    "[bold]==> Injection script uci-defaults (cloud-init NoCloud)...[/bold]"
+                )
                 uci_dir = mnt / "etc" / "uci-defaults"
                 uci_dir.mkdir(parents=True, exist_ok=True)
                 uci_script = uci_dir / "99-proxmox-init"
@@ -285,7 +301,9 @@ class OpenWRTBuilder():
                     break
             if not disk_id:
                 disk_id = f"{storage}:vm-{vmid}-disk-0"
-                console.print(f"  [yellow]⚠ volume ID non trouvé, fallback : {disk_id}[/yellow]")
+                console.print(
+                    f"  [yellow]⚠ volume ID non trouvé, fallback : {disk_id}[/yellow]"
+                )
             OpenWRTBuilder._run(
                 [
                     "qm",
@@ -304,6 +322,6 @@ class OpenWRTBuilder():
             self.pve.create_pool("templates")
             self.pve.moove_vm_to_pool("templates", vmid)
 
-            
-
-        console.print(f"\n[bold green]✓ Template prête : VM {vmid} (openwrt-{version})[/bold green]")
+        console.print(
+            f"\n[bold green]✓ Template prête : VM {vmid} (openwrt-{version})[/bold green]"
+        )

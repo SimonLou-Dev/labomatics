@@ -1,0 +1,40 @@
+dn: ou=users,{{ LDAP_BASE_DN }}
+objectClass: organizationalUnit
+ou: users
+
+dn: ou=groups,{{ LDAP_BASE_DN }}
+objectClass: organizationalUnit
+ou: groups
+
+dn: ou=svcaccounts,{{ LDAP_BASE_DN }}
+objectClass: organizationalUnit
+ou: svcaccounts
+
+dn: cn=keycloak-bind,ou=svcaccounts,{{ LDAP_BASE_DN }}
+objectClass: organizationalRole
+objectClass: simpleSecurityObject
+cn: keycloak-bind
+userPassword: {{ LDAP_KEYCLOAK_BIND_PASSWORD }}
+description: Compte de service utilise par Keycloak (User Federation WRITABLE)
+
+dn: cn=radius-bind,ou=svcaccounts,{{ LDAP_BASE_DN }}
+objectClass: organizationalRole
+objectClass: simpleSecurityObject
+cn: radius-bind
+userPassword: {{ LDAP_RADIUS_BIND_PASSWORD }}
+description: Compte utilise par FreeRADIUS pour les recherches LDAP (rlm_ldap)
+
+dn: cn=superadmin,ou=groups,{{ LDAP_BASE_DN }}
+objectClass: groupOfNames
+cn: superadmin
+member: cn=admin,{{ LDAP_BASE_DN }}
+
+dn: cn=prof,ou=groups,{{ LDAP_BASE_DN }}
+objectClass: groupOfNames
+cn: prof
+member: cn=admin,{{ LDAP_BASE_DN }}
+
+dn: cn=student,ou=groups,{{ LDAP_BASE_DN }}
+objectClass: groupOfNames
+cn: student
+member: cn=admin,{{ LDAP_BASE_DN }}

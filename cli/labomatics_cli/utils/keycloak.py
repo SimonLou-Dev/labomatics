@@ -481,3 +481,84 @@ class KeycloakClient:
             raise RuntimeError(
                 f"Failed to assign role: {resp.status_code} - {resp.text}"
             )
+
+    def create_ldap_federation(
+        self, realm_name: str, base_dn: str, bind_dn: str, bind_credential: str
+    ) -> str:
+        """Créer le provider User Federation LDAP (WRITABLE) et retourner son component id."""
+        url = f"{self.base_url}/admin/realms/{realm_name}/components"
+        data = {
+            "name": "ldap-labomatics",
+            "providerId": "ldap",
+            "providerType": "org.keycloak.storage.UserStorageProvider",
+            "parentId": realm_name,
+            "config": {
+                "vendor": ["other"],
+                "connectionUrl": ["ldaps://ldap:636"],
+                "usersDn": [f"ou=users,{base_dn}"],
+                "bindDn": [bind_dn],
+                "bindCredential": [bind_credential],
+                "editMode": ["WRITABLE"],
+                "syncRegistrations": ["true"],
+                "usernameLDAPAttribute": ["uid"],
+                "rdnLDAPAttribute": ["uid"],
+                "uuidLDAPAttribute": ["entryUUID"],
+                "userObjectClasses": ["inetOrgPerson, organizationalPerson"],
+                "authType": ["simple"],
+                "useTruststoreSpi": ["ldapsOnly"],
+                "connectionPooling": ["true"],
+                "pagination": ["true"],
+                "batchSizeForSync": ["1000"],
+                "fullSyncPeriod": ["86400"],
+                "changedSyncPeriod": ["300"],
+                "importEnabled": ["true"],
+            },
+        }
+        resp = requests.post(url, json=data, headers=self._headers(), verify=False)
+        if resp.status_code == 409:
+            existing = requests.get(
+                f"{url}?parent={realm_name}&type=org.keycloak.storage.UserStorageProvider",
+                headers=self._headers(),
+                verify=False,
+            ).json()
+            for c in existing:
+                if c["name"] == "ldap-labomatics":
+                    return c["id"]
+        if resp.status_code == 201:
+            location = resp.headers.get("Location", "")
+            if location:
+                return location.split("/")[-1]
+        if resp.status_code >= 400:
+            raise RuntimeError(
+                f"Failed to create LDAP federation: {resp.status_code} - {resp.text}"
+            )
+        return resp.json()["id"]
+
+    def create_group_ldap_mapper(
+        self, realm_name: str, ldap_component_id: str, base_dn: str
+    ) -> None:
+        """Créer le Group LDAP Mapper (sync bidirectionnelle des groupes)."""
+        url = f"{self.base_url}/admin/realms/{realm_name}/components"
+        data = {
+            "name": "group-ldap-mapper",
+            "providerId": "group-ldap-mapper",
+            "providerType": "org.keycloak.storage.ldap.mappers.LDAPStorageMapper",
+            "parentId": ldap_component_id,
+            "config": {
+                "groups.dn": [f"ou=groups,{base_dn}"],
+                "group.name.ldap.attribute": ["cn"],
+                "group.object.classes": ["groupOfNames"],
+                "membership.ldap.attribute": ["member"],
+                "membership.attribute.type": ["DN"],
+                "membership.user.ldap.attribute": ["uid"],
+                "mode": ["LDAP_ONLY"],
+                "user.roles.retrieve.strategy": ["LOAD_GROUPS_BY_MEMBER_ATTRIBUTE"],
+                "mapped.group.attributes": [""],
+                "drop.non.existing.groups.during.sync": ["false"],
+            },
+        }
+        resp = requests.post(url, json=data, headers=self._headers(), verify=False)
+        if resp.status_code not in (201, 409):
+            raise RuntimeError(
+                f"Failed to create group LDAP mapper: {resp.status_code} - {resp.text}"
+            )

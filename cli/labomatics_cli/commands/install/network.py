@@ -31,9 +31,20 @@ class NetworkSetup:
         )
 
     def setup_all(
-        self, wan_config: dict, vxlan_config: dict, dns_servers: str, node: str
+        self,
+        wan_config: dict,
+        vxlan_config: dict,
+        dns_servers: str,
+        node: str,
+        pg_root_password: str = "",
+        labomatics_db_password: str = "",
+        keycloak_db_password: str = "",
+        keycloak_admin_password: str = "",
+        ldap_radius_secrets: dict = None,
     ):
         """Configurer tout le réseau."""
+        if ldap_radius_secrets is None:
+            ldap_radius_secrets = {}
         try:
             # Setup SDN
             self._setup_sdn(node, vxlan_config)
@@ -49,7 +60,19 @@ class NetworkSetup:
             self._setup_proxmox_dns(node)
             self._setup_vm_dns()
 
-            # Setup certificates
+            # Install Docker and upload compose files
+            self._install_docker()
+            context = self._build_compose_context(
+                wan_config,
+                pg_root_password,
+                labomatics_db_password,
+                keycloak_db_password,
+                keycloak_admin_password,
+                ldap_radius_secrets,
+            )
+            self._upload_compose_files(context)
+
+            # Setup certificates (must be before docker compose up)
             self._setup_certificates(node)
 
             # Start Docker
@@ -195,6 +218,92 @@ echo '{config}' | sudo tee /etc/labomatics/traefik.yml > /dev/null
             f"echo '{resolv}' | sudo tee /etc/resolv.conf > /dev/null"
         )
         success("DNS VM configuré")
+
+    def _install_docker(self):
+        """Installer Docker Engine + plugin compose sur la VM Fedora."""
+        info("Installation Docker...")
+        script = """
+set -e
+sudo dnf install -y dnf-plugins-core
+sudo dnf config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo
+sudo dnf install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+sudo systemctl enable --now docker
+sudo usermod -aG docker labomatics
+"""
+        self.ssh.exec_command(script)
+        success("Docker installé")
+
+    def _build_compose_context(
+        self,
+        wan_config,
+        pg_root_password,
+        labomatics_db_password,
+        keycloak_db_password,
+        keycloak_admin_password,
+        ldap_radius_secrets,
+    ):
+        """Construire le contexte pour le rendu des templates Docker Compose."""
+        context = {
+            "DOMAIN": self.domain,
+            "WAN_IFACE": wan_config.get("name", "wan"),
+            "PG_ROOT_PASSWORD": pg_root_password,
+            "LABOMATICS_DB_PASSWORD": labomatics_db_password,
+            "KEYCLOAK_DB_PASSWORD": keycloak_db_password,
+            "KEYCLOAK_ADMIN_PASSWORD": keycloak_admin_password,
+        }
+        if ldap_radius_secrets:
+            context.update(
+                {
+                    "LDAP_BASE_DN": ldap_radius_secrets.get("base_dn", "dc=local"),
+                    "LDAP_ADMIN_PASSWORD": ldap_radius_secrets.get(
+                        "ldap_admin_password", ""
+                    ),
+                    "LDAP_KEYCLOAK_BIND_PASSWORD": ldap_radius_secrets.get(
+                        "ldap_keycloak_bind_password", ""
+                    ),
+                    "LDAP_RADIUS_BIND_PASSWORD": ldap_radius_secrets.get(
+                        "ldap_radius_bind_password", ""
+                    ),
+                    "RADIUS_SHARED_SECRET": ldap_radius_secrets.get(
+                        "radius_shared_secret", ""
+                    ),
+                }
+            )
+        return context
+
+    def _upload_compose_files(self, context: dict):
+        """Rendre et uploader tous les fichiers de la stack Docker."""
+        info("Upload configuration Docker Compose...")
+        self.ssh.exec_command(
+            "mkdir -p /etc/labomatics/dynamic /etc/labomatics/ldap /etc/labomatics/radius/mods-enabled /etc/labomatics/radius/sites-enabled"
+        )
+
+        compose = render_template("docker-compose.yml", context)
+        self.ssh.put_file_content("/etc/labomatics/docker-compose.yml", compose)
+
+        init_db = render_template("init-databases.sh", context)
+        self.ssh.put_file_content("/etc/labomatics/init-databases.sh", init_db)
+
+        dynamic = render_template("dynamic.yml", context)
+        self.ssh.put_file_content("/etc/labomatics/dynamic/dynamic.yml", dynamic)
+
+        ldif = render_template("ldap-bootstrap.ldif", context)
+        self.ssh.put_file_content("/etc/labomatics/ldap/bootstrap.ldif", ldif)
+
+        radius_clients = render_template("radius-clients.conf", context)
+        self.ssh.put_file_content("/etc/labomatics/radius/clients.conf", radius_clients)
+
+        radius_ldap = render_template("radius-mods-ldap", context)
+        self.ssh.put_file_content(
+            "/etc/labomatics/radius/mods-enabled/ldap", radius_ldap
+        )
+
+        radius_site = render_template("radius-site-default", context)
+        self.ssh.put_file_content(
+            "/etc/labomatics/radius/sites-enabled/default", radius_site
+        )
+
+        success("Fichiers de configuration uploadés")
 
     def _setup_certificates(self, node):
         """Configurer certificats."""

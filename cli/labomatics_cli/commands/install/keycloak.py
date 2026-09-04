@@ -11,13 +11,23 @@ from ...utils.theme import info, success, warning
 class KeycloakSetup:
     """Configuration Keycloak."""
 
-    def __init__(self, domain: str, admin_password: str, state: InstallState, pve=None):
+    def __init__(
+        self,
+        domain: str,
+        admin_password: str,
+        state: InstallState,
+        pve=None,
+        ldap_base_dn: str = None,
+        ldap_secrets: dict = None,
+    ):
         """Initialiser."""
         self.domain = domain
         self.admin_password = admin_password
         self.state = state
         self.pve = pve
         self.kc_url = f"https://keycloak.{domain}"
+        self.ldap_base_dn = ldap_base_dn
+        self.ldap_secrets = ldap_secrets or {}
 
     def setup(self, admin_first_name: str, admin_last_name: str, admin_email: str):
         """Configurer Keycloak."""
@@ -167,8 +177,32 @@ class KeycloakSetup:
         self.state.set("admin_last_name", admin_last_name)
 
         if user_password is None:
-            warning(f"L'utilisateur {username} existe déjà. Utilisez ses credentials existants.")
+            warning(
+                f"L'utilisateur {username} existe déjà. Utilisez ses credentials existants."
+            )
         if admin_svc_password is None:
-            warning("Le compte labomatics-admin existe déjà. Utilisez ses credentials existants.")
+            warning(
+                "Le compte labomatics-admin existe déjà. Utilisez ses credentials existants."
+            )
+
+        # Configure LDAP federation if secrets provided
+        if self.ldap_base_dn and self.ldap_secrets:
+            self._setup_ldap_federation(kc, self.ldap_base_dn, self.ldap_secrets)
 
         success("Keycloak configuré")
+
+    def _setup_ldap_federation(self, kc, base_dn: str, secrets: dict) -> None:
+        """Configurer la fédération LDAP et le mapper de groupes."""
+        info("Configuration fédération LDAP...")
+        ldap_bind_dn = f"cn=keycloak-bind,ou=svcaccounts,{base_dn}"
+        ldap_component_id = kc.create_ldap_federation(
+            "labomatics",
+            base_dn,
+            ldap_bind_dn,
+            secrets.get("ldap_keycloak_bind_password", ""),
+        )
+        success(f"  LDAP federation créée (id={ldap_component_id})")
+
+        info("Configuration Group LDAP Mapper...")
+        kc.create_group_ldap_mapper("labomatics", ldap_component_id, base_dn)
+        success("  Group LDAP Mapper créé")
