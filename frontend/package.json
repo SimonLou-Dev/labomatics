@@ -6,7 +6,9 @@
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview",
-    "lint": "eslint src/ --fix"
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "type-check": "vue-tsc --noEmit"
   },
   "dependencies": {
     "@primeuix/themes": "^3.0.0",
