@@ -2,7 +2,14 @@
   <div class="flex h-screen bg-surface-0 dark:bg-surface-50">
     <!-- Sidebar -->
     <SidebarLayout class="min-h-192! relative!">
-      <Sidebar id="labomatics-sidebar" v-model:open="sidebarVisible" class="!w-64!" :collapsible="isMobile ? 'offcanvas' : 'icon'" :overlay="isMobile" :style="{ width: sidebarVisible ? '16rem' : 'auto' }">
+      <Sidebar
+        id="labomatics-sidebar"
+        v-model:open="sidebarVisible"
+        class="!w-64!"
+        :collapsible="isMobile ? 'offcanvas' : 'icon'"
+        :overlay="isMobile"
+        :style="{ width: sidebarVisible ? '16rem' : 'auto' }"
+      >
         <SidebarSpacer />
         <SidebarAside>
           <SidebarPanel>
@@ -10,20 +17,37 @@
               <SidebarMenu>
                 <SidebarMenuItem>
                   <SidebarMenuButton>
-                    <img v-if="!sidebarVisible" src="@/assets/logo.svg" class="h-10 mx-auto" />
-                    <img v-else src="@/assets/logo-large.svg" class="h-9 mx-auto" />
+                    <img
+                      v-if="!sidebarVisible"
+                      src="@/assets/logo.svg"
+                      class="h-10 mx-auto"
+                    >
+                    <img
+                      v-else
+                      src="@/assets/logo-large.svg"
+                      class="h-9 mx-auto"
+                    >
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               </SidebarMenu>
             </SidebarHeader>
             <SidebarContent>
-              <SidebarGroup v-for="group in menuItems" :key="group.label">
+              <SidebarGroup
+                v-for="group in menuItems"
+                :key="group.label"
+              >
                 <SidebarGroupLabel>{{ group.label }}</SidebarGroupLabel>
                 <SidebarGroupContent>
                   <SidebarMenu>
-                    <SidebarMenuItem v-for="item in group.items" :key="item.label">
-                      <SidebarMenuButton @click="item.command()">
-                        <component :is="item.icon" :color="isDark ? `rgb(var(--primary-400))` : `rgb(var(--primary-600))`" />
+                    <SidebarMenuItem
+                      v-for="item in group.items"
+                      :key="item.label"
+                    >
+                      <SidebarMenuButton @click="item.command?.()">
+                        <component
+                          :is="item.icon"
+                          :color="isDark ? `rgb(var(--primary-400))` : `rgb(var(--primary-600))`"
+                        />
                         <span class="text-primary-lab-600">{{ item.label }}</span>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -34,32 +58,56 @@
             <SidebarFooter>
               <SidebarMenu>
                 <SidebarMenuItem>
-                  <SidebarMenuButton class="p-1!" v-if="isDark" @click="toggleTheme">
-                    <Sun :color="isDark ? `rgb(var(--primary-400))` : `rgb(var(--primary-600))`"/>
+                  <SidebarMenuButton
+                    v-if="isDark"
+                    class="p-1!"
+                    @click="toggleTheme"
+                  >
+                    <Sun :color="isDark ? `rgb(var(--primary-400))` : `rgb(var(--primary-600))`" />
                     <span class="text-primary-lab-400">Thème clair</span>
                   </SidebarMenuButton>
-                  <SidebarMenuButton class="p-1!" v-else @click="toggleTheme">
-                    <component :is="Moon" :color="isDark ? `rgb(var(--primary-400))` : `rgb(var(--primary-600))`" />
+                  <SidebarMenuButton
+                    v-else
+                    class="p-1!"
+                    @click="toggleTheme"
+                  >
+                    <component
+                      :is="Moon"
+                      :color="isDark ? `rgb(var(--primary-400))` : `rgb(var(--primary-600))`"
+                    />
                     <span class="text-primary-lab-600">Thème sombre</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                  <SidebarMenuButton class="p-1!" v-if="isDyslexia" @click="toggleDyslexia">
-                    <Palette :color="isDark ? `rgb(var(--primary-400))` : `rgb(var(--primary-600))`"/>
+                  <SidebarMenuButton
+                    v-if="isDyslexia"
+                    class="p-1!"
+                    @click="toggleDyslexia"
+                  >
+                    <Palette :color="isDark ? `rgb(var(--primary-400))` : `rgb(var(--primary-600))`" />
                     <span class="text-primary-lab-600 dark:text-primary-lab-400">Mode dyslexie ON</span>
                   </SidebarMenuButton>
-                  <SidebarMenuButton class="p-1!" v-else @click="toggleDyslexia">
-                    <Palette :color="isDark ? `rgb(var(--primary-400))` : `rgb(var(--primary-600))`"/>
+                  <SidebarMenuButton
+                    v-else
+                    class="p-1!"
+                    @click="toggleDyslexia"
+                  >
+                    <Palette :color="isDark ? `rgb(var(--primary-400))` : `rgb(var(--primary-600))`" />
                     <span class="text-primary-lab-600 dark:text-primary-lab-400">Mode dyslexie</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                  <SidebarMenuButton class="p-1!" @click="handleLogout">
-                    <component :is="SignOut" :color="`rgb(var(--error))`" />
+                  <SidebarMenuButton
+                    class="p-1!"
+                    @click="handleLogout"
+                  >
+                    <component
+                      :is="SignOut"
+                      :color="`rgb(var(--error))`"
+                    />
                     <span class="text-error-lab">Déconnexion</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-
               </SidebarMenu>
             </SidebarFooter>
             <SidebarRail />
@@ -69,14 +117,25 @@
       <SidebarMain>
         <Menubar :model="topBarItems">
           <template #start>
-            <SidebarTrigger severity="secondary" target="labomatics-sidebar" :text="true" size="small">
+            <SidebarTrigger
+              severity="secondary"
+              target="labomatics-sidebar"
+              :text="true"
+              size="small"
+            >
               <SidebarIcon />
             </SidebarTrigger>
-            <Breadcrumb :model="breadcrumbs" class="ml-4" />
+            <Breadcrumb
+              :model="breadcrumbs"
+              class="ml-4"
+            />
           </template>
 
           <template #end>
-            <Avatar image="https://primefaces.org/cdn/primevue/images/avatar/amyelsner.png" shape="circle" />
+            <Avatar
+              image="https://primefaces.org/cdn/primevue/images/avatar/amyelsner.png"
+              shape="circle"
+            />
           </template>
         </Menubar>
 
@@ -85,7 +144,6 @@
     </SidebarLayout>
 
     <!-- Main Content -->
-
   </div>
 </template>
 
@@ -118,6 +176,7 @@ import SidebarTrigger from 'primevue/sidebartrigger';
 import Breadcrumb from 'primevue/breadcrumb';
 
 import {Home, User, Users, Book, Pencil, Cog, Server, Sun, Moon, Palette, SignOut, Globe, Wrench, SlidersH}  from '@primeicons/vue'
+import type { MenuItemGroup } from '@/api/types'
 
 
 const router = useRouter()
@@ -125,12 +184,12 @@ const auth = useAuthStore()
 const { isDark, isDyslexia, toggleTheme, toggleDyslexia } = useTheme()
 
 const sidebarVisible = ref(true)
-const userMenu = ref()
+const _userMenu = ref()
 const isMobile = ref(false)
 let mql: MediaQueryList | null = null
 let onMqlChange: ((event: MediaQueryListEvent) => void) | null = null
 
-const user = computed(() => auth.user)
+const _user = computed(() => auth.user)
 const hasRole = (role: string) => auth.hasRole(role)
 
 onMounted(() => {
@@ -208,7 +267,7 @@ const breadcrumbs = computed(() => {
 // Menu items organized by role
 const menuItems = computed(() => {
 
-  const items: any[] = [
+  const items: MenuItemGroup[] = [
     {
       label: "Navigation",
       items: [

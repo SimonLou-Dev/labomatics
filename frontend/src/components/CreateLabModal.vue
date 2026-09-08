@@ -7,16 +7,24 @@
     @update:visible="emitClose"
   >
     <!-- Loading state -->
-    <div v-if="loading" class="flex justify-center items-center h-40">
+    <div
+      v-if="loading"
+      class="flex justify-center items-center h-40"
+    >
       <ProgressSpinner />
     </div>
 
     <!-- Success state -->
-    <div v-else-if="successMessage" class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+    <div
+      v-else-if="successMessage"
+      class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4"
+    >
       <div class="flex items-start gap-3">
-        <i class="pi pi-check-circle text-green-600 dark:text-green-400 text-2xl mt-1 flex-shrink-0"></i>
+        <i class="pi pi-check-circle text-green-600 dark:text-green-400 text-2xl mt-1 flex-shrink-0" />
         <div>
-          <h3 class="font-semibold text-green-900 dark:text-green-100 mb-2">Lab créé avec succès!</h3>
+          <h3 class="font-semibold text-green-900 dark:text-green-100 mb-2">
+            Lab créé avec succès!
+          </h3>
           <p class="text-green-700 dark:text-green-200 text-sm mb-2">
             {{ successMessage }}
           </p>
@@ -31,14 +39,24 @@
     </div>
 
     <!-- Form -->
-    <div v-else class="space-y-4">
+    <div
+      v-else
+      class="space-y-4"
+    >
       <!-- Error alert -->
-      <div v-if="error" class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+      <div
+        v-if="error"
+        class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4"
+      >
         <div class="flex items-start gap-3">
-          <i class="pi pi-exclamation-circle text-red-600 dark:text-red-400 text-lg mt-1 flex-shrink-0"></i>
+          <i class="pi pi-exclamation-circle text-red-600 dark:text-red-400 text-lg mt-1 flex-shrink-0" />
           <div>
-            <h3 class="font-semibold text-red-900 dark:text-red-100 mb-1">Erreur</h3>
-            <p class="text-red-700 dark:text-red-200 text-sm">{{ error }}</p>
+            <h3 class="font-semibold text-red-900 dark:text-red-100 mb-1">
+              Erreur
+            </h3>
+            <p class="text-red-700 dark:text-red-200 text-sm">
+              {{ error }}
+            </p>
           </div>
         </div>
       </div>
@@ -48,15 +66,15 @@
         <label class="block text-sm font-medium mb-3">
           Cluster <span class="text-red-500">*</span>
         </label>
-        <Dropdown
+        <Select
           v-model="selectedClusterId"
           :options="availableClusters"
-          optionLabel="name"
-          optionValue="id"
+          option-label="name"
+          option-value="id"
           placeholder="Sélectionner un cluster"
           :loading="loadingClusters"
           class="w-full"
-          :showClear="false"
+          :show-clear="false"
         />
         <p class="text-xs text-surface-500 dark:text-surface-400 mt-2">
           Sélectionnez le cluster où provisioner le lab
@@ -64,9 +82,12 @@
       </div>
 
       <!-- Info message for students -->
-      <div v-else class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+      <div
+        v-else
+        class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3"
+      >
         <div class="flex items-start gap-2">
-          <i class="pi pi-info-circle text-blue-600 dark:text-blue-400 text-lg mt-0.5 flex-shrink-0"></i>
+          <i class="pi pi-info-circle text-blue-600 dark:text-blue-400 text-lg mt-0.5 flex-shrink-0" />
           <p class="text-sm text-blue-700 dark:text-blue-200">
             Votre lab sera créé sur le cluster par défaut de votre promotion.
           </p>
@@ -79,9 +100,15 @@
           La création du lab provisionnera:
         </p>
         <ul class="text-sm text-surface-600 dark:text-surface-400 mt-2 space-y-1 ml-4">
-          <li class="list-disc">Une VM OpenWRT pour le routage</li>
-          <li class="list-disc">Les allocations réseau (IP WAN, tag VXLAN)</li>
-          <li class="list-disc">L'accès SSH et web à votre infrastructure</li>
+          <li class="list-disc">
+            Une VM OpenWRT pour le routage
+          </li>
+          <li class="list-disc">
+            Les allocations réseau (IP WAN, tag VXLAN)
+          </li>
+          <li class="list-disc">
+            L'accès SSH et web à votre infrastructure
+          </li>
         </ul>
       </div>
     </div>
@@ -116,7 +143,7 @@ import { useToast } from 'primevue/usetoast'
 import {
   Dialog,
   Button,
-  Dropdown,
+  Select,
   ProgressSpinner,
 } from 'primevue'
 import type { ClusterDTO } from '@/api/types'
@@ -130,6 +157,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   visible: false,
   isStudent: false,
+  userCohortName: '',
 })
 
 const emit = defineEmits<{
@@ -172,7 +200,7 @@ async function fetchClusters() {
     // const response = await clustersApi.listClusters(1, 100)
     // availableClusters.value = response.items
     console.log('Fetch clusters from API')
-  } catch (err) {
+  } catch {
     error.value = 'Impossible de charger les clusters disponibles'
     toast.add({
       severity: 'error',
@@ -197,13 +225,13 @@ async function createLab() {
   loading.value = true
 
   try {
-    const clusterId = props.isStudent
+    const _clusterId = props.isStudent
       ? undefined // Will use default from backend
       : selectedClusterId.value
 
     // TODO: Call actual API
     // const response = await labsApi.createLab({
-    //   cluster_id: clusterId,
+    //   cluster_id: _clusterId,
     // })
     // jobId.value = response.job_id
 

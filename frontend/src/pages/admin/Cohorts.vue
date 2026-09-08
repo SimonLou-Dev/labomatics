@@ -1,55 +1,89 @@
 <template>
   <div class="min-h-screen bg-surface-900 dark:bg-surface-50 p-6">
-    <h1 class="text-3xl font-bold mb-6">Gestion des Promotions</h1>
+    <h1 class="text-3xl font-bold mb-6">
+      Gestion des Promotions
+    </h1>
 
     <DataTable
       :value="cohorts"
-      dataKey="id"
+      data-key="id"
       :rows="pageSize"
-      :rowsPerPageOptions="[5, 10, 20, 50]"
-      :totalRecords="totalRecords"
+      :rows-per-page-options="[5, 10, 20, 50]"
+      :total-records="totalRecords"
       :loading="loading"
       paginator
       @page="onPageChange"
     >
-      <template #empty>Aucune promotion trouvée</template>
+      <template #empty>
+        Aucune promotion trouvée
+      </template>
 
-      <Column field="name" header="Nom" style="width: 25%">
+      <Column
+        field="name"
+        header="Nom"
+        style="width: 25%"
+      >
         <template #body="{ data }">
           <span class="font-semibold">{{ data.name }}</span>
         </template>
       </Column>
 
-      <Column field="year" header="Année" style="width: 10%">
+      <Column
+        field="year"
+        header="Année"
+        style="width: 10%"
+      >
         <template #body="{ data }">
           <span class="font-mono">{{ data.year }}</span>
         </template>
       </Column>
 
-      <Column field="is_active" header="Statut" style="width: 10%">
+      <Column
+        field="is_active"
+        header="Statut"
+        style="width: 10%"
+      >
         <template #body="{ data }">
-          <Badge :value="data.is_active ? 'Actif' : 'Inactif'" :severity="data.is_active ? 'success' : 'secondary'" />
+          <Badge
+            :value="data.is_active ? 'Actif' : 'Inactif'"
+            :severity="data.is_active ? 'success' : 'secondary'"
+          />
         </template>
       </Column>
 
-      <Column field="default_cluster" header="Cluster par défaut" style="width: 20%">
+      <Column
+        field="default_cluster"
+        header="Cluster par défaut"
+        style="width: 20%"
+      >
         <template #body="{ data }">
           <Badge
             v-if="getDefaultCluster(data)"
             :value="getDefaultCluster(data)?.name || '—'"
             severity="success"
           />
-          <span v-else class="text-surface-400">Aucun</span>
+          <span
+            v-else
+            class="text-surface-400"
+          >Aucun</span>
         </template>
       </Column>
 
-      <Column field="cluster_count" header="Nb clusters" style="width: 10%">
+      <Column
+        field="cluster_count"
+        header="Nb clusters"
+        style="width: 10%"
+      >
         <template #body="{ data }">
           <span class="font-mono">{{ data.clusters?.length || 0 }}</span>
         </template>
       </Column>
 
-      <Column field="actions" header="Actions" style="width: 15%">
+      <Column
+        field="actions"
+        header="Actions"
+        style="width: 15%"
+      >
         <template #body="{ data }">
           <div class="flex gap-2">
             <Button
@@ -70,7 +104,10 @@
       modal
       :style="{ width: '100vw', maxWidth: '700px' }"
     >
-      <div v-if="editingCohort" class="space-y-6">
+      <div
+        v-if="editingCohort"
+        class="space-y-6"
+      >
         <div>
           <h3 class="font-semibold mb-4">
             Promotion: <span class="text-primary-600">{{ editingCohort.name }}</span>
@@ -80,7 +117,10 @@
         <!-- Assigned Clusters -->
         <div>
           <label class="block text-sm font-medium mb-3">Clusters assignés</label>
-          <div v-if="editingCohort.clusters.length > 0" class="space-y-2 mb-4">
+          <div
+            v-if="editingCohort.clusters.length > 0"
+            class="space-y-2 mb-4"
+          >
             <div
               v-for="cluster in editingCohort.clusters"
               :key="cluster.id"
@@ -113,7 +153,12 @@
               </div>
             </div>
           </div>
-          <div v-else class="text-surface-400 p-3 mb-4">Aucun cluster assigné</div>
+          <div
+            v-else
+            class="text-surface-400 p-3 mb-4"
+          >
+            Aucun cluster assigné
+          </div>
         </div>
 
         <!-- Available Clusters to Add -->
@@ -123,16 +168,16 @@
             <Select
               v-model="selectedClusterToAdd"
               :options="availableClustersForAdd"
-              optionLabel="name"
-              optionValue="id"
+              option-label="name"
+              option-value="id"
               placeholder="Sélectionner un cluster"
               class="flex-1"
             />
             <Button
               label="Ajouter"
               severity="success"
-              @click="handleAddCluster"
               :loading="addingCluster"
+              @click="handleAddCluster"
             />
           </div>
         </div>
@@ -159,7 +204,7 @@ import {
   Badge,
   Select,
 } from 'primevue'
-import type { ClusterDTO } from '@/api/types'
+import type { ClusterDTO, DataTableSimplePageEvent } from '@/api/types'
 import type { CohortDTO, CohortListResponseDTO } from '@/api/types/cohorts'
 import * as cohortsApi from '@/api/cohorts'
 import * as clustersApi from '@/api/clusters'
@@ -251,7 +296,7 @@ async function fetchCohorts(page: number = 1) {
   }
 }
 
-function onPageChange(event: any) {
+function onPageChange(event: DataTableSimplePageEvent) {
   const newPage = event.page + 1
   fetchCohorts(newPage)
 }

@@ -1,7 +1,9 @@
 <template>
   <div class="min-h-screen bg-surface-900 dark:bg-surface-50 p-6">
     <div class="mb-6 flex justify-between items-center">
-      <h1 class="text-3xl font-bold">Étudiants</h1>
+      <h1 class="text-3xl font-bold">
+        Étudiants
+      </h1>
       <Button
         label="Importer CSV"
         icon="pi pi-upload"
@@ -19,7 +21,7 @@
         @click="clearFilter"
       >
         <template #icon>
-          <i class="pi pi-filter-slash"></i>
+          <i class="pi pi-filter-slash" />
         </template>
         Réinitialiser filtres
       </Button>
@@ -38,102 +40,163 @@
     <DataTable
       v-model:filters="filters"
       :value="students"
-      dataKey="id"
+      data-key="id"
       :rows="pageSize"
-      :rowsPerPageOptions="[5, 10, 20, 50]"
-      :totalRecords="totalRecords"
+      :rows-per-page-options="[5, 10, 20, 50]"
+      :total-records="totalRecords"
       :loading="loading"
       paginator
-      filterDisplay="menu"
-      :globalFilterFields="['first_name', 'last_name', 'email', 'wan_ip']"
-      sortField="last_name"
-      :sortOrder="1"
+      filter-display="menu"
+      :global-filter-fields="['first_name', 'last_name', 'email', 'wan_ip']"
+      sort-field="last_name"
+      :sort-order="1"
       @page="onPageChange"
     >
-      <template #empty>Aucun étudiant trouvé</template>
+      <template #empty>
+        Aucun étudiant trouvé
+      </template>
 
-      <Column field="id" header="#" style="width: 8%">
+      <Column
+        field="id"
+        header="#"
+        style="width: 8%"
+      >
         <template #body="{ data }">
           <span class="font-semibold text-sm">{{ data.id.slice(0, 8) }}</span>
         </template>
       </Column>
 
-      <Column field="login" header="Login" style="width: 12%">
+      <Column
+        field="login"
+        header="Login"
+        style="width: 12%"
+      >
         <template #body="{ data }">
           <span class="font-semibold">{{ data.login }}</span>
         </template>
       </Column>
 
-      <Column field="first_name" header="Nom" style="width: 15%">
+      <Column
+        field="first_name"
+        header="Nom"
+        style="width: 15%"
+      >
         <template #body="{ data }">
           <span class="font-semibold">{{ data.first_name }} {{ data.last_name }}</span>
         </template>
         <template #filter="{ filterModel }">
-          <InputText v-model="filterModel.value" type="text" placeholder="Rechercher par nom" />
+          <InputText
+            v-model="filterModel.value"
+            type="text"
+            placeholder="Rechercher par nom"
+          />
         </template>
       </Column>
 
-      <Column field="email" header="Email" style="width: 18%">
+      <Column
+        field="email"
+        header="Email"
+        style="width: 18%"
+      >
         <template #body="{ data }">
           <span class="font-semibold text-sm">{{ data.email }}</span>
         </template>
         <template #filter="{ filterModel }">
-          <InputText v-model="filterModel.value" type="text" placeholder="Rechercher par email" />
+          <InputText
+            v-model="filterModel.value"
+            type="text"
+            placeholder="Rechercher par email"
+          />
         </template>
       </Column>
 
-      <Column field="cohort_name" header="Promo" style="width: 12%">
+      <Column
+        field="cohort_name"
+        header="Promo"
+        style="width: 12%"
+      >
         <template #body="{ data }">
-          <Badge :value="data.cohort_name" :severity="getCohortColor(data.cohort_name)" />
+          <Badge
+            :value="data.cohort_name"
+            :severity="getCohortColor(data.cohort_name)"
+          />
         </template>
         <template #filter="{ filterModel }">
           <Select
             v-model="filterModel.value"
             :options="cohortOptions"
-            optionLabel="label"
-            optionValue="value"
+            option-label="label"
+            option-value="value"
             placeholder="Filtrer par promo"
-            showClear
+            show-clear
             class="w-full"
           />
         </template>
       </Column>
 
-      <Column field="wan_ip" header="IP WAN" style="width: 12%">
+      <Column
+        field="wan_ip"
+        header="IP WAN"
+        style="width: 12%"
+      >
         <template #body="{ data }">
-          <span class="font-mono text-sm" v-if="data.wan_ip">
+          <span
+            v-if="data.wan_ip"
+            class="font-mono text-sm"
+          >
             {{ data.wan_ip }}
           </span>
-          <span v-else class="text-surface-400">—</span>
+          <span
+            v-else
+            class="text-surface-400"
+          >—</span>
         </template>
         <template #filter="{ filterModel }">
-          <InputText v-model="filterModel.value" type="text" placeholder="Rechercher par IP" />
+          <InputText
+            v-model="filterModel.value"
+            type="text"
+            placeholder="Rechercher par IP"
+          />
         </template>
       </Column>
 
-      <Column field="vxlan_tag" header="VNI" style="width: 8%">
+      <Column
+        field="vxlan_tag"
+        header="VNI"
+        style="width: 8%"
+      >
         <template #body="{ data }">
-          <span class="font-mono font-semibold" v-if="data.vxlan_tag">
+          <span
+            v-if="data.vxlan_tag"
+            class="font-mono font-semibold"
+          >
             {{ data.vxlan_tag }}
           </span>
-          <span v-else class="text-surface-400">—</span>
+          <span
+            v-else
+            class="text-surface-400"
+          >—</span>
         </template>
       </Column>
 
-      <Column field="actions" header="Actions" style="width: 15%">
+      <Column
+        field="actions"
+        header="Actions"
+        style="width: 15%"
+      >
         <template #body="{ data }">
           <div class="flex gap-2">
             <Button
+              v-tooltip="data.wan_ip ? 'Recréer le lab' : 'Déployer le lab'"
               icon="pi pi-replay"
               severity="secondary"
               size="small"
-              v-tooltip="data.wan_ip ? 'Recréer le lab' : 'Déployer le lab'"
             />
             <Button
+              v-tooltip="'Supprimer'"
               icon="pi pi-trash"
               severity="danger"
               size="small"
-              v-tooltip="'Supprimer'"
             />
           </div>
         </template>
@@ -164,6 +227,7 @@ import {
 import { FilterMatchMode } from '@primevue/core/api'
 import { Search } from '@primeicons/vue'
 import { listStudents, type StudentListItem } from '@/api/students'
+import type { DataTablePageChangeEvent } from '@/api/types'
 import { getCohortColor } from '@/utils/colors'
 import StudentImportDialog from './StudentImportDialog.vue'
 
@@ -174,9 +238,9 @@ const totalRecords = ref(0)
 const loading = ref(false)
 const currentPage = ref(1)
 const pageSize = ref(20)
-const cohortOptions = ref<{ label: string; value: string }[]>([])
+const cohortOptions = ref<{ label: string; value: string | null }[]>([])
 const importDialog = ref<InstanceType<typeof StudentImportDialog>>()
-let debounceTimer: ReturnType<typeof setTimeout> | null = null
+let _debounceTimer: ReturnType<typeof setTimeout> | null = null
 
 const filters = ref({
   global: { value: null, matchMode: FilterMatchMode.CONTAINS },
@@ -200,9 +264,13 @@ async function fetchStudents(page: number = 1) {
     currentPage.value = page
 
     // Mettre à jour les options de promo
-    const promos = new Set(response.items.map(s => s.cohort_name).filter(p => p !== '—'))
+    const promos = new Set(
+      response.items
+        .map(s => s.cohort_name)
+        .filter((p): p is string => p !== undefined && p !== '—')
+    )
     cohortOptions.value = [
-      { label: 'Tous', value: null as any },
+      { label: 'Tous', value: null },
       ...Array.from(promos).map(promo => ({ label: promo, value: promo }))
     ]
   } catch (error) {
@@ -229,7 +297,7 @@ function clearFilter() {
   fetchStudents(1)
 }
 
-function onPageChange(event: any) {
+function onPageChange(event: DataTablePageChangeEvent) {
   const newPage = Math.floor(event.first / event.rows) + 1
   fetchStudents(newPage)
 }

@@ -4,24 +4,32 @@
       <Card class="shadow-lg">
         <template #content>
           <div class="text-center space-y-8">
-            <img src="@/assets/logo-large.svg" alt="Labomatics" class="h-20 mx-auto" />
+            <img
+              src="@/assets/logo-large.svg"
+              alt="Labomatics"
+              class="h-20 mx-auto"
+            >
 
             <div class="pt-4">
               <Button
                 label="Connexion Keycloak"
                 class="w-full mb-4 [&_.p-button-label]:font-medium"
                 :style="{ backgroundColor: 'rgb(var(--primary-600))', borderColor: 'rgb(var(--primary-600))' }"
-                @click="handleLogin"
                 :loading="loading"
                 :icon="`pi pi-sign-in`"
+                @click="handleLogin"
               />
             </div>
 
-            <Message v-if="error" severity="error" :text="error" class="w-full" />
+            <Message
+              v-if="error"
+              severity="error"
+              :text="error"
+              class="w-full"
+            />
           </div>
         </template>
       </Card>
-
     </div>
   </div>
 </template>

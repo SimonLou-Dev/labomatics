@@ -2,10 +2,14 @@
   <div class="min-h-screen bg-surface-900 dark:bg-surface-50 flex items-center justify-center p-6">
     <div class="text-center max-w-md">
       <div class="mb-6">
-        <i class="pi pi-shield-exclamation text-6xl text-red-500"></i>
+        <i class="pi pi-shield-exclamation text-6xl text-red-500" />
       </div>
-      <h1 class="text-4xl font-bold mb-2">403</h1>
-      <h2 class="text-2xl font-semibold mb-4">Accès Refusé</h2>
+      <h1 class="text-4xl font-bold mb-2">
+        403
+      </h1>
+      <h2 class="text-2xl font-semibold mb-4">
+        Accès Refusé
+      </h2>
       <p class="text-surface-600 dark:text-surface-400 mb-6">
         Vous n'avez pas les permissions nécessaires pour accéder à cette ressource.
       </p>

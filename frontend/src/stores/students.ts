@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { importPreview, importApply } from '@/api/students'
-import type { StudentImportDiff, StudentImportMapping } from '@/api'
+import type { StudentImportMapping } from '@/api'
 
 export const useStudentsStore = defineStore('students', () => {
   const loading = ref(false)

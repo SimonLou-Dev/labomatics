@@ -5,21 +5,40 @@
         label="Retour"
         icon="pi pi-arrow-left"
         severity="secondary"
-        @click="goBack"
         class="mb-4"
+        @click="goBack"
       />
-      <h1 v-if="range" class="text-3xl font-bold">{{ range.name }}</h1>
-      <p v-if="range" class="text-surface-400 mt-2">{{ range.network }} • Passerelle: {{ range.gateway }}</p>
+      <h1
+        v-if="range"
+        class="text-3xl font-bold"
+      >
+        {{ range.name }}
+      </h1>
+      <p
+        v-if="range"
+        class="text-surface-400 mt-2"
+      >
+        {{ range.network }} • Passerelle: {{ range.gateway }}
+      </p>
     </div>
 
     <!-- Métriques -->
-    <div v-if="range" class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+    <div
+      v-if="range"
+      class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6"
+    >
       <Card class="p-6">
-        <div class="text-sm text-surface-500 dark:text-surface-400 mb-2">Utilisation</div>
+        <div class="text-sm text-surface-500 dark:text-surface-400 mb-2">
+          Utilisation
+        </div>
         <div class="flex items-end justify-between">
           <div>
-            <div class="text-2xl font-bold">{{ utilizationPercent }}%</div>
-            <div class="text-sm text-surface-400">{{ ipCountUsed }} / {{ totalIps }} IPs</div>
+            <div class="text-2xl font-bold">
+              {{ utilizationPercent }}%
+            </div>
+            <div class="text-sm text-surface-400">
+              {{ ipCountUsed }} / {{ totalIps }} IPs
+            </div>
           </div>
           <ProgressBar
             :value="utilizationPercent"
@@ -30,12 +49,18 @@
       </Card>
 
       <Card class="p-6">
-        <div class="text-sm text-surface-500 dark:text-surface-400 mb-2">IPs Libres</div>
-        <div class="text-2xl font-bold">{{ ipsFree }}</div>
+        <div class="text-sm text-surface-500 dark:text-surface-400 mb-2">
+          IPs Libres
+        </div>
+        <div class="text-2xl font-bold">
+          {{ ipsFree }}
+        </div>
       </Card>
 
       <Card class="p-6">
-        <div class="text-sm text-surface-500 dark:text-surface-400 mb-2">Statut</div>
+        <div class="text-sm text-surface-500 dark:text-surface-400 mb-2">
+          Statut
+        </div>
         <div class="flex items-center gap-2">
           <i
             :class="statusIcon"
@@ -47,7 +72,10 @@
     </div>
 
     <!-- Barre de progression -->
-    <div v-if="range" class="mb-6">
+    <div
+      v-if="range"
+      class="mb-6"
+    >
       <div class="flex items-center gap-4">
         <ProgressBar
           :value="utilizationPercent"
@@ -58,54 +86,90 @@
       </div>
       <div class="flex gap-6 mt-3 text-xs">
         <div class="flex items-center gap-2">
-          <div class="w-3 h-3 rounded-full" style="background-color: var(--green-500)"></div>
+          <div
+            class="w-3 h-3 rounded-full"
+            style="background-color: var(--green-500)"
+          />
           <span>&lt; 50%</span>
         </div>
         <div class="flex items-center gap-2">
-          <div class="w-3 h-3 rounded-full" style="background-color: var(--yellow-500)"></div>
+          <div
+            class="w-3 h-3 rounded-full"
+            style="background-color: var(--yellow-500)"
+          />
           <span>50-80%</span>
         </div>
         <div class="flex items-center gap-2">
-          <div class="w-3 h-3 rounded-full" style="background-color: var(--red-500)"></div>
+          <div
+            class="w-3 h-3 rounded-full"
+            style="background-color: var(--red-500)"
+          />
           <span>&gt; 80%</span>
         </div>
       </div>
     </div>
 
     <!-- Allocations Table -->
-    <Card v-if="range" class="p-6">
-      <h2 class="text-xl font-bold mb-4">Allocations d'adresses IP</h2>
+    <Card
+      v-if="range"
+      class="p-6"
+    >
+      <h2 class="text-xl font-bold mb-4">
+        Allocations d'adresses IP
+      </h2>
       <DataTable
         paginator
         :rows="pageSize"
-        :rowsPerPageOptions="[5, 10, 20]"
+        :rows-per-page-options="[5, 10, 20]"
         :value="allocations"
-        dataKey="ip_address"
+        data-key="ip_address"
         :loading="allocationsLoading"
-        :totalRecords="allocations.length"
+        :total-records="allocations.length"
       >
-        <template #empty>Aucune allocation trouvée</template>
-        <Column field="ip_address" header="Adresse IP" style="width: 20%">
+        <template #empty>
+          Aucune allocation trouvée
+        </template>
+        <Column
+          field="ip_address"
+          header="Adresse IP"
+          style="width: 20%"
+        >
           <template #body="{ data }">
             <span class="font-mono">{{ data.ip_address }}</span>
           </template>
         </Column>
-        <Column field="student_login" header="Login" style="width: 15%">
+        <Column
+          field="student_login"
+          header="Login"
+          style="width: 15%"
+        >
           <template #body="{ data }">
             <span class="font-semibold">{{ data.student_login }}</span>
           </template>
         </Column>
-        <Column field="student_first_name" header="Prénom" style="width: 15%">
+        <Column
+          field="student_first_name"
+          header="Prénom"
+          style="width: 15%"
+        >
           <template #body="{ data }">
             <span>{{ data.student_first_name }}</span>
           </template>
         </Column>
-        <Column field="student_last_name" header="Nom" style="width: 15%">
+        <Column
+          field="student_last_name"
+          header="Nom"
+          style="width: 15%"
+        >
           <template #body="{ data }">
             <span>{{ data.student_last_name }}</span>
           </template>
         </Column>
-        <Column field="openwrt_link" header="OpenWRT" style="width: 20%">
+        <Column
+          field="openwrt_link"
+          header="OpenWRT"
+          style="width: 20%"
+        >
           <template #body="{ data }">
             <a
               v-if="data.openwrt_link"
@@ -113,19 +177,31 @@
               target="_blank"
               class="text-blue-500 hover:underline flex items-center gap-1"
             >
-              <i class="pi pi-external-link" style="font-size: 0.75rem"></i>
+              <i
+                class="pi pi-external-link"
+                style="font-size: 0.75rem"
+              />
               Accéder
             </a>
-            <span v-else class="text-surface-400">—</span>
+            <span
+              v-else
+              class="text-surface-400"
+            >—</span>
           </template>
         </Column>
-        <Column field="actions" header="Actions" style="width: 15%" frozen align-frozen="right">
+        <Column
+          field="actions"
+          header="Actions"
+          style="width: 15%"
+          frozen
+          align-frozen="right"
+        >
           <template #body="{ data }">
             <Button
+              v-tooltip="'Voir le lab étudiant'"
               icon="pi pi-arrow-right"
               severity="info"
               size="small"
-              v-tooltip="'Voir le lab étudiant'"
               @click="goToStudentLab(data.student_login)"
             />
           </template>

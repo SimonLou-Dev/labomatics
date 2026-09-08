@@ -1,7 +1,9 @@
 <template>
   <div class="min-h-screen bg-surface-900 dark:bg-surface-50 p-6">
     <div class="mb-6 flex justify-between items-center">
-      <h1 class="text-3xl font-bold">Clusters Proxmox</h1>
+      <h1 class="text-3xl font-bold">
+        Clusters Proxmox
+      </h1>
       <div class="flex gap-3">
         <Button
           label="Importer YAML"
@@ -20,40 +22,69 @@
     <DataTable
       paginator
       :rows="pageSize"
-      :rowsPerPageOptions="[5, 10, 20, 50]"
+      :rows-per-page-options="[5, 10, 20, 50]"
       :value="clusters"
-      dataKey="id"
-      :totalRecords="totalRecords"
+      data-key="id"
+      :total-records="totalRecords"
       :loading="loading"
       @page="onPageChange"
     >
-      <template #empty>Aucun cluster trouvé</template>
-      <Column field="name" header="Nom" style="width: 15%">
+      <template #empty>
+        Aucun cluster trouvé
+      </template>
+      <Column
+        field="name"
+        header="Nom"
+        style="width: 15%"
+      >
         <template #body="{ data }">
           <span class="font-semibold">{{ data.name }}</span>
         </template>
       </Column>
-      <Column field="url" header="URL" style="width: 15%">
+      <Column
+        field="url"
+        header="URL"
+        style="width: 15%"
+      >
         <template #body="{ data }">
-          <span class="font-mono text-sm"><a :href="data.url" target="_blanck">Console proxmox</a></span>
+          <span class="font-mono text-sm"><a
+            :href="data.url"
+            target="_blanck"
+          >Console proxmox</a></span>
         </template>
       </Column>
-      <Column field="default_storage" header="Stockage" style="width: 10%">
+      <Column
+        field="default_storage"
+        header="Stockage"
+        style="width: 10%"
+      >
         <template #body="{ data }">
           <span class="font-semibold">{{ data.default_storage }}</span>
         </template>
       </Column>
-      <Column field="sdn_zone" header="Zone SDN" style="width: 12%">
+      <Column
+        field="sdn_zone"
+        header="Zone SDN"
+        style="width: 12%"
+      >
         <template #body="{ data }">
           <span class="font-semibold">{{ data.sdn_zone }}</span>
         </template>
       </Column>
-      <Column field="wan_bridge" header="Bridge WAN" style="width: 10%">
+      <Column
+        field="wan_bridge"
+        header="Bridge WAN"
+        style="width: 10%"
+      >
         <template #body="{ data }">
           <span class="font-semibold">{{ data.wan_bridge }}</span>
         </template>
       </Column>
-      <Column field="has_credential" header="Credential" style="width: 10%">
+      <Column
+        field="has_credential"
+        header="Credential"
+        style="width: 10%"
+      >
         <template #body="{ data }">
           <Badge
             :value="data.has_credential ? 'Configuré' : 'Absent'"
@@ -61,9 +92,16 @@
           />
         </template>
       </Column>
-      <Column field="ip_ranges" header="Plages IP" style="width: 12%">
+      <Column
+        field="ip_ranges"
+        header="Plages IP"
+        style="width: 12%"
+      >
         <template #body="{ data }">
-          <div v-if="data.ip_ranges.length > 0" class="flex flex-wrap gap-1">
+          <div
+            v-if="data.ip_ranges.length > 0"
+            class="flex flex-wrap gap-1"
+          >
             <Chip
               v-for="range in data.ip_ranges"
               :key="range.id"
@@ -72,24 +110,41 @@
               @click="() => goToWanDetails(range.id)"
             />
           </div>
-          <span v-else class="text-surface-400">—</span>
+          <span
+            v-else
+            class="text-surface-400"
+          >—</span>
         </template>
       </Column>
-      <Column field="vxlan_ranges" header="Plages VXLAN" style="width: 12%">
+      <Column
+        field="vxlan_ranges"
+        header="Plages VXLAN"
+        style="width: 12%"
+      >
         <template #body="{ data }">
-          <div v-if="data.vxlan_ranges.length > 0" class="flex flex-wrap gap-1">
+          <div
+            v-if="data.vxlan_ranges.length > 0"
+            class="flex flex-wrap gap-1"
+          >
             <Chip
               v-for="range in data.vxlan_ranges"
               :key="range.id"
               :label="range.name"
               class="text-xs cursor-pointer"
-               @click="() => goToVxlanDetails(range.id)"
+              @click="() => goToVxlanDetails(range.id)"
             />
           </div>
-          <span v-else class="text-surface-400">—</span>
+          <span
+            v-else
+            class="text-surface-400"
+          >—</span>
         </template>
       </Column>
-      <Column field="is_default_for_new_cohorts" header="Défaut" style="width: 8%">
+      <Column
+        field="is_default_for_new_cohorts"
+        header="Défaut"
+        style="width: 8%"
+      >
         <template #body="{ data }">
           <Badge
             v-if="data.is_default_for_new_cohorts"
@@ -97,53 +152,62 @@
             severity="info"
             class="text-lg"
           />
-          <span v-else class="text-surface-400">—</span>
+          <span
+            v-else
+            class="text-surface-400"
+          >—</span>
         </template>
       </Column>
-      <Column field="actions" header="Actions" style="width: 18%" frozen align-frozen="right">
+      <Column
+        field="actions"
+        header="Actions"
+        style="width: 18%"
+        frozen
+        align-frozen="right"
+      >
         <template #body="{ data }">
           <div class="flex gap-2">
             <Button
+              v-tooltip="'Éditer'"
               icon="pi pi-pencil"
               severity="secondary"
               size="small"
-              v-tooltip="'Éditer'"
               @click="openEditDialog(data)"
             />
             <Button
+              v-tooltip="'Credential'"
               icon="pi pi-shield"
               severity="info"
               size="small"
-              v-tooltip="'Credential'"
               @click="openCredentialDialog(data)"
             />
             <Button
+              v-tooltip="'Tester la connexion'"
               icon="pi pi-check"
               severity="warning"
               size="small"
               :loading="testingConnection === data.id"
-              v-tooltip="'Tester la connexion'"
               @click="testConnection(data)"
             />
             <Button
+              v-tooltip="'Gérer plages'"
               icon="pi pi-link"
               severity="warning"
               size="small"
-              v-tooltip="'Gérer plages'"
               @click="openRangesDialog(data)"
             />
             <Button
+              v-tooltip="data.is_default_for_new_cohorts ? 'Défaut' : 'Définir défaut'"
               icon="pi pi-star"
               :severity="data.is_default_for_new_cohorts ? 'success' : 'secondary'"
               size="small"
-              v-tooltip="data.is_default_for_new_cohorts ? 'Défaut' : 'Définir défaut'"
               @click="setDefaultCluster(data)"
             />
             <Button
+              v-tooltip="'Supprimer'"
               icon="pi pi-trash"
               severity="danger"
               size="small"
-              v-tooltip="'Supprimer'"
               @click="confirmDeleteCluster(data)"
             />
           </div>
@@ -269,7 +333,9 @@
       <div class="space-y-6">
         <!-- IP Ranges -->
         <div>
-          <h3 class="text-lg font-semibold mb-3">Plages IP WAN</h3>
+          <h3 class="text-lg font-semibold mb-3">
+            Plages IP WAN
+          </h3>
           <div class="flex flex-wrap gap-2 mb-3">
             <div
               v-for="ipRange in availableIpRanges"
@@ -278,29 +344,29 @@
             >
               <span class="text-sm font-medium">{{ ipRange.name }}</span>
               <Button
+                v-tooltip="'Consulter'"
                 icon="pi pi-arrow-right"
                 size="small"
                 text
                 severity="info"
-                v-tooltip="'Consulter'"
                 @click="goToWanRangeDetails(ipRange.id)"
               />
               <Button
-                v-if="rangesCluster?.ip_ranges.some((r) => r.id === ipRange.id)"
+                v-if="rangesCluster?.ip_ranges?.some((r) => r.id === ipRange.id)"
+                v-tooltip="'Détacher'"
                 icon="pi pi-times"
                 size="small"
                 text
                 severity="danger"
-                v-tooltip="'Détacher'"
                 @click="detachIPRange(ipRange.id)"
               />
               <Button
                 v-else
+                v-tooltip="'Attacher'"
                 icon="pi pi-plus"
                 size="small"
                 text
                 severity="success"
-                v-tooltip="'Attacher'"
                 @click="attachIPRange(ipRange.id)"
               />
             </div>
@@ -309,7 +375,9 @@
 
         <!-- VXLAN Ranges -->
         <div>
-          <h3 class="text-lg font-semibold mb-3">Plages VXLAN</h3>
+          <h3 class="text-lg font-semibold mb-3">
+            Plages VXLAN
+          </h3>
           <div class="flex flex-wrap gap-2 mb-3">
             <div
               v-for="vxlanRange in availableVxlanRanges"
@@ -318,29 +386,29 @@
             >
               <span class="text-sm font-medium">{{ vxlanRange.name }}</span>
               <Button
+                v-tooltip="'Consulter'"
                 icon="pi pi-arrow-right"
                 size="small"
                 text
                 severity="info"
-                v-tooltip="'Consulter'"
                 @click="goToNetworkRangeDetails(vxlanRange.id)"
               />
               <Button
-                v-if="rangesCluster?.vxlan_ranges.some((r) => r.id === vxlanRange.id)"
+                v-if="rangesCluster?.vxlan_ranges?.some((r) => r.id === vxlanRange.id)"
+                v-tooltip="'Détacher'"
                 icon="pi pi-times"
                 size="small"
                 text
                 severity="danger"
-                v-tooltip="'Détacher'"
                 @click="detachVxlanRange(vxlanRange.id)"
               />
               <Button
                 v-else
+                v-tooltip="'Attacher'"
                 icon="pi pi-plus"
                 size="small"
                 text
                 severity="success"
-                v-tooltip="'Attacher'"
                 @click="attachVxlanRange(vxlanRange.id)"
               />
             </div>
@@ -396,7 +464,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
 import {
@@ -415,6 +483,8 @@ import type {
   ClusterCreateDTO,
   IpRangeDTO,
   VxlanRangeDTO,
+  DataTablePageChangeEvent,
+  FileSelectEvent,
 } from '@/api/types'
 import * as clusterApi from '@/api/clusters'
 import * as ipRangeApi from '@/api/ipRanges'
@@ -480,7 +550,7 @@ async function fetchClusters(page: number = 1) {
   }
 }
 
-function onPageChange(event: any) {
+function onPageChange(event: DataTablePageChangeEvent) {
   const newPage = Math.floor(event.first / event.rows) + 1
   fetchClusters(newPage)
 }
@@ -781,7 +851,7 @@ async function deleteCluster(id: string) {
   }
 }
 
-function onFileSelect(event: any) {
+function onFileSelect(event: FileSelectEvent) {
   const file = event.files[0]
   if (file) {
     selectedFile.value = file

@@ -1,7 +1,9 @@
 <template>
   <div class="min-h-screen bg-surface-900 dark:bg-surface-50 p-6">
     <div class="mb-6 flex justify-between items-center">
-      <h1 class="text-3xl font-bold">Plages VXLAN Étudiants</h1>
+      <h1 class="text-3xl font-bold">
+        Plages VXLAN Étudiants
+      </h1>
       <Button
         label="Créer"
         icon="pi pi-plus"
@@ -12,28 +14,43 @@
     <DataTable
       paginator
       :rows="pageSize"
-      :rowsPerPageOptions="[5, 10, 20, 50]"
+      :rows-per-page-options="[5, 10, 20, 50]"
       :value="vxlanRanges"
-      dataKey="id"
-      :totalRecords="totalRecords"
+      data-key="id"
+      :total-records="totalRecords"
       :loading="loading"
       @page="onPageChange"
     >
-      <template #empty>Aucune plage VXLAN trouvée</template>
-      <Column field="name" header="Nom" style="width: 15%">
+      <template #empty>
+        Aucune plage VXLAN trouvée
+      </template>
+      <Column
+        field="name"
+        header="Nom"
+        style="width: 15%"
+      >
         <template #body="{ data }">
           <span class="font-semibold">{{ data.name }}</span>
         </template>
       </Column>
-      <Column field="base_network" header="Réseau Base" style="width: 13%">
+      <Column
+        field="base_network"
+        header="Réseau Base"
+        style="width: 13%"
+      >
         <template #body="{ data }">
           <span class="font-mono">{{ data.base_network }}</span>
         </template>
       </Column>
-      <Column field="utilization" header="Utilisation" style="width: 15%">
+      <Column
+        field="utilization"
+        header="Utilisation"
+        style="width: 15%"
+      >
         <template #body="{ data }">
           <div class="flex items-center gap-2">
-            <div class="flex-1 h-6 border border-surface-400 bg-surface-700 rounded"
+            <div
+              class="flex-1 h-6 border border-surface-400 bg-surface-700 rounded"
               :style="{
                 background: `linear-gradient(90deg, ${getProgressBarColor(data)} 0%, ${getProgressBarColor(data)} ${getUtilizationPercent(data)}%, var(--surface-700) ${getUtilizationPercent(data)}%, var(--surface-700) 100%)`
               }"
@@ -44,24 +61,43 @@
           </div>
         </template>
       </Column>
-      <Column field="mtu" header="MTU" style="width: 8%">
+      <Column
+        field="mtu"
+        header="MTU"
+        style="width: 8%"
+      >
         <template #body="{ data }">
           <span class="font-mono">{{ data.mtu }}</span>
         </template>
       </Column>
-      <Column field="vni_min" header="VNI Min" style="width: 8%">
+      <Column
+        field="vni_min"
+        header="VNI Min"
+        style="width: 8%"
+      >
         <template #body="{ data }">
           <span class="font-mono">{{ data.vni_min }}</span>
         </template>
       </Column>
-      <Column field="vni_max" header="VNI Max" style="width: 8%">
+      <Column
+        field="vni_max"
+        header="VNI Max"
+        style="width: 8%"
+      >
         <template #body="{ data }">
           <span class="font-mono">{{ data.vni_max }}</span>
         </template>
       </Column>
-      <Column field="exclusions" header="Exclusions VNI" style="width: 18%">
+      <Column
+        field="exclusions"
+        header="Exclusions VNI"
+        style="width: 18%"
+      >
         <template #body="{ data }">
-          <div v-if="data.exclusions.length > 0" class="flex flex-wrap gap-1">
+          <div
+            v-if="data.exclusions.length > 0"
+            class="flex flex-wrap gap-1"
+          >
             <Chip
               v-for="(excl, idx) in data.exclusions"
               :key="idx"
@@ -69,31 +105,40 @@
               class="text-xs"
             />
           </div>
-          <span v-else class="text-surface-400">—</span>
+          <span
+            v-else
+            class="text-surface-400"
+          >—</span>
         </template>
       </Column>
-      <Column field="actions" header="Actions" style="width: 21%" frozen align-frozen="right">
+      <Column
+        field="actions"
+        header="Actions"
+        style="width: 21%"
+        frozen
+        align-frozen="right"
+      >
         <template #body="{ data }">
           <div class="flex gap-2">
             <Button
+              v-tooltip="'Consulter'"
               icon="pi pi-arrow-right"
               severity="info"
               size="small"
-              v-tooltip="'Consulter'"
               @click="goToDetails(data)"
             />
             <Button
+              v-tooltip="'Éditer'"
               icon="pi pi-pencil"
               severity="secondary"
               size="small"
-              v-tooltip="'Éditer'"
               @click="openEditDialog(data)"
             />
             <Button
+              v-tooltip="'Supprimer'"
               icon="pi pi-trash"
               severity="danger"
               size="small"
-              v-tooltip="'Supprimer'"
               @click="confirmDeleteRange(data)"
             />
           </div>
@@ -190,9 +235,8 @@ import {
   InputNumber,
   Chip,
   Textarea,
-  ProgressBar,
 } from 'primevue'
-import type { VxlanRangeDTO, VxlanRangeCreateDTO } from '@/api/types'
+import type { VxlanRangeDTO, VxlanRangeCreateDTO, DataTablePageChangeEvent } from '@/api/types'
 import * as vxlanRangeApi from '@/api/vxlanRanges'
 
 const router = useRouter()
@@ -219,7 +263,7 @@ const formData = ref<VxlanRangeCreateDTO>({
 })
 
 function getUtilizationPercent(range: VxlanRangeDTO): number {
-  return range.utilization_percent
+  return range.utilization_percent ?? 0
 }
 
 function getProgressBarColor(range: VxlanRangeDTO): string {
@@ -249,7 +293,7 @@ async function fetchVxlanRanges(page: number = 1) {
   }
 }
 
-function onPageChange(event: any) {
+function onPageChange(event: DataTablePageChangeEvent) {
   const newPage = Math.floor(event.first / event.rows) + 1
   fetchVxlanRanges(newPage)
 }

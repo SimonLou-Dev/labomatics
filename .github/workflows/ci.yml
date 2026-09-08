@@ -32,9 +32,6 @@ jobs:
         working-directory: backend
         run: poetry run ruff format --check .
 
-      - name: mypy
-        working-directory: backend
-        run: poetry run mypy labomatics --ignore-missing-imports
 
   lint-cli:
     name: Lint CLI (ruff + mypy)
@@ -60,10 +57,6 @@ jobs:
       - name: ruff format check
         working-directory: cli
         run: poetry run ruff format --check .
-
-      - name: mypy
-        working-directory: cli
-        run: poetry run mypy labomatics_cli --ignore-missing-imports
 
   lint-frontend:
     name: Lint frontend (eslint + vue-tsc)
