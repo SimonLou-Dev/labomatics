@@ -1,6 +1,25 @@
 # CHANGELOG
 
 
+## v0.4.0-rc.5 (2026-09-08)
+
+### Bug Fixes
+
+- Ci repo lower
+  ([`861de0b`](https://github.com/SimonLou-Dev/labomatics/commit/861de0bd97c3cbe49c7ee2d1a943f790237a41a0))
+
+- Update wf
+  ([`b5780ab`](https://github.com/SimonLou-Dev/labomatics/commit/b5780abba102be0d394722f89a4f56c0ce7ce5a7))
+
+### Continuous Integration
+
+- Add perms
+  ([`56b5cb4`](https://github.com/SimonLou-Dev/labomatics/commit/56b5cb4526c2fd000d6652bc77a9ca39a548714c))
+
+- Update wf
+  ([`c8a169c`](https://github.com/SimonLou-Dev/labomatics/commit/c8a169cdf9b5c886698da4b256a354b56d9437a2))
+
+
 ## v0.4.0-rc.4 (2026-09-08)
 
 ### Continuous Integration
