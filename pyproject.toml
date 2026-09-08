@@ -22,3 +22,4 @@ prerelease = false
 match = "dev"
 prerelease = true
 prerelease_token = "rc"
+push = false
