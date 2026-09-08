@@ -179,10 +179,17 @@ def _display_completion_summary(state, domain):
     console.print("[bold]Installation Terminée![/bold]\n")
 
     table = Table(show_header=False, box=None, padding=(0, 2))
-    table.add_row(
-        "[bold]Keycloak Console[/bold]",
-        f"https://keycloak.{domain}/admin/labomatics/console/",
+
+    # URLs
+    console.print("[bold]🔗 URLs d'accès:[/bold]")
+    console.print(f"  Frontend: [cyan]https://app.{domain}[/cyan]")
+    console.print(f"  API: [cyan]https://api.{domain}/v1[/cyan]")
+    console.print(
+        f"  Keycloak: [cyan]https://keycloak.{domain}/admin/labomatics/console/[/cyan]"
     )
+    console.print()
+
+    # Keycloak credentials
     table.add_row(
         "[bold]Admin User[/bold]",
         f"{state.get('admin_first_name')}.{state.get('admin_last_name')}",
@@ -192,13 +199,15 @@ def _display_completion_summary(state, domain):
         f"[yellow]{state.get('labomatics_user_password')}[/yellow]",
     )
     table.add_row(
-        "[bold]Backend Keycloak User[/bold]",
+        "[bold]Backend Service User[/bold]",
         state.get("labomatics_admin_username"),
     )
     table.add_row(
-        "[bold]Backend Keycloak Password[/bold]",
+        "[bold]Backend Service Password[/bold]",
         f"[yellow]{state.get('labomatics_admin_password')}[/yellow]",
     )
+
+    # LDAP info
     ldap_step = state.get_step(9)
     if ldap_step:
         table.add_row(
@@ -213,12 +222,17 @@ def _display_completion_summary(state, domain):
             "[bold]RADIUS Shared Secret[/bold]",
             f"[yellow]{ldap_step.get('radius_shared_secret', 'N/A')}[/yellow]",
         )
+
     if state.get("clusterconfig_path"):
         table.add_row(
             "[bold]Cluster Config[/bold]",
             state.get("clusterconfig_path"),
         )
+
     console.print(table)
+    console.print("\n[bold]📝 Docs:[/bold]")
+    console.print("  Admin: https://docs.labomatics.io/admin/")
+    console.print("  API: https://docs.labomatics.io/api/")
     console.print("\n[bold cyan]════════════════════════════════════════[/bold cyan]\n")
 
 

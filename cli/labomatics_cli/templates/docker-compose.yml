@@ -101,6 +101,95 @@ services:
       - ldap
     restart: unless-stopped
 
+  redis:
+    image: redis:7-alpine
+    container_name: labomatics-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - labomatics
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ../../backend
+      dockerfile: Dockerfile
+    container_name: labomatics-api
+    environment:
+      DATABASE_URL: postgresql://api:{{ API_DB_PASSWORD }}@postgres:5432/labomatics
+      REDIS_URL: redis://redis:6379/0
+      LOG_LEVEL: info
+      DOMAIN: {{ DOMAIN }}
+    volumes:
+      - ./init-backend.sh:/app/init-backend.sh:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - labomatics
+      - proxy
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["sh /app/init-backend.sh && uvicorn labomatics.app:app --host 0.0.0.0 --port 8000"]
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.api-https.rule=Host(`api.{{ DOMAIN }}`)
+      - traefik.http.routers.api-https.entrypoints=websecure
+      - traefik.http.routers.api-https.tls=true
+      - traefik.http.routers.api-https.service=api
+      - traefik.http.services.api.loadbalancer.server.port=8000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  worker:
+    build:
+      context: ../../backend
+      dockerfile: Dockerfile.worker
+    container_name: labomatics-worker
+    environment:
+      DATABASE_URL: postgresql://api:{{ API_DB_PASSWORD }}@postgres:5432/labomatics
+      REDIS_URL: redis://redis:6379/0
+      LOG_LEVEL: info
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - labomatics
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ../../frontend
+      dockerfile: Dockerfile
+    container_name: labomatics-frontend
+    environment:
+      VITE_API_URL: https://api.{{ DOMAIN }}/v1
+      VITE_BASE_URL: https://app.{{ DOMAIN }}
+    depends_on:
+      - api
+    networks:
+      - proxy
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.frontend-https.rule=Host(`app.{{ DOMAIN }}`)
+      - traefik.http.routers.frontend-https.entrypoints=websecure
+      - traefik.http.routers.frontend-https.tls=true
+      - traefik.http.routers.frontend-https.service=frontend
+      - traefik.http.services.frontend.loadbalancer.server.port=80
+
   traefik:
     image: traefik:v3.7.9
     command:
