@@ -77,6 +77,8 @@ jobs:
             file: frontend/Dockerfile
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: docker/setup-buildx-action@v3
 
@@ -106,7 +108,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.PAT_SEMANTIC_RELEASE || github.token }}
+          token: ${{ secrets.PAT_SEMANTIC_RELEASE }}
 
       - name: Reset dev to main
         run: |
