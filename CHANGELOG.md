@@ -1,6 +1,25 @@
 # CHANGELOG
 
 
+## v0.4.0-rc.4 (2026-09-08)
+
+### Continuous Integration
+
+- Update ci path
+  ([`d63904b`](https://github.com/SimonLou-Dev/labomatics/commit/d63904b8cf0245e883cebe3008462681cc0d6531))
+
+### Features
+
+- Ajout du backend + UI
+  ([`3aee7a6`](https://github.com/SimonLou-Dev/labomatics/commit/3aee7a697c7a690f6f860f302ac1fc8a959961bb))
+
+BREAKING CHANGE: passe à la v1 avec l'ajout de l'ui
+
+### Breaking Changes
+
+- Passe à la v1 avec l'ajout de l'ui
+
+
 ## v0.4.0-rc.3 (2026-09-08)
 
 ### Bug Fixes
