@@ -1,6 +1,7 @@
 """Keycloak setup."""
 
 import secrets
+from typing import Optional
 
 from ...utils.keycloak import KeycloakClient
 from ...utils.verify import ServiceVerifier
@@ -17,8 +18,8 @@ class KeycloakSetup:
         admin_password: str,
         state: InstallState,
         pve=None,
-        ldap_base_dn: str = None,
-        ldap_secrets: dict = None,
+        ldap_base_dn: Optional[str] = None,
+        ldap_secrets: Optional[dict] = None,
     ):
         """Initialiser."""
         self.domain = domain

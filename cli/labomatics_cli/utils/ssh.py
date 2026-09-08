@@ -1,6 +1,6 @@
 """SSH client pour se connecter à la VM et exécuter des commandes."""
 
-import paramiko
+import paramiko  # type: ignore[import-untyped]
 import time
 from typing import Optional
 
@@ -24,7 +24,7 @@ class SSHClient:
         self.key_filename = key_filename
         self.port = port
         self.timeout = timeout
-        self.client = None
+        self.client: Optional[paramiko.SSHClient] = None
 
     def connect(self, retries: int = 5, delay: int = 2) -> None:
         """Se connecter au serveur SSH avec retry."""
@@ -55,7 +55,9 @@ class SSHClient:
         if self.client:
             self.client.close()
 
-    def exec_command(self, command: str, timeout: int = None) -> tuple[str, str, int]:
+    def exec_command(
+        self, command: str, timeout: Optional[int] = None
+    ) -> tuple[str, str, int]:
         """Exécuter une commande et retourner stdout, stderr, return code."""
         if not self.client:
             raise RuntimeError("Not connected")

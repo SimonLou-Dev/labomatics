@@ -1,7 +1,7 @@
 """API Keycloak client pour setup."""
 
 import requests
-from typing import Dict
+from typing import Dict, Optional
 
 
 class KeycloakClient:
@@ -42,7 +42,7 @@ class KeycloakClient:
             "Content-Type": "application/json",
         }
 
-    def create_realm(self, realm_name: str, display_name: str = None) -> None:
+    def create_realm(self, realm_name: str, display_name: Optional[str] = None) -> None:
         """Créer un realm."""
         url = f"{self.base_url}/admin/realms"
         data = {
@@ -50,7 +50,7 @@ class KeycloakClient:
             "displayName": display_name or realm_name,
             "enabled": True,
         }
-        resp = requests.post(url, json=data, headers=self._headers(), verify=False)
+        resp = requests.post(url, json=data, headers=self._headers(), verify=False)  # type: ignore
         if resp.status_code == 409:
             return  # Realm exists, ignore
         resp.raise_for_status()
@@ -59,8 +59,8 @@ class KeycloakClient:
         self,
         realm_name: str,
         client_id: str,
-        name: str = None,
-        redirect_uris: list = None,
+        name: Optional[str] = None,
+        redirect_uris: Optional[list] = None,
         public_client: bool = False,
         enable_auth: bool = False,
     ) -> str:
@@ -78,7 +78,7 @@ class KeycloakClient:
                 "oidc.compliance.subtle.change": "true",
             },
         }
-        resp = requests.post(url, json=data, headers=self._headers(), verify=False)
+        resp = requests.post(url, json=data, headers=self._headers(), verify=False)  # type: ignore
         if resp.status_code == 409:
             # Client exists, get its ID and secret
             clients = requests.get(
@@ -90,7 +90,7 @@ class KeycloakClient:
             if resp.status_code >= 400:
                 raise RuntimeError(
                     f"Failed to create client ({resp.status_code}): "
-                    f"text='{resp.text}' | content='{resp.content}'"
+                    f"text='{resp.text}' | content='{resp.content}'"  # type: ignore
                 )
             try:
                 if not resp.text:
@@ -155,8 +155,8 @@ class KeycloakClient:
         username: str,
         first_name: str = "",
         last_name: str = "",
-        email: str = None,
-        temporary_password: str = None,
+        email: Optional[str] = None,
+        temporary_password: Optional[str] = None,
     ) -> str:
         """Créer un user et retourner son ID."""
         url = f"{self.base_url}/admin/realms/{realm_name}/users"
@@ -179,7 +179,7 @@ class KeycloakClient:
                 }
             ]
 
-        resp = requests.post(url, json=data, headers=self._headers(), verify=False)
+        resp = requests.post(url, json=data, headers=self._headers(), verify=False)  # type: ignore
         if resp.status_code == 409:
             # User exists, get its ID
             users = requests.get(
@@ -197,7 +197,7 @@ class KeycloakClient:
             return resp.json()["id"]
         except Exception as e:
             raise RuntimeError(
-                f"create_user failed: {resp.status_code} - {resp.text}"
+                f"create_user failed: {resp.status_code} - {resp.text!r}"  # type: ignore
             ) from e
 
     def get_user_by_username(self, realm_name: str, username: str) -> dict | None:
@@ -222,14 +222,17 @@ class KeycloakClient:
         )
         data = {"type": "password", "value": password, "temporary": temporary}
         requests.put(
-            url, json=data, headers=self._headers(), verify=False
+            url,
+            json=data,
+            headers=self._headers(),
+            verify=False,  # type: ignore
         ).raise_for_status()
 
     def create_realm_role(
         self,
         realm_name: str,
         role_name: str,
-        description: str = None,
+        description: Optional[str] = None,
         composite: bool = False,
     ) -> str:
         """Créer un rôle realm et retourner son ID."""
@@ -239,7 +242,7 @@ class KeycloakClient:
             "description": description or role_name,
             "composite": composite,
         }
-        resp = requests.post(url, json=data, headers=self._headers(), verify=False)
+        resp = requests.post(url, json=data, headers=self._headers(), verify=False)  # type: ignore
 
         if resp.status_code == 409:
             # Role exists, get its ID
@@ -420,7 +423,11 @@ class KeycloakClient:
         return clients[0]["id"]
 
     def create_client_role(
-        self, realm_name: str, client_id: str, role_name: str, description: str = None
+        self,
+        realm_name: str,
+        client_id: str,
+        role_name: str,
+        description: Optional[str] = None,
     ) -> str:
         """Créer un rôle client et retourner son ID."""
         client_uuid = self.get_client_uuid(realm_name, client_id)
@@ -514,7 +521,7 @@ class KeycloakClient:
                 "importEnabled": ["true"],
             },
         }
-        resp = requests.post(url, json=data, headers=self._headers(), verify=False)
+        resp = requests.post(url, json=data, headers=self._headers(), verify=False)  # type: ignore
         if resp.status_code == 409:
             existing = requests.get(
                 f"{url}?parent={realm_name}&type=org.keycloak.storage.UserStorageProvider",
@@ -557,7 +564,7 @@ class KeycloakClient:
                 "drop.non.existing.groups.during.sync": ["false"],
             },
         }
-        resp = requests.post(url, json=data, headers=self._headers(), verify=False)
+        resp = requests.post(url, json=data, headers=self._headers(), verify=False)  # type: ignore
         if resp.status_code not in (201, 409):
             raise RuntimeError(
                 f"Failed to create group LDAP mapper: {resp.status_code} - {resp.text}"

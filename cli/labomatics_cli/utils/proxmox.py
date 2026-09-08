@@ -2,7 +2,7 @@
 
 import time
 from typing import Dict, Any, Optional
-from proxmoxer import ProxmoxAPI
+from proxmoxer import ProxmoxAPI  # type: ignore
 
 
 class ProxmoxClient:
@@ -133,10 +133,10 @@ class ProxmoxClient:
         storage: str,
         disk_size: int = 50,
         ciuser: str = "root",
-        cicustom: str = None,
-        boot_image: str = None,
-        sshkeys: str = None,
-        cpu: str = None,
+        cicustom: Optional[str] = None,
+        boot_image: Optional[str] = None,
+        sshkeys: Optional[str] = None,
+        cpu: Optional[str] = None,
     ) -> str:
         """Créer une VM vide et retourner le UPID."""
         # Vérifier que la VM n'existe pas déjà
@@ -215,12 +215,12 @@ class ProxmoxClient:
         node: str,
         vmid: int,
         username: str = "root",
-        password: str = None,
-        sshkeys: str = None,
-        hostname: str = None,
-        ipconfig0: str = None,
-        ipconfig1: str = None,
-        nameserver: str = None,
+        password: Optional[str] = None,
+        sshkeys: Optional[str] = None,
+        hostname: Optional[str] = None,
+        ipconfig0: Optional[str] = None,
+        ipconfig1: Optional[str] = None,
+        nameserver: Optional[str] = None,
         ciupgrade: bool = True,
     ) -> None:
         """Définir la configuration cloud-init d'une VM."""
@@ -241,7 +241,7 @@ class ProxmoxClient:
         if nameserver:
             data["nameserver"] = nameserver
 
-        data["ciupgrade"] = 1 if ciupgrade else 0
+        data["ciupgrade"] = "1" if ciupgrade else "0"  # type: ignore
 
         self.proxmox.nodes(node).qemu(vmid).config.put(**data)
 
@@ -268,7 +268,7 @@ class ProxmoxClient:
         self,
         userid: str,
         tokenid: str,
-        expire: int = None,
+        expire: Optional[int] = None,
     ) -> Optional[Dict[str, Any]]:
         """Créer un token pour un user."""
         data = {}
@@ -312,7 +312,7 @@ class ProxmoxClient:
         self.proxmox.cluster.sdn.zones.post(**data)
 
     def create_sdn_vnet(
-        self, zone: str, vnet: str, vlanid: int = None, **kwargs
+        self, zone: str, vnet: str, vlanid: Optional[int] = None, **kwargs
     ) -> None:
         """Créer un VNet dans une zone SDN."""
         data = {
@@ -320,7 +320,7 @@ class ProxmoxClient:
             "zone": zone,
         }
         if vlanid:
-            data["vlanid"] = vlanid
+            data["vlanid"] = vlanid  # type: ignore
         data.update(kwargs)
         self.proxmox.cluster.sdn.vnets.post(**data)
 
@@ -351,7 +351,7 @@ class ProxmoxClient:
         url: str,
         filename: str,
         content_type: str = "iso",
-        checksum: str = None,
+        checksum: Optional[str] = None,
         checksum_algorithm: str = "sha256",
     ) -> str:
         """Télécharger un ISO/image dans le storage Proxmox."""
@@ -392,7 +392,7 @@ class ProxmoxClient:
         vmid: int,
         storage: str,
         userdata_file: str,
-        network_file: str = None,
+        network_file: Optional[str] = None,
     ) -> None:
         """Configurer cloud-init NoCloud pour une VM."""
         # Format cicustom: user=storage:snippets/filename
@@ -415,9 +415,9 @@ class ProxmoxClient:
         self,
         node: str,
         dns1: str,
-        dns2: str = None,
-        dns3: str = None,
-        search: str = None,
+        dns2: Optional[str] = None,
+        dns3: Optional[str] = None,
+        search: Optional[str] = None,
     ) -> None:
         """Configurer les serveurs DNS d'un nœud."""
         data = {"dns1": dns1}
@@ -429,7 +429,9 @@ class ProxmoxClient:
             data["search"] = search
         self.proxmox.nodes(node).dns.put(**data)
 
-    def create_oidc_user(self, username: str, realm: str, email: str = None) -> None:
+    def create_oidc_user(
+        self, username: str, realm: str, email: Optional[str] = None
+    ) -> None:
         """Créer un user OIDC dans Proxmox."""
         user_id = f"{username}@{realm}"
         data = {"userid": user_id}
@@ -451,7 +453,7 @@ class ProxmoxClient:
         username_claim: str = "preferred_username",
         scopes: str = "email profile",
         default: bool = False,
-        capath: str = None,
+        capath: Optional[str] = None,
     ) -> None:
         """Configurer un realm d'authentification OpenID Connect dans Proxmox."""
         data_create = {
@@ -488,7 +490,6 @@ class ProxmoxClient:
                 raise
 
     def create_pool(self, pool_name: str) -> None:
-
         try:
             self.proxmox.pools(pool_name).get()
         except Exception:

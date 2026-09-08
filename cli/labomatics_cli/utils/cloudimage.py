@@ -2,6 +2,7 @@
 
 import requests
 from pathlib import Path
+from typing import Optional
 
 
 class CloudInitImageManager:
@@ -34,7 +35,7 @@ class CloudInitImageManager:
     @staticmethod
     def download_image(
         image_type: str = "fedora-server",
-        cache_dir: Path = None,
+        cache_dir: Optional[Path] = None,
         progress_callback=None,
     ) -> str:
         """

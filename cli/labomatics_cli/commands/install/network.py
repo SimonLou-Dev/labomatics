@@ -1,5 +1,7 @@
 """Network setup (DNS, dnsmasq, Traefik)."""
 
+from typing import Optional
+
 from ...utils.proxmox import ProxmoxClient
 from ...utils.state import InstallState
 from ...templates import render_template
@@ -40,7 +42,7 @@ class NetworkSetup:
         labomatics_db_password: str = "",
         keycloak_db_password: str = "",
         keycloak_admin_password: str = "",
-        ldap_radius_secrets: dict = None,
+        ldap_radius_secrets: Optional[dict] = None,
     ):
         """Configurer tout le réseau."""
         if ldap_radius_secrets is None:

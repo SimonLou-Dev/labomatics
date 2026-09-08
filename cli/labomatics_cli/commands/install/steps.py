@@ -1,6 +1,8 @@
 """Installation steps - configuration collection."""
 
 import secrets
+from typing import Optional
+
 from rich.prompt import Prompt
 from rich.console import Console
 
@@ -81,7 +83,7 @@ def collect_step_2_proxmox_connection(state: InstallState) -> tuple:
     return url, user, token_id, token_secret, node
 
 
-def collect_step_3_network_config(state: InstallState) -> tuple[dict, dict, str]:
+def collect_step_3_network_config(state: InstallState) -> tuple[dict, dict, str, str]:
     """Étape 3: Configuration réseau (WAN, VXLAN, DNS)."""
     step_data = state.get_step(3)
     if step_data:
@@ -89,7 +91,7 @@ def collect_step_3_network_config(state: InstallState) -> tuple[dict, dict, str]
             step_data["wan_config"],
             step_data["vxlan_config"],
             step_data.get("dns_servers", "8.8.8.8 8.8.4.4"),
-            step_data.get("storage"),
+            step_data.get("storage", ""),
         )
 
     step(3, 9, "Configuration du cluster - Réseau WAN")
@@ -154,11 +156,11 @@ def collect_step_4_proxmox_user(
         4,
         {
             "labomatics_user": user_id,
-            "labomatics_token_secret": token_data["value"],
+            "labomatics_token_secret": token_data["value"],  # type: ignore
         },
     )
 
-    return user_id, token_data["value"]
+    return user_id, token_data["value"]  # type: ignore
 
 
 def collect_step_5_vm_config(state: InstallState) -> tuple:
@@ -178,7 +180,7 @@ def collect_step_5_vm_config(state: InstallState) -> tuple:
     vm_name = prompt_with_retry("Nom de la VM", default="labomatics")
     vm_memory = int(prompt_with_retry("Mémoire (MB)", default="8192"))
     vm_cores = int(prompt_with_retry("Cores CPU", default="4"))
-    vm_storage = state.get_step(3)["storage"]
+    vm_storage = state.get_step(3)["storage"]  # type: ignore
     vm_password = Prompt.ask("  Password labomatics", password=True)
 
     ssh_pubkeys = SSHManager.collect_ssh_keys()
@@ -313,11 +315,11 @@ def collect_step_9_ldap_radius(state: InstallState) -> dict:
 
 
 def prompt_with_retry(
-    prompt_text: str, default: str = None, max_retries: int = 3
+    prompt_text: str, default: Optional[str] = None, max_retries: int = 3
 ) -> str:
     """Prompt avec retry."""
     for _ in range(max_retries):
         value = Prompt.ask(f"  {prompt_text}", default=default)
         if value or default:
-            return value or default
+            return value or default or ""  # type: ignore
     raise RuntimeError(f"Impossible de récupérer: {prompt_text}")

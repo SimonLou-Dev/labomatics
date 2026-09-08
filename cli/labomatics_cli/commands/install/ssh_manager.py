@@ -2,6 +2,7 @@
 
 import subprocess
 from pathlib import Path
+from typing import Optional
 
 from ...utils.ssh import SSHClient
 from ...utils.theme import info, success, warning
@@ -73,7 +74,10 @@ class SSHManager:
 
     @staticmethod
     def connect_to_host(
-        host: str, user: str = "root", password: str = None, key_filename: str = None
+        host: str,
+        user: str = "root",
+        password: Optional[str] = None,
+        key_filename: Optional[str] = None,
     ) -> SSHClient:
         """Connecter à un hôte SSH."""
         ssh = SSHClient(host, user=user, password=password, key_filename=key_filename)

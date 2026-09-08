@@ -144,6 +144,7 @@ def run_installation(state: InstallState) -> int:
         vm_name,
         proxmox_url,
         labomatics_token_secret,
+        storage,
         wan_config,
         vxlan_config,
         node,

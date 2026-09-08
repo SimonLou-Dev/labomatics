@@ -9,7 +9,7 @@ from datetime import datetime
 class InstallState:
     """Sauvegarde et restaure l'état d'une installation."""
 
-    def __init__(self, state_file: Path = None):
+    def __init__(self, state_file: Optional[Path] = None):
         """Initialiser le gestionnaire d'état."""
         if state_file is None:
             state_file = Path.home() / ".labomatics" / "install-state.json"

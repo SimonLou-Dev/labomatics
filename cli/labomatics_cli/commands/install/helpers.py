@@ -1,6 +1,8 @@
 """Helper functions for installation."""
 
 from ipaddress import IPv4Network, IPv4Address
+from typing import Optional
+
 from ...utils.ssh import SSHClient
 
 
@@ -39,7 +41,9 @@ def allocate_first_wan_ip(wan_config: dict) -> str:
     raise RuntimeError("Pas d'IP disponible dans le réseau WAN")
 
 
-def connect_to_vm(host: str, user: str = "root", password: str = None) -> SSHClient:
+def connect_to_vm(
+    host: str, user: str = "root", password: Optional[str] = None
+) -> SSHClient:
     """Se connecter à la VM en SSH."""
     ssh = SSHClient(host, user=user, password=password)
     ssh.connect()

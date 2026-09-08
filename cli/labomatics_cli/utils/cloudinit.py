@@ -1,6 +1,8 @@
 """Génération de cloud-init personnalisé pour Proxmox (NoCloud datasource)."""
 
-import yaml
+from typing import Optional
+
+import yaml  # type: ignore[import-untyped]
 
 
 def generate_cloudinit_userdata(
@@ -20,7 +22,7 @@ def generate_cloudinit_userdata(
     }
 
     # Packages adaptés au système
-    config["packages"] = [
+    config["packages"] = [  # type: ignore
         "openssh-server",
         "openssh-client",
         "qemu-guest-agent",
@@ -44,20 +46,20 @@ def generate_cloudinit_userdata(
     if password:
         users[0]["passwd"] = password
 
-    config["users"] = users
+    config["users"] = users  # type: ignore
 
     # Groupe par défaut
-    config["groups"] = ["wheel", "sudo"]
+    config["groups"] = ["wheel", "sudo"]  # type: ignore
 
     # DNS via resolv_conf
     if dns_list:
-        config["resolv_conf"] = {
+        config["resolv_conf"] = {  # type: ignore
             "nameservers": dns_list,
             "search": ["local"],
         }
 
     # Services
-    config["runcmd"] = [
+    config["runcmd"] = [  # type: ignore
         "systemctl daemon-reload",
         "systemctl enable sshd",
         "systemctl start sshd",
@@ -111,7 +113,7 @@ def generate_cloudinit_network(
 
 
 def generate_cloudinit_metadata(
-    hostname: str = "labomatics", instance_id: str = None
+    hostname: str = "labomatics", instance_id: Optional[str] = None
 ) -> str:
     """Générer meta-data cloud-init YAML pour NoCloud."""
     if not instance_id:

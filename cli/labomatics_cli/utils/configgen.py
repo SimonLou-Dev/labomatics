@@ -1,11 +1,9 @@
 """Génération du fichier de config YAML initial du cluster."""
 
-import yaml
+import yaml  # type: ignore[import-untyped]
 from typing import Optional, List
 
 from ..models.config import (
-    ClusterConfigFile,
-    ClusterEntry,
     WanConfig,
     VnetConfig,
 )
@@ -29,7 +27,7 @@ class ClusterConfigGenerator:
         vxlan_name: str,
         vxlan_network: str,
         vxlan_mtu: int = 1350,
-        sdn_zone: str = None,
+        sdn_zone: Optional[str] = None,
         vni_min: int = 1000,
         vni_max: int = 4000,
     ) -> str:
@@ -77,7 +75,9 @@ class ClusterConfigGenerator:
             "vnet_config": {
                 "vxlan_range_id": None,  # Généré par la DB
                 "name": vxlan_name,
-            } if vxlan_name else None,
+            }
+            if vxlan_name
+            else None,
         }
 
         config_data = {

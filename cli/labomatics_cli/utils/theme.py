@@ -1,5 +1,7 @@
 """Design system labomatics — styles Rich personnalisés."""
 
+from typing import Optional
+
 from rich.console import Console
 from rich.theme import Theme
 
@@ -62,7 +64,7 @@ def warning(text: str) -> None:
     console.print(f"[warning]⚠[/warning] {text}")
 
 
-def panel(text: str, title: str = None, style: str = None) -> None:
+def panel(text: str, title: Optional[str] = None, style: Optional[str] = None) -> None:
     """Affiche un panel avec bordure."""
     from rich.panel import Panel
 

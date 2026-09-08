@@ -63,6 +63,7 @@ class ServiceVerifier:
     def wait_for_tcp_port(host: str, port: int, timeout: int = 120) -> bool:
         """Attendre qu'un port TCP réponde."""
         import socket
+
         start = time.time()
         attempt = 0
         while time.time() - start < timeout:
