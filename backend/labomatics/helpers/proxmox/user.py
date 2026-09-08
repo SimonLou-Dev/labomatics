@@ -62,9 +62,7 @@ class ProxmoxUserClient:
                     },
                 )
             except ProxmoxServerError as e:
-                raise RuntimeError(
-                    f"Failed to create user {userid}: {e}"
-                ) from e
+                raise RuntimeError(f"Failed to create user {userid}: {e}") from e
 
     async def delete(self, userid: str) -> None:
         """Supprime un utilisateur Proxmox.

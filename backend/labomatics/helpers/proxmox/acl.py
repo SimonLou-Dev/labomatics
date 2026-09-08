@@ -153,7 +153,7 @@ class ProxmoxAclClient:
         self,
         user_pool: str,
         zone: str,
-        vnet: int,
+        vnet: str,
         user_id: str,
         template_pool: str = "template",
     ) -> None:

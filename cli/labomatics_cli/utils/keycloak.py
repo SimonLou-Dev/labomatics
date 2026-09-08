@@ -223,9 +223,9 @@ class KeycloakClient:
         data = {"type": "password", "value": password, "temporary": temporary}
         requests.put(
             url,
-            json=data,
+            json=data,  # type: ignore
             headers=self._headers(),
-            verify=False,  # type: ignore
+            verify=False,
         ).raise_for_status()
 
     def create_realm_role(

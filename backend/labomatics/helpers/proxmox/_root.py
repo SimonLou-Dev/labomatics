@@ -94,7 +94,9 @@ class LabomaticsProxmoxClient:
 
         # 2. Vérifier que le pool existe
         if not await self.pool.exists(user_name):
-            raise RuntimeError(f"Pool {user_name} does not exist. Create it manually first.")
+            raise RuntimeError(
+                f"Pool {user_name} does not exist. Create it manually first."
+            )
 
         # 3. Créer le vnet s'il n'existe pas
         vnets = await self.sdn.list_vnets_in_zone(zone)

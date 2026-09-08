@@ -108,7 +108,7 @@ class AsyncProxmoxClient:
             return data
         except httpx.TimeoutException as e:
             raise ProxmoxTimeoutError(
-                f"GET {path} timeout après {self._timeout.timeout}s"
+                f"GET {path} timeout après {self._timeout}s"
             ) from e
         except httpx.NetworkError as e:
             raise ProxmoxConnectionError(f"Erreur réseau GET {path}: {e}") from e
@@ -139,7 +139,7 @@ class AsyncProxmoxClient:
             return self._handle_response(resp)
         except httpx.TimeoutException as e:
             raise ProxmoxTimeoutError(
-                f"POST {path} timeout après {self._timeout.timeout}s"
+                f"POST {path} timeout après {self._timeout}s"
             ) from e
         except httpx.NetworkError as e:
             raise ProxmoxConnectionError(f"Erreur réseau POST {path}: {e}") from e
@@ -169,7 +169,7 @@ class AsyncProxmoxClient:
             return self._handle_response(resp)
         except httpx.TimeoutException as e:
             raise ProxmoxTimeoutError(
-                f"PUT {path} timeout après {self._timeout.timeout}s"
+                f"PUT {path} timeout après {self._timeout}s"
             ) from e
         except httpx.NetworkError as e:
             raise ProxmoxConnectionError(f"Erreur réseau PUT {path}: {e}") from e
@@ -199,7 +199,7 @@ class AsyncProxmoxClient:
             return self._handle_response(resp)
         except httpx.TimeoutException as e:
             raise ProxmoxTimeoutError(
-                f"DELETE {path} timeout après {self._timeout.timeout}s"
+                f"DELETE {path} timeout après {self._timeout}s"
             ) from e
         except httpx.NetworkError as e:
             raise ProxmoxConnectionError(f"Erreur réseau DELETE {path}: {e}") from e

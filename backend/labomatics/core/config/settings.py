@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     redis_port: int = Field(default=6379, alias="REDIS_PORT")
     redis_database: int = Field(default=0, alias="REDIS_DATABASE")
     redis_password: str | None = Field(default=None, alias="REDIS_PASSWORD")
-    redis_prefix: str = Field(default="kitcat", alias="REDIS_PREFIX")
+    redis_prefix: str = Field(default="labomatics", alias="REDIS_PREFIX")
     # Sentinel (optionnel)
     redis_sentinel_host: str | None = Field(default=None, alias="REDIS_SENTINEL_HOST")
     redis_sentinel_port: int = Field(default=26379, alias="REDIS_SENTINEL_PORT")
@@ -72,8 +72,6 @@ class Settings(BaseSettings):
 
     # --- Misc ---
     environment: str = Field(default="development", alias="ENVIRONMENT")
-
-    redis_prefix: str = Field(default=f"laboamtics-{environment}")
 
 
 settings = Settings()

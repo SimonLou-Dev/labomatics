@@ -26,7 +26,7 @@ class ProxmoxClientWrapper:
         self.proxmox = ProxmoxAPI(
             self.url,
             user=self.token_id,
-            token_name="token",
+            token_name="token",  # noqa: S106
             token_value=self.token_secret,
             verify_ssl=False,
         )

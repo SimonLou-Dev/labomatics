@@ -206,8 +206,8 @@ class ClusterConfigService:
             return
 
         try:
-            path = Path(config_path)
-            yaml_text = path.read_text()
+            with Path(config_path).open() as f:  # noqa: ASYNC230
+                yaml_text = f.read()
 
             config = await self.parse(yaml_text)
             result = await self.apply(config)

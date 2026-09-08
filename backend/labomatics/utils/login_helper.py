@@ -18,7 +18,7 @@ def generate_password(length: int = 12) -> str:
     return "".join(secrets.choice(alphabet) for _ in range(length))
 
 
-def get_school_year() -> tuple[int, int]:
+def get_school_year() -> tuple[int, datetime, datetime]:
     """Retourne (year, start_date, end_date) de l'année scolaire courante.
 
     Année scolaire: 01/09/year à 31/08/year+1
@@ -27,11 +27,7 @@ def get_school_year() -> tuple[int, int]:
     """
     now = datetime.now()
 
-    # Si avant 01/09, on est dans l'année scolaire précédente
-    if now.month < 9:
-        year = now.year - 1
-    else:
-        year = now.year
+    year = now.year - 1 if now.month < 9 else now.year
 
     start_date = datetime(year, 9, 1)
     end_date = datetime(year + 1, 8, 31)

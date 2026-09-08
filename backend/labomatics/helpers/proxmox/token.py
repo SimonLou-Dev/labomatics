@@ -38,9 +38,7 @@ class ProxmoxTokenClient:
             except ProxmoxNotFoundError:
                 return False
             except ProxmoxServerError as e:
-                raise RuntimeError(
-                    f"Failed to list tokens for {userid}: {e}"
-                ) from e
+                raise RuntimeError(f"Failed to list tokens for {userid}: {e}") from e
 
         # Chercher le token par son nom
         tokens = resp.get("data", [])

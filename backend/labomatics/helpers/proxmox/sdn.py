@@ -106,9 +106,13 @@ class ProxmoxSDNClient:
             if subnet:
                 # Vérifier si le subnet existe déjà
                 try:
-                    resp = await client.get(urls.sdn_vnet_subnets(vnet_name), cache=False)
+                    resp = await client.get(
+                        urls.sdn_vnet_subnets(vnet_name), cache=False
+                    )
                     existing_subnets = resp.get("data", [])
-                    subnet_exists = any(s.get("subnet") == subnet for s in existing_subnets)
+                    subnet_exists = any(
+                        s.get("subnet") == subnet for s in existing_subnets
+                    )
                 except ProxmoxServerError:
                     subnet_exists = False
 

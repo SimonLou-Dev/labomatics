@@ -29,7 +29,7 @@ class ProxmoxVMClient:
             wait_for_task_fn: Fonction partagée pour attendre les tâches (optionnelle, pour fallback local).
         """
         self._proxmox_client: ProxmoxClientPool = proxmox_client
-        self._wait_for_task_fn = wait_for_task_fn
+        self._wait_for_task_fn: Callable[[str, str], None] | None = wait_for_task_fn
 
     async def get_next_vmid(self) -> int:
         """Obtient le prochain VMID disponible du cluster.
@@ -386,6 +386,7 @@ class ProxmoxVMClient:
         # Extraire l'UPID et attendre
         # Proxmox retourne l'UPID comme string directement dans 'data'
         import logging
+
         logger = logging.getLogger(__name__)
         logger.info(f"Clone response: {resp}")
 
@@ -399,7 +400,7 @@ class ProxmoxVMClient:
         logger.info(f"Extracted UPID: {upid} (type: {type(upid).__name__})")
 
         if self._wait_for_task_fn:
-            await self._wait_for_task_fn(source_node, upid)
+            self._wait_for_task_fn(source_node, upid)
         else:
             raise RuntimeError("No wait_for_task function provided")
 
