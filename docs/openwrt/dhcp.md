@@ -16,3 +16,5 @@ Cela distribue les IPs `10.200.0.100` → `10.200.0.149` sur l'interface LAN.
 
 ### Via interface web
 `Network` → `Interfaces` → `lan` → `Edit` → onglet `DHCP Server` → `Set up DHCP server`
+
+TODO : Ajouter les captures
