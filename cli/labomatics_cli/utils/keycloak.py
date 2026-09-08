@@ -412,6 +412,14 @@ class KeycloakClient:
             )
         resp.raise_for_status()
 
+    def get_realm_uuid(self, realm_name: str) -> str:
+        """Récupère l'UUID d'un realm par son nom."""
+        url = f"{self.base_url}/admin/realms/{realm_name}"
+        realm = requests.get(url, headers=self._headers(), verify=False).json()
+        if not realm or "id" not in realm:
+            raise RuntimeError(f"Realm {realm_name} not found or has no id")
+        return realm["id"]
+
     def get_client_uuid(self, realm_name: str, client_id: str) -> str:
         """Récupère l'UUID d'un client par son ID (ex: realm-management)."""
         url = f"{self.base_url}/admin/realms/{realm_name}/clients"
@@ -494,31 +502,46 @@ class KeycloakClient:
     ) -> str:
         """Créer le provider User Federation LDAP (WRITABLE) et retourner son component id."""
         url = f"{self.base_url}/admin/realms/{realm_name}/components"
+        realm_uuid = self.get_realm_uuid(realm_name)
         data = {
-            "name": "ldap-labomatics",
+            "name": "ldap",
             "providerId": "ldap",
             "providerType": "org.keycloak.storage.UserStorageProvider",
-            "parentId": realm_name,
+            "parentId": realm_uuid,
             "config": {
+                "enabled": ["true"],
                 "vendor": ["other"],
-                "connectionUrl": ["ldaps://ldap:636"],
-                "usersDn": [f"ou=users,{base_dn}"],
+                "connectionUrl": ["ldap://ldap:389"],
+                "connectionTimeout": [""],
                 "bindDn": [bind_dn],
                 "bindCredential": [bind_credential],
-                "editMode": ["WRITABLE"],
-                "syncRegistrations": ["true"],
+                "startTls": ["false"],
+                "useTruststoreSpi": ["always"],
+                "connectionPooling": ["false"],
+                "authType": ["simple"],
+                "usersDn": [f"ou=users,{base_dn}"],
                 "usernameLDAPAttribute": ["uid"],
                 "rdnLDAPAttribute": ["uid"],
                 "uuidLDAPAttribute": ["entryUUID"],
                 "userObjectClasses": ["inetOrgPerson, organizationalPerson"],
-                "authType": ["simple"],
-                "useTruststoreSpi": ["ldapsOnly"],
-                "connectionPooling": ["true"],
+                "customUserSearchFilter": [""],
+                "readTimeout": [""],
+                "editMode": ["WRITABLE"],
+                "searchScope": [""],
                 "pagination": ["true"],
+                "referral": [""],
                 "batchSizeForSync": ["1000"],
+                "importEnabled": ["true"],
+                "syncRegistrations": ["true"],
+                "allowKerberosAuthentication": ["false"],
+                "useKerberosForPasswordAuthentication": ["false"],
+                "cachePolicy": ["DEFAULT"],
+                "usePasswordModifyExtendedOp": ["false"],
+                "validatePasswordPolicy": ["false"],
+                "trustEmail": ["false"],
+                "krbPrincipalAttribute": ["krb5PrincipalName"],
                 "fullSyncPeriod": ["86400"],
                 "changedSyncPeriod": ["300"],
-                "importEnabled": ["true"],
             },
         }
         resp = requests.post(url, json=data, headers=self._headers(), verify=False)  # type: ignore
@@ -531,15 +554,16 @@ class KeycloakClient:
             for c in existing:
                 if c["name"] == "ldap-labomatics":
                     return c["id"]
-        if resp.status_code == 201:
-            location = resp.headers.get("Location", "")
-            if location:
-                return location.split("/")[-1]
         if resp.status_code >= 400:
             raise RuntimeError(
                 f"Failed to create LDAP federation: {resp.status_code} - {resp.text}"
             )
-        return resp.json()["id"]
+        if resp.status_code == 201:
+            location = resp.headers.get("Location", "")
+            if location:
+                return location.split("/")[-1]
+            return resp.json().get("id", "unknown")
+        return resp.json().get("id", "unknown")
 
     def create_group_ldap_mapper(
         self, realm_name: str, ldap_component_id: str, base_dn: str
@@ -552,16 +576,21 @@ class KeycloakClient:
             "providerType": "org.keycloak.storage.ldap.mappers.LDAPStorageMapper",
             "parentId": ldap_component_id,
             "config": {
+                "membership.attribute.type": ["DN"],
+                "mode": ["LDAP_ONLY"],
+                "user.roles.retrieve.strategy": ["LOAD_GROUPS_BY_MEMBER_ATTRIBUTE"],
                 "groups.dn": [f"ou=groups,{base_dn}"],
                 "group.name.ldap.attribute": ["cn"],
                 "group.object.classes": ["groupOfNames"],
+                "preserve.group.inheritance": ["true"],
+                "ignore.missing.groups": ["false"],
                 "membership.ldap.attribute": ["member"],
-                "membership.attribute.type": ["DN"],
                 "membership.user.ldap.attribute": ["uid"],
-                "mode": ["LDAP_ONLY"],
-                "user.roles.retrieve.strategy": ["LOAD_GROUPS_BY_MEMBER_ATTRIBUTE"],
+                "groups.ldap.filter": [""],
+                "memberof.ldap.attribute": ["memberOf"],
                 "mapped.group.attributes": [""],
                 "drop.non.existing.groups.during.sync": ["false"],
+                "groups.path": ["/"],
             },
         }
         resp = requests.post(url, json=data, headers=self._headers(), verify=False)  # type: ignore

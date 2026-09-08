@@ -269,13 +269,16 @@ class ProxmoxClient:
         userid: str,
         tokenid: str,
         expire: Optional[int] = None,
+        privesep: bool = True,
     ) -> Optional[Dict[str, Any]]:
         """Créer un token pour un user."""
         data = {}
         if expire is not None:
             data["expire"] = expire
+        if not privesep:
+            data["privsep"] = 0
 
-        result = self.proxmox.access.users(userid).tokens(tokenid).post(**data)
+        result = self.proxmox.access.users(userid).token(tokenid).post(**data)
         return result
 
     def set_acl(

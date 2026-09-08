@@ -84,8 +84,6 @@ class NetworkSetup:
 
     def _setup_sdn(self, node, vxlan_config):
         """Configurer SDN (zones et vnets)."""
-        from rich.prompt import Confirm
-
         info("Configuration SDN...")
         zone_name = "labs"
 
@@ -95,31 +93,23 @@ class NetworkSetup:
             success("Zone SDN trouvée")
         else:
             # Collect node IPs for VXLAN peers
-            all_nodes = self.pve.get_nodes()
-            peers = []
-            for n in all_nodes:
-                n_ip = self.pve.get_node_ip(n)
-                if n_ip:
-                    peers.append(n_ip)
+            nodes_ips = self.pve.get_nodes_with_ips()
+            peers = list(nodes_ips.values())
 
-            # Show instructions to user
-            from ...utils.theme import console
+            if not peers:
+                raise RuntimeError(
+                    "Impossible de récupérer les IPs des nœuds pour la zone VXLAN"
+                )
 
-            console.print("\n[bold cyan]Configuration Zone VXLAN[/bold cyan]")
-            console.print(f"  Zone: [yellow]{zone_name}[/yellow]")
-            console.print("  Type: [yellow]vxlan[/yellow]")
-            console.print(f"  Peers: [yellow]{','.join(peers)}[/yellow]")
-            console.print("  MTU: [yellow]1350[/yellow]")
-            console.print("\nCreer la zone manuellement dans Proxmox:")
-            console.print("  1. Aller à Datacenter > SDN > Zones")
-            console.print("  2. Cliquer 'Create'")
-            console.print("  3. Remplir les paramètres ci-dessus")
-            console.print("  4. Cliquer 'Create'\n")
-
-            if not Confirm.ask("Zone VXLAN créée dans Proxmox?", default=False):
-                raise RuntimeError("Zone VXLAN non créée - installation annulée")
-
-            success("Zone VXLAN confirmée")
+            # Create zone automatically
+            info(f"Création zone VXLAN avec peers: {','.join(peers)}")
+            self.pve.create_sdn_zone(
+                zone=zone_name,
+                zone_type="vxlan",
+                peers=",".join(peers),
+                mtu=1350,
+            )
+            success(f"Zone VXLAN créée: {zone_name}")
 
         # Apply SDN configuration
         info("Application configuration SDN...")
@@ -172,6 +162,8 @@ class NetworkSetup:
         info("  Installation + configuration dnsmasq (script unique)...")
         script = f"""
 set -e
+sudo systemctl stop systemd-resolved || true
+sudo systemctl disable systemd-resolved || true
 sudo dnf install -y dnsmasq
 sudo mkdir -p /etc/dnsmasq.d
 echo '{config}' | sudo tee /etc/dnsmasq.conf > /dev/null
@@ -223,16 +215,26 @@ echo '{config}' | sudo tee /etc/labomatics/traefik.yml > /dev/null
 
     def _install_docker(self):
         """Installer Docker Engine + plugin compose sur la VM Fedora."""
+        info("Vérification Docker...")
+        # Check if docker is already installed
+        stdout, stderr, rc = self.ssh.exec_command("docker --version")
+        if rc == 0:
+            success(f"Docker déjà installé: {stdout.strip()}")
+            return
+
         info("Installation Docker...")
         script = """
 set -e
-sudo dnf install -y dnf-plugins-core
-sudo dnf config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo
-sudo dnf install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+sudo dnf config-manager addrepo --from-repofile https://download.docker.com/linux/fedora/docker-ce.repo
+sudo dnf install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 sudo systemctl enable --now docker
 sudo usermod -aG docker labomatics
+sleep 2
+docker --version || (echo "Docker installation failed" && exit 1)
 """
-        self.ssh.exec_command(script)
+        stdout, stderr, rc = self.ssh.exec_command(script)
+        if rc != 0:
+            raise RuntimeError(f"Installation Docker échouée: {stderr}")
         success("Docker installé")
 
     def _build_compose_context(
@@ -277,7 +279,10 @@ sudo usermod -aG docker labomatics
         """Rendre et uploader tous les fichiers de la stack Docker."""
         info("Upload configuration Docker Compose...")
         self.ssh.exec_command(
-            "mkdir -p /etc/labomatics/dynamic /etc/labomatics/ldap /etc/labomatics/radius/mods-enabled /etc/labomatics/radius/sites-enabled"
+            "sudo mkdir -p /etc/labomatics/dynamic /etc/labomatics/ldap /etc/labomatics/radius/mods-enabled /etc/labomatics/radius/sites-enabled"
+        )
+        self.ssh.exec_command(
+            "sudo chown -R labomatics:labomatics /etc/labomatics && sudo chmod -R 755 /etc/labomatics"
         )
 
         compose = render_template("docker-compose.yml", context)

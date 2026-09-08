@@ -6,7 +6,7 @@ ldap {
 
     user {
         base_dn = "${..base_dn}"
-        filter = "(uid=%{%{Stripped-User-Name}:-%{User-Name}})"
+        filter = "{% raw %}(uid=%{%{Stripped-User-Name}:-%{User-Name}}){% endraw %}"
     }
 
     tls {

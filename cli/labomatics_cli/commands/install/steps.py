@@ -98,17 +98,29 @@ def collect_step_3_network_config(state: InstallState) -> tuple[dict, dict, str,
     wan_name = prompt_with_retry("Nom du réseau WAN", default="esgilabs")
     wan_network = prompt_with_retry("Réseau WAN (CIDR)", default="172.16.0.0/24")
     wan_gateway = prompt_with_retry("Gateway WAN", default="172.16.0.254")
+    wan_exclude = prompt_with_retry(
+        "Adresses WAN à exclure (séparées par des virgules, ex: 172.16.0.1,172.16.0.2)",
+        default="",
+    )
     wan_config = {
         "name": wan_name,
         "network": wan_network,
         "gateway": wan_gateway,
-        "exclude": [],
+        "exclude": [x.strip() for x in wan_exclude.split(",") if x.strip()],
     }
 
     step(3, 9, "Configuration du cluster - Réseau VXLAN")
     vxlan_name = prompt_with_retry("Nom de la zone VXLAN", default="esgilab")
     vxlan_network = prompt_with_retry("Réseau VXLAN (CIDR)", default="10.100.0.0/12")
-    vxlan_config = {"name": vxlan_name, "network": vxlan_network, "exclude": []}
+    vxlan_exclude = prompt_with_retry(
+        "VNI VXLAN à exclure (séparées par des virgules, ex: 100,200,300)",
+        default="",
+    )
+    vxlan_config = {
+        "name": vxlan_name,
+        "network": vxlan_network,
+        "exclude": [x.strip() for x in vxlan_exclude.split(",") if x.strip()],
+    }
 
     step(3, 9, "Configuration DNS")
     dns_servers = prompt_with_retry(
@@ -140,17 +152,17 @@ def collect_step_4_proxmox_user(
         return step_data["labomatics_user"], step_data["labomatics_token_secret"]
 
     step(4, 9, "Création user Proxmox et token")
-    user_id = "labomatics-cli@pve"
+    user_id = "labomatics@pve"
     password = secrets.token_urlsafe(16)
 
     try:
-        pve.create_user(user_id, password, comment="labomatics CLI user")
+        pve.create_user(user_id, password, comment="labomatics user")
     except Exception as e:
         if "already exists" not in str(e):
             raise
 
     pve.set_acl("/", user_id, "PVEAdmin")
-    token_data = pve.create_token(user_id, "labomatics-token")
+    token_data = pve.create_token(user_id, "labomatics-token", privesep=False)
 
     state.set_step(
         4,

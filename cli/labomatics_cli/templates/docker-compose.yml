@@ -57,37 +57,36 @@ services:
       - traefik.http.services.keycloak.loadbalancer.server.port=8080
 
   ldap:
-    image: bitnami/openldap:2.6
+    image: ghcr.io/vegardit/openldap:latest
     container_name: labomatics-ldap
-    user: "0:0"
     environment:
-      LDAP_ROOT: "{{ LDAP_BASE_DN }}"
-      LDAP_ADMIN_USERNAME: admin
-      LDAP_ADMIN_PASSWORD: "{{ LDAP_ADMIN_PASSWORD }}"
-      LDAP_ENABLE_TLS: "yes"
-      LDAP_TLS_CERT_FILE: /opt/bitnami/openldap/certs/ldap.{{ DOMAIN }}.crt
-      LDAP_TLS_KEY_FILE: /opt/bitnami/openldap/certs/ldap.{{ DOMAIN }}.key
-      LDAP_TLS_CA_FILE: /opt/bitnami/openldap/certs/ca.crt
-      LDAP_CUSTOM_LDIF_DIR: /ldifs
+      LDAP_INIT_ORG_DN: "{{ LDAP_BASE_DN }}"
+      LDAP_INIT_ORG_NAME: "labomatics"
+      LDAP_INIT_ROOT_USER_PW: "{{ LDAP_ADMIN_PASSWORD }}"
+      LDAP_TLS_CA_CRT_FILENAME: ca.crt
+      LDAP_TLS_CRT_FILENAME: ldap.{{ DOMAIN }}.crt
+      LDAP_TLS_KEY_FILENAME: ldap.{{ DOMAIN }}.key
     volumes:
-      - ldap_data:/bitnami/openldap
-      - ./ldap/bootstrap.ldif:/ldifs/01-bootstrap.ldif:ro
-      - ./certs:/opt/bitnami/openldap/certs:ro
+      - ldap_data:/var/lib/ldap
+      - ldap_config:/etc/ldap/slapd.d
+      - ./ldap/bootstrap.ldif:/opt/ldifs/custom/01-bootstrap.ldif:ro
+      - ./certs:/etc/ldap/certs
     ports:
-      - "389:1389"
-      - "636:1636"
+      - "389:389"
+      - "636:636"
     networks:
       - labomatics
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "ldapsearch", "-x", "-H", "ldap://localhost:1389", "-b", "{{ LDAP_BASE_DN }}", "-s", "base"]
+      test: ["CMD", "ldapsearch", "-x", "-H", "ldap://localhost", "-D", "uid=admin,{{ LDAP_BASE_DN }}", "-w", "{{ LDAP_ADMIN_PASSWORD }}", "-b", "{{ LDAP_BASE_DN }}", "-s", "base"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   radius:
-    image: freeradius/freeradius-server:3.2.5
+    image: freeradius/freeradius-server:3.2.10-alpine
     container_name: labomatics-radius
+    command: radiusd -X
     volumes:
       - ./radius/clients.conf:/etc/raddb/clients.conf:ro
       - ./radius/mods-enabled/ldap:/etc/raddb/mods-enabled/ldap:ro
@@ -99,13 +98,11 @@ services:
     networks:
       - labomatics
     depends_on:
-      ldap:
-        condition: service_healthy
+      - ldap
     restart: unless-stopped
 
   traefik:
     image: traefik:v3.7.9
-    container_name: labomatics-traefik
     command:
       - --configFile=/etc/traefik/traefik.yml
     ports:
@@ -142,6 +139,8 @@ volumes:
   postgres_data:
     driver: local
   ldap_data:
+    driver: local
+  ldap_config:
     driver: local
   traefik_acme:
     driver: local

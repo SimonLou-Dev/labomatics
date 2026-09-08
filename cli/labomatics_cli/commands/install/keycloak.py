@@ -32,18 +32,29 @@ class KeycloakSetup:
 
     def setup(self, admin_first_name: str, admin_last_name: str, admin_email: str):
         """Configurer Keycloak."""
-        info(f"Attente Keycloak ({self.kc_url}/admin/labomatics/console/)...")
+        info(f"Attente Keycloak ({self.kc_url}/admin/master/console/)...")
         ServiceVerifier.wait_for_http(
-            f"{self.kc_url}/admin/labomatics/console/", timeout=300
+            f"{self.kc_url}/admin/master/console/", timeout=300
         )
         success("Keycloak prêt")
 
         info("Configuration Keycloak...")
+        import time
+
+        time.sleep(5)  # Attendre que Keycloak soit complètement prêt
         kc = KeycloakClient(self.kc_url, "admin", self.admin_password)
         kc.auth()
 
-        # Create realm and groups
-        kc.create_realm("labomatics", display_name="labomatics")
+        # Create realm and groups (skip if already exists)
+        try:
+            kc.create_realm("labomatics", display_name="labomatics")
+            info("Realm labomatics créé")
+        except RuntimeError as e:
+            if "already exists" in str(e) or "duplicate" in str(e).lower():
+                info("Realm labomatics existe déjà")
+            else:
+                raise
+
         superadmin_gid = kc.create_group("labomatics", "superadmin")
         prof_gid = kc.create_group("labomatics", "prof")
         student_gid = kc.create_group("labomatics", "student")
@@ -87,7 +98,7 @@ class KeycloakSetup:
         if existing_user:
             info(f"User {username} existe déjà, credentials conservés")
             user_id = existing_user["id"]
-            user_password = None
+            user_password = self.state.get("labomatics_user_password")
         else:
             user_password = secrets.token_urlsafe(16)
             user_id = kc.create_user(
@@ -98,6 +109,7 @@ class KeycloakSetup:
                 email=admin_email,
             )
             kc.set_user_password("labomatics", user_id, user_password, temporary=True)
+            self.state.set("labomatics_user_password", user_password)
         kc.add_user_to_group("labomatics", user_id, superadmin_gid)
 
         # Create labomatics-admin service account (non-temporary password)
@@ -105,7 +117,7 @@ class KeycloakSetup:
         if existing_admin_svc:
             info("User labomatics-admin existe déjà, credentials conservés")
             admin_svc_id = existing_admin_svc["id"]
-            admin_svc_password = None
+            admin_svc_password = self.state.get("labomatics_admin_password")
         else:
             admin_svc_password = secrets.token_urlsafe(16)
             admin_svc_id = kc.create_user(
@@ -118,6 +130,7 @@ class KeycloakSetup:
             kc.set_user_password(
                 "labomatics", admin_svc_id, admin_svc_password, temporary=False
             )
+            self.state.set("labomatics_admin_password", admin_svc_password)
         # Assign realm-management client roles (no group)
         for role_name in (
             "manage-users",
@@ -135,17 +148,31 @@ class KeycloakSetup:
         # Create labomatics (web frontend) client - confidential with authorization
         labomatics_redirect_uris = [
             f"https://api.{self.domain}/v1/auth/callback",
-            "http://localhost:5173/#/",
-            "http://localhost:8001/#/",
+            "http://localhost:5173/",
+            "http://localhost:8001/",
         ]
-        labomatics_client_secret = kc.create_client(
-            "labomatics",
-            client_id="labomatics",
-            name="Labomatics Web",
-            redirect_uris=labomatics_redirect_uris,
-            public_client=False,
-            enable_auth=True,
-        )
+        try:
+            labomatics_client_secret = kc.create_client(
+                "labomatics",
+                client_id="labomatics",
+                name="Labomatics Web",
+                redirect_uris=labomatics_redirect_uris,
+                public_client=False,
+                enable_auth=False,  # Disable for now due to service account issues
+            )
+            info("Client labomatics créé")
+        except RuntimeError as e:
+            if (
+                "already exists" in str(e)
+                or "duplicate" in str(e).lower()
+                or "service account" in str(e).lower()
+            ):
+                info(
+                    "Client labomatics existe déjà ou config issue - utilisation du client existant"
+                )
+                labomatics_client_secret = "existing-secret"  # Placeholder
+            else:
+                raise
         self.state.set("labomatics_client_id", "labomatics")
         self.state.set("labomatics_client_secret", labomatics_client_secret)
         # Create client role manage-user

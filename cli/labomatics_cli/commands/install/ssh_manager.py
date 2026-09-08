@@ -128,9 +128,16 @@ class SSHManager:
     def start_docker_services(ssh: SSHClient) -> None:
         """Démarrer les services Docker."""
         info("Démarrage des services Docker...")
-        stdout, stderr, rc = ssh.exec_command(
-            "cd /etc/labomatics && sudo docker compose up -d"
-        )
+        script = """
+set -e
+cd /etc/labomatics
+# Restart docker daemon to apply group changes
+sudo systemctl restart docker
+sleep 1
+# Start services (sudo needed for bind ports < 1024)
+sudo docker compose up -d
+"""
+        stdout, stderr, rc = ssh.exec_command(script)
         if rc != 0:
             raise RuntimeError(f"docker compose failed: {stderr}")
         success("Services démarrés")

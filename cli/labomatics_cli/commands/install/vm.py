@@ -99,5 +99,5 @@ class VMDeployer:
         success("VM démarrée")
 
         info("Attente SSH...")
-        ServiceVerifier.wait_for_ssh(vm_ip, timeout=300)
+        ServiceVerifier.wait_for_tcp_port(vm_ip, 22, timeout=300)
         success("SSH prêt")

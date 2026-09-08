@@ -90,9 +90,17 @@ class OpenWRTBuilder:
         )
 
         # Vérification VM existante
+        from rich.prompt import Confirm
+
         result = OpenWRTBuilder._run(["qm", "status", str(vmid)], check=False)
         if result.returncode == 0:
-            console.print(f"[yellow]⚠  La VM {vmid} existe déjà.[/yellow]")
+            console.print(
+                f"[yellow]⚠  La template OpenWRT {vmid} existe déjà.[/yellow]"
+            )
+            if not Confirm.ask("Recréer la template OpenWRT?", default=False):
+                console.print("[dim]Utilisation de la template existante.[/dim]")
+                return
+            console.print("[dim]Suppression de la template existante...[/dim]")
             OpenWRTBuilder._run(["qm", "destroy", str(vmid), "--purge"])
             console.print(f"  [red]✖ VM {vmid} supprimée[/red]")
 
