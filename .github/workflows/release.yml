@@ -17,6 +17,11 @@ jobs:
       released: ${{ steps.release.outputs.released }}
       version: ${{ steps.release.outputs.version }}
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:
