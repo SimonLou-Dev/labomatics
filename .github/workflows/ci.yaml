@@ -6,4 +6,4 @@ on:
 
 jobs:
   lint:
-    uses: ./.github/workflows/templates/lint.yaml
+    uses: ./.github/workflows/lint.yaml

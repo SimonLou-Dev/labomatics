@@ -8,12 +8,12 @@ on:
 
 jobs:
   lint:
-    uses: ./.github/workflows/templates/lint.yaml
+    uses: ./.github/workflows/lint.yaml
 
   release:
     if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
     needs: lint
-    uses: ./.github/workflows/templates/release.yaml
+    uses: ./.github/workflows/release.yaml
     with:
       github_ref: ${{ github.ref }}
     secrets: inherit
@@ -21,7 +21,7 @@ jobs:
   docker:
     if: github.event_name == 'push' && github.ref == 'refs/heads/dev' && needs.release.outputs.released == 'true'
     needs: release
-    uses: ./.github/workflows/templates/docker.yaml
+    uses: ./.github/workflows/docker.yaml
     with:
       version: ${{ needs.release.outputs.version }}
       tag_suffix: "-rc"

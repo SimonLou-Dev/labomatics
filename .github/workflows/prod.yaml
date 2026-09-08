@@ -11,11 +11,11 @@ permissions:
 
 jobs:
   lint:
-    uses: ./.github/workflows/templates/lint.yaml
+    uses: ./.github/workflows/lint.yaml
 
   release:
     needs: lint
-    uses: ./.github/workflows/templates/release.yaml
+    uses: ./.github/workflows/release.yaml
     with:
       github_ref: ${{ github.ref }}
     secrets: inherit
@@ -23,7 +23,7 @@ jobs:
   docker:
     if: needs.release.outputs.released == 'true'
     needs: release
-    uses: ./.github/workflows/templates/docker.yaml
+    uses: ./.github/workflows/docker.yaml
     with:
       version: ${{ needs.release.outputs.version }}
     secrets: inherit
@@ -31,7 +31,7 @@ jobs:
   pypi:
     if: needs.release.outputs.released == 'true'
     needs: release
-    uses: ./.github/workflows/templates/pypi.yaml
+    uses: ./.github/workflows/pypi.yaml
     with:
       version: ${{ needs.release.outputs.version }}
     secrets: inherit
