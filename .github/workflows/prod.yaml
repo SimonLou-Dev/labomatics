@@ -1,0 +1,37 @@
+name: Prod CI/CD
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  id-token: write
+  packages: write
+
+jobs:
+  lint:
+    uses: ./.github/workflows/templates/lint.yaml
+
+  release:
+    needs: lint
+    uses: ./.github/workflows/templates/release.yaml
+    with:
+      github_ref: ${{ github.ref }}
+    secrets: inherit
+
+  docker:
+    if: needs.release.outputs.released == 'true'
+    needs: release
+    uses: ./.github/workflows/templates/docker.yaml
+    with:
+      version: ${{ needs.release.outputs.version }}
+    secrets: inherit
+
+  pypi:
+    if: needs.release.outputs.released == 'true'
+    needs: release
+    uses: ./.github/workflows/templates/pypi.yaml
+    with:
+      version: ${{ needs.release.outputs.version }}
+    secrets: inherit

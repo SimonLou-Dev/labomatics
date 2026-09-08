@@ -1,0 +1,9 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main, dev]
+
+jobs:
+  lint:
+    uses: ./.github/workflows/templates/lint.yaml

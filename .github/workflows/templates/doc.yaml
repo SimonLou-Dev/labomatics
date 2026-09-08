@@ -1,0 +1,22 @@
+name: Build Documentation
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+
+jobs:
+  build-docs:
+    name: Build and Deploy Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Placeholder - Documentation build
+        run: |
+          echo "Building documentation for version ${{ inputs.version }}"
+          # TODO: Add actual doc build step (mkdocs, sphinx, etc.)

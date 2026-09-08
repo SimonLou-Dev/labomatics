@@ -1,0 +1,28 @@
+name: Dev CI/CD
+
+on:
+  push:
+    branches: [dev]
+  pull_request:
+    branches: [dev]
+
+jobs:
+  lint:
+    uses: ./.github/workflows/templates/lint.yaml
+
+  release:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+    needs: lint
+    uses: ./.github/workflows/templates/release.yaml
+    with:
+      github_ref: ${{ github.ref }}
+    secrets: inherit
+
+  docker:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev' && needs.release.outputs.released == 'true'
+    needs: release
+    uses: ./.github/workflows/templates/docker.yaml
+    with:
+      version: ${{ needs.release.outputs.version }}
+      tag_suffix: "-rc"
+    secrets: inherit
