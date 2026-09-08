@@ -1,6 +1,19 @@
 # CHANGELOG
 
 
+## v0.4.0-rc.2 (2026-09-08)
+
+### Bug Fixes
+
+- Ci not release dev
+  ([`a991823`](https://github.com/SimonLou-Dev/labomatics/commit/a991823c555059ba7578c1c13713aa56946077f1))
+
+### Chores
+
+- Full setupwith CLI
+  ([`deae8d7`](https://github.com/SimonLou-Dev/labomatics/commit/deae8d72c4f6465eb9f2ef3b3a32fad2d8971e2a))
+
+
 ## v0.4.0-rc.1 (2026-09-08)
 
 ### Bug Fixes
