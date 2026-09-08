@@ -1,6 +1,479 @@
 # CHANGELOG
 
 
+## v0.4.0-rc.1 (2026-09-08)
+
+### Bug Fixes
+
+- Ajouter ID comme identifiant stable pour matching lors du diff import
+  ([`d645629`](https://github.com/SimonLou-Dev/labomatics/commit/d645629e8ecd6b17d243a404eca9fb41d11058b9))
+
+- Ajouter 'id' (colonne mappable) aux requiredFields - L'ID devient le login stable de l'étudiant -
+  Utiliser ID comme clé de matching (au lieu de email) pour comparaisons diffs - Service: indexer
+  par login (qui vient de l'ID du CSV) pour matching stable - Routes: accepter paramètre 'id'
+  obligatoire
+
+- Align frontend types with backend LabDataDTO structure
+  ([`17315eb`](https://github.com/SimonLou-Dev/labomatics/commit/17315ebce60028f72616588b278849ce972267d1))
+
+- Remove wan_ip and vxlan_tag from StudentDetailDTO - Add wan_ip, vxlan_tag, openwrt_link to
+  LabDataDTO - Fix LabVmDTO field names (memory/disk instead of memory_mb/disk_gb)
+
+Co-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>
+
+- Check token existence by listing instead of direct access to avoid 500 error
+  ([`9215a6a`](https://github.com/SimonLou-Dev/labomatics/commit/9215a6a1c0784b8a94739407919a6dafbb188d21))
+
+Co-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>
+
+- Correction des routes GET /ip-ranges et /vxlan-ranges, refresh token en dev
+  ([`769f9a2`](https://github.com/SimonLou-Dev/labomatics/commit/769f9a2612637c6bf2d9fe88ad4b1b9fefe9bf49))
+
+- GET /ip-ranges/{id} et GET /vxlan-ranges/{id}: corrigé auth (CurrentUser au lieu de
+  RequireManageCluster), enlevé paramètre dto inutile - Services: charger les allocations utilisées
+  quand on récupère une range par ID pour calculation correcte de utilization_percent -
+  IpAllocationDTO: renommé champ 'ip' en 'ip_address' pour cohérence frontend - AuthMiddleware:
+  amélioré la logique de refresh token (catch HTTPException directement, meilleur logging) - auth.py
+  callback + middleware: cookies HTTPOnly avec secure=False en développement, secure=True en
+  production - settings.py: ajouté alias ENVIRONMENT pour pouvoir configurer via .env
+
+- Display lab data correctly using PrimeVue Card slots
+  ([`984b53a`](https://github.com/SimonLou-Dev/labomatics/commit/984b53a21fbda1fbc8c9bb062626b351d521d096))
+
+- Use Card #title and #content slots properly - Fix data binding paths (wan_ip and vxlan_tag at root
+  level, not in student) - Fix DataTable field names (memory/disk instead of memory_mb/disk_gb)
+
+Co-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>
+
+- Use keycloak realm instead of hardcoded 'pve' for Proxmox user creation
+  ([`2e85a0d`](https://github.com/SimonLou-Dev/labomatics/commit/2e85a0d3a515848195e7b406cf0de1199cabdca1))
+
+Co-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>
+
+- **backend**: Csrf middleware, pagination, and security
+  ([`9e32e81`](https://github.com/SimonLou-Dev/labomatics/commit/9e32e817c206d095c2c38fa475f6edc3af91d743))
+
+- Fix CSRF middleware logic to properly handle token validation - Generate and expose CSRF token on
+  all responses for SPA frontend - Add proxmoxer dependency for cluster connection testing - Add
+  cluster_config_path setting for bootstrap configuration - Add encryption module for Proxmox API
+  token secrets using Fernet - Enhance repository paginate() to support eager-loading relations
+
+- **backend**: Timestamp timezone consistency and model corrections
+  ([`192e32a`](https://github.com/SimonLou-Dev/labomatics/commit/192e32a422d8ea8ecdf724fca55916a5d91329ee))
+
+- Change TimestampMixin to use naive UTC datetimes (datetime.utcnow().replace(tzinfo=None)) - Fixes
+  mismatch with PostgreSQL TIMESTAMP WITHOUT TIME ZONE columns - Remove unnecessary imports and
+  clean up model definitions - Ensure all timestamp fields are consistently timezone-naive
+
+- **build-template**: Nœud de build = nœud de connexion API (plus de pick_node aléatoire)
+  ([`a51d105`](https://github.com/SimonLou-Dev/labomatics/commit/a51d1052dfc7fbebae1ce65eef7305d206241f62))
+
+Sur un cluster multi-nœuds, pick_node() pouvait choisir pve4 pour le build alors que labomatics
+  tourne sur pve1 : téléchargement sur le mauvais nœud, virt-customize SSH sur le mauvais nœud.
+  local_node() résout le nœud par correspondance hostname avec PROXMOX_HOST. fallback pick_node si
+  aucune correspondance.
+
+Le champ node: dans infra.yaml permet de forcer un nœud explicite.
+
+Docs : ajout des prérequis stockage local (type import) + libguestfs-tools dans build-template.md et
+  setup.md.
+
+- **openwrt**: Basculer LuCI sur ports 1336 (HTTP) / 1337 (HTTPS)
+  ([`a2c7081`](https://github.com/SimonLou-Dev/labomatics/commit/a2c708156353a95406b2f0e1ffc7a3c101e1eb1a))
+
+- Config uhttpd: écoute sur 1336 et 1337 - Redirection HTTP → HTTPS maintenue - Firewall: autoriser
+  les nouveaux ports depuis WAN - Docs: mise à jour des instructions d'accès LuCI
+
+Closes #12 Closes #13
+
+### Chores
+
+- Append docker test
+  ([`2c821ba`](https://github.com/SimonLou-Dev/labomatics/commit/2c821bad9fa79ab9d30055f47942d8c9e8a7b84f))
+
+- Append logos
+  ([`c55273e`](https://github.com/SimonLou-Dev/labomatics/commit/c55273e23bd0e036f01858eb9170290b348c2481))
+
+- Cleanup and consolidate dependencies
+  ([`41bd1cc`](https://github.com/SimonLou-Dev/labomatics/commit/41bd1cc30fb6b305415070d41b03761716880f93))
+
+- Update poetry.lock with new dependencies (proxmoxer, pyyaml) - Update model __init__ exports for
+  new models - Update students route with consistency improvements - Add lab.py DTO for lab details
+  (placeholder) - Add lab_vm.py model (placeholder) - Remove deprecated Students.vue page (moved to
+  admin/Students.vue) - Remove deprecated services/api.ts (migrated to api/ clients)
+
+- Connecteur proxmox async
+  ([`9cc6d19`](https://github.com/SimonLou-Dev/labomatics/commit/9cc6d19d778e648cb9f03dcfb3cec6ae4bf2601f))
+
+- Liting + typing backend
+  ([`4940b9f`](https://github.com/SimonLou-Dev/labomatics/commit/4940b9fb795ab9d9ce2a2626391710d7f09c45bd))
+
+- Liting + typing cli
+  ([`64b5882`](https://github.com/SimonLou-Dev/labomatics/commit/64b5882af4a72036b01354065f302480a537a653))
+
+- Liting + typing front
+  ([`81efc2a`](https://github.com/SimonLou-Dev/labomatics/commit/81efc2a225c473abe20172b5de8b7a1d83c0097f))
+
+- Service allocation (tag vxlan, subnet, ip wan)
+  ([`bd1460a`](https://github.com/SimonLou-Dev/labomatics/commit/bd1460a1de99d760059ca40c4250a3b6638d9ca3))
+
+- Service allocation (tag vxlan, subnet, ip wan)
+  ([`9a99519`](https://github.com/SimonLou-Dev/labomatics/commit/9a99519b49861bcb107de375337d917b90ed991f))
+
+- Update lock
+  ([`d5b141a`](https://github.com/SimonLou-Dev/labomatics/commit/d5b141a28e601b3adb0ebe9d835711fb85dad100))
+
+- **backend**: Update config examples and gitignore
+  ([`e7b979a`](https://github.com/SimonLou-Dev/labomatics/commit/e7b979acdb67b6e05886ca37c2c42a5eef193505))
+
+- Add CLUSTER_CONFIG_PATH to .env.example for bootstrap configuration - Update .gitignore patterns
+  for new build artifacts
+
+- **branding**: Design system showcase HTML avec couleurs et typographie
+  ([`4f0c773`](https://github.com/SimonLou-Dev/labomatics/commit/4f0c773eeb0625a621f5e0fb970699a6029a14ff))
+
+- **branding**: Guide d'identité visuelle complet
+  ([`aac078f`](https://github.com/SimonLou-Dev/labomatics/commit/aac078fee171e8284ee17da823129de38c0b070c))
+
+### Continuous Integration
+
+- Fix perms
+  ([`141d159`](https://github.com/SimonLou-Dev/labomatics/commit/141d159ef5fd82c6b96c24960ce0fd665d79ccde))
+
+- Fix perms
+  ([`2e7a5ca`](https://github.com/SimonLou-Dev/labomatics/commit/2e7a5ca2e3194f9ae13a5a56e4a58d93fdce8564))
+
+- Fix perms
+  ([`a66308e`](https://github.com/SimonLou-Dev/labomatics/commit/a66308eb59456cb6befc031aecbc7cfcd26f62f8))
+
+- Fix perms
+  ([`676cf06`](https://github.com/SimonLou-Dev/labomatics/commit/676cf06777c8a62de88b0aa35303cb92a9df3591))
+
+- Fix perms
+  ([`634161f`](https://github.com/SimonLou-Dev/labomatics/commit/634161f23d464c2211dcf927ff5f818831827a1e))
+
+- Fix perms
+  ([`c4c906d`](https://github.com/SimonLou-Dev/labomatics/commit/c4c906d415e31bb13ccfccbf8498aaad6f066c32))
+
+### Documentation
+
+- **evolution**: Document v0.4 implementation progress
+  ([`e72a0b0`](https://github.com/SimonLou-Dev/labomatics/commit/e72a0b0ce2f35bdbfb71a66695deb555bca1cf03))
+
+- labomatics install CLI infrastructure complete - Modular architecture and idempotent operations -
+  Full Keycloak and Proxmox OIDC integration - Multi-cluster support via terraform
+
+### Features
+
+- Add frontend components and flows for lab management
+  ([`9fba775`](https://github.com/SimonLou-Dev/labomatics/commit/9fba7752cdd0d54a5cc8f783da40b46a7e0311ef))
+
+- Add API clients for labs and cohorts (frontend) - Add Lab page and related components - Add menu
+  item for lab access - Add Cohorts admin page - Update OpenWrt init script documentation
+
+Co-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>
+
+- Add lab creation API endpoints and database migrations
+  ([`58113e2`](https://github.com/SimonLou-Dev/labomatics/commit/58113e2ee8f75afa32b53e68c7f862bd720b360e))
+
+- Create POST /labs endpoint for lab creation - Create GET /labs/me endpoint to fetch user's lab
+  data - Add database migration for owner-generic pattern - Add cachetools dependency for asyncpg -
+  Improve worker job orchestration
+
+Co-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>
+
+- Add LabService, AuditService and new enums for lab creation workflow
+  ([`99c4894`](https://github.com/SimonLou-Dev/labomatics/commit/99c4894fb308ec3625e8ea6fc719a40d02fc8f6c))
+
+- Add OwnerRole enum (STUDENT, TEACHER, ADMIN) - Add EventType enum for audit trail (LAB_REQUESTED,
+  WAN_IP_ALLOCATED, etc) - Create AuditService for event logging - Create LabService for
+  orchestrating lab creation - Improve VxlanRangeService with proper repository initialization
+
+Co-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>
+
+- Add LDAP, RADIUS, and Docker installation to CLI installer
+  ([`f564fac`](https://github.com/SimonLou-Dev/labomatics/commit/f564facecd83d4101fda8b1cbf544b31ca2b662a))
+
+Add OpenLDAP and FreeRADIUS services to the Docker Compose stack with: - OpenLDAP
+  (bitnami/openldap:2.6) with LDAPS support via CA-signed certificates - FreeRADIUS
+  (freeradius/freeradius-server:3.2.5) with PAP authentication via LDAP bind - Keycloak LDAP User
+  Federation (WRITABLE mode) for bidirectional sync - LDAP Group Mapper for group synchronization
+  between LDAP and Keycloak - TLS encryption for LDAP/RADIUS using the existing PKI infrastructure
+
+Fix the broken Docker installation pipeline: - Install Docker Engine and docker-compose-plugin via
+  dnf in NetworkSetup - Upload docker-compose.yml, init-databases.sh, dynamic.yml, and config files
+  before docker compose up - Extend certificate generation to include ldap.{domain} and DNS:ldap SAN
+  entries
+
+Add step 9 for LDAP/RADIUS configuration: - Collect Base DN (auto-derived from domain), service
+  account passwords, and RADIUS shared secret - Generate cryptographically-secure secrets via
+  secrets.token_urlsafe() - Update all step counters from 8 to 9 for progress display
+
+Extend KeycloakClient with LDAP federation methods: - create_ldap_federation(): Configure User
+  Federation WRITABLE provider - create_group_ldap_mapper(): Configure bidirectional group sync
+  (LDAP_ONLY mode)
+
+Add ServiceVerifier.wait_for_tcp_port() for LDAP readiness check before Keycloak config.
+
+Files modified: - templates/docker-compose.yml: Add ldap and radius services -
+  templates/ldap-bootstrap.ldif: LDIF seed for LDAP directory structure -
+  templates/radius-clients.conf: RADIUS client config - templates/radius-mods-ldap: FreeRADIUS LDAP
+  module config for PAP auth - templates/radius-site-default: FreeRADIUS site config -
+  commands/install/network.py: Docker installation and compose file upload -
+  commands/install/steps.py: Step 9 (LDAP/RADIUS config collection) -
+  commands/install/certificates.py: LDAP certificate generation - commands/install/ldap_setup.py:
+  LDAP readiness verification - commands/install/keycloak.py: LDAP federation setup -
+  commands/install/orchestrator.py: Step 9 integration, LDAP wait, federation config -
+  utils/keycloak.py: LDAP federation API methods - utils/verify.py: TCP port availability check -
+  utils/ldap_utils.py: domain_to_base_dn() utility
+
+Co-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>
+
+Claude-Session: https://claude.ai/code/session_01SfG8ZALzU4MMz7TH6TaNur
+
+- Add owner-generic pattern to database models for multi-role lab support
+  ([`8ced4ad`](https://github.com/SimonLou-Dev/labomatics/commit/8ced4ad5be31797479a92154b94898a58b03439b))
+
+- Add owner_keycloak_id and owner_role to LabProvisioning, IpAllocation, VxlanAllocation - Make
+  student_id nullable to support teacher/admin owners - Add is_default boolean to CohortCluster for
+  cluster-per-cohort defaulting - Add eager-loading repository methods to prevent
+  DetachedInstanceError
+
+Co-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>
+
+- Construction de la vm openwrt template lors de l'install
+  ([`f5eb20d`](https://github.com/SimonLou-Dev/labomatics/commit/f5eb20dad445a6d800d53f1a80c1fe22cee71d4e))
+
+- Implémenter l'infrastructure labomatics install
+  ([`0b4ae37`](https://github.com/SimonLou-Dev/labomatics/commit/0b4ae378df9457f4c3eea45246b4fb685e0835bd))
+
+- Provisionnement de la VM via cloud-init - Configuration Keycloak (realms, groupes, rôles, client
+  OIDC) - Configuration authentification OIDC Proxmox - Certificats TLS auto-signés avec DNS dnsmasq
+  - Configuration zone SDN VXLAN et nœuds - Accès SSH par nœud avec demande MDP - Génération
+  idempotente des certificats - Suivi d'état pour installations résumables
+
+Closes #15 #22 #23
+
+- Interface multi-étapes d'import XML pour étudiants
+  ([`cf6cc61`](https://github.com/SimonLou-Dev/labomatics/commit/cf6cc611167d0876946422beab99096831aa7f8e))
+
+Frontend: - StudentImportDialog.vue: composant avec 4 étapes (upload, mapping, vérification,
+  confirmation) - Tableaux de diff avec filtre par statut et recherche par nom - Affichage des
+  ajoutés/modifiés/supprimés avec détails - Page Students.vue: ajout du bouton 'Importer XML' -
+  Types + API pour l'import XML (previewStudentImport, applyStudentImport)
+
+Backend: - StudentImportService: parsing XML, calcul du diff (added/modified/deleted) - Routes POST
+  /students/import-xml/preview et /apply avec Form mapping - DTO StudentImportDiffDTO pour résultat
+  (added/modified/deleted/errors)
+
+Note: l'applique de l'import (sauvegarde en DB) est TODO
+
+- **backend**: Admin infrastructure for clusters, IP ranges, and VXLAN ranges
+  ([`9094dae`](https://github.com/SimonLou-Dev/labomatics/commit/9094dae864d1d70f404e92fb008d4eb1d249e811))
+
+- Add DTOs for cluster management with credentials and range attachments - Add DTOs for IP ranges
+  and VXLAN ranges with allocations - Add pagination DTO for paginated responses - Add services for
+  CRUD operations on clusters, ranges, and config bootstrap - Add cluster credential
+  encryption/decryption support - Add cluster config parsing and idempotent bootstrap from YAML -
+  Services support range attachment, credential management, and connection testing
+
+- **backend**: Ajouter liste étudiants paginée avec IP WAN et VNI
+  ([`4d5f708`](https://github.com/SimonLou-Dev/labomatics/commit/4d5f70876b7409d24f1e3deef56bf1cc0516d474))
+
+- StudentService + DTO pour la liste paginée avec pagination - Route GET /v1/students?page=size
+  retourne étudiants avec cohort + IP WAN + VNI - StudentRepository.list_with_pagination() avec
+  jointures SQL optimisées - Réparer relationships cassées: IpAllocation et VxlanAllocation -
+  Enlever back_populates cassés dans IpRange et VxlanRange
+
+Co-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>
+
+- **backend**: Api routes for cluster and range management
+  ([`828c89a`](https://github.com/SimonLou-Dev/labomatics/commit/828c89a82182555cd4cf99f73e294b045a064024))
+
+- Add GET/POST/PATCH/DELETE routes for clusters with pagination - Add routes for credential
+  management and Proxmox connection testing - Add routes for attaching/detaching IP ranges and VXLAN
+  ranges - Add routes for cluster config upload and application - Add GET/POST/PATCH/DELETE routes
+  for IP ranges and VXLAN ranges - All list endpoints return paginated responses - Secure mutations
+  with manage_cluster role requirement
+
+- **backend**: Bootstrap cluster config and RBAC for admin
+  ([`db399cc`](https://github.com/SimonLou-Dev/labomatics/commit/db399cc9785b198a7c670c3f09b865faee7d19d1))
+
+- Add cluster config bootstrap at startup (idempotent, one-shot) - Add manage_cluster role for
+  administrative operations - Register new services (Cluster, IpRange, VxlanRange, ClusterConfig) as
+  dependencies - Services auto-wire to repositories and other dependencies
+
+- **backend**: Implémenter auth, RBAC, student import, mail service
+  ([`4929261`](https://github.com/SimonLou-Dev/labomatics/commit/4929261855722e01f16756cf177673c13af9304d))
+
+- JWT authentication + role-based access control (RBAC) - AuthService: decode token, ensure role,
+  exchange code for token - StudentImportService: preview/apply CSV import avec validation -
+  MailService: stub avec TODO pour SMTP réel - KeycloakAdminConnector: create/delete user, manage
+  groups/roles - DTO: AuthUser, MeDTO, StudentImportMapping, StudentImportDiff - Middlewares: JWT
+  verification et role extraction - Routes: /me, /students/import/preview, /students/import/apply -
+  Settings: KEYCLOAK_ADMIN_USERNAME, KEYCLOAK_ADMIN_PASSWORD - Alembic migrations initiales
+
+Fixes #17, #24, #19, #20, #21
+
+Co-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>
+
+- **backend**: Vxlan MTU migration and cluster bootstrap configuration
+  ([`2835af9`](https://github.com/SimonLou-Dev/labomatics/commit/2835af90039f7002bcb0d7d1f710918c01942119))
+
+- Add Alembic migration to add mtu field to vxlan_range table (default 1350) - Add
+  clusterconfig.example.yaml template for cluster bootstrap - Include example configuration for
+  clusters, IP ranges, and VXLAN ranges - Template ready for deployment with CLUSTER_CONFIG_PATH
+  environment variable
+
+- **backend/frontend**: Student import complet + filtrage + cohort/cluster assign
+  ([`e19ff3f`](https://github.com/SimonLou-Dev/labomatics/commit/e19ff3fc4ad8f0089371c732a92408848e86d562))
+
+- StudentService: create/update/delete avec Keycloak + password + mail - Login auto:
+  firstname.lastname (non-modifiable) - Cohort/Enrollment idempotent + année scolaire 01/09-31/08 -
+  User ajouté groupe 'student' automatiquement - Cohort assigné au cluster par défaut - Frontend:
+  tri par nom, filtrage par promo, recherche globale (nom/email/IP) - Recherche backend sur tous les
+  étudiants, pas juste la page actuelle - Enrollment actif détecté par dates, pas end_date is None -
+  Eager load relations pour éviter DetachedInstanceError
+
+- **cli**: Ajouter compte technique keycloak + permissions realm-management
+  ([`f83929c`](https://github.com/SimonLou-Dev/labomatics/commit/f83929c0f73b58cb098793d02fd5fe9838d174d5))
+
+- Creation user labomatics-admin (password non-temporaire) - Assignment des 4 rôles
+  realm-management: manage-users, view-users, manage-clients, view-clients - Methodes
+  KeycloakClient: get_client_uuid, assign_client_role_to_user - Affichage credentials en fin
+  d'install (username + password en couleur) - Role manage_user assigné au groupe superadmin
+
+Fixes #17, #24
+
+Co-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>
+
+- **cli**: Scaffold v0.4 avec commande install + cloud-init Alpine
+  ([`dee7eba`](https://github.com/SimonLou-Dev/labomatics/commit/dee7eba25496fdb766084a3b945a97b16234fcf6))
+
+- **cli**: Update schema and keycloak setup for admin roles
+  ([`aebc43c`](https://github.com/SimonLou-Dev/labomatics/commit/aebc43c46a1f16636541b5762ce2451f4360c3fa))
+
+- Update VnetConfig with vni_min, vni_max fields - Update ClusterEntry with sdn_zone, token_id,
+  token_secret fields - Update ConfigGenerator to pass these fields to templates - Add
+  manage_cluster role creation in keycloak setup - Assign manage_cluster role to superadmin group -
+  Add user existence check before creating new users
+
+- **db**: Modèle de données SQLAlchemy v0.4-v0.5
+  ([`449b7fb`](https://github.com/SimonLou-Dev/labomatics/commit/449b7fb103e38021ca0ef0d4018b23e386b6e805))
+
+- 16 modèles SQLAlchemy: 6 identité, 2 sécurité, 8 provisioning - 16 repositories avec pattern
+  générique BaseRepository - Migrations Alembic: identité, sécurité, provisioning multi-cluster -
+  Index uniques partiels pour historique (enrollment, allocations) - Chiffrement Fernet pour secrets
+  cluster
+
+Resolves #16
+
+- **frontend**: Add Lab page placeholder
+  ([`4a94e89`](https://github.com/SimonLou-Dev/labomatics/commit/4a94e895955e0f98dddfd2c0b0a4292e435b9bfb))
+
+- Add Lab.vue page for individual student lab details - Accessible at /lab/:userId route -
+  Placeholder for future integration with lab provisioning data
+
+- **frontend**: Admin pages for cluster and range management
+  ([`d2d550b`](https://github.com/SimonLou-Dev/labomatics/commit/d2d550b7edfd1d19c8b944f77e4b4d69bc61f36b))
+
+- Add Clusters.vue with DataTable CRUD, credential management, range attachment - Add WanRanges.vue
+  with IP range management and utilization progress bars - Add NetworkRanges.vue with VXLAN range
+  management and utilization progress bars - Add WanRangeDetails.vue showing IP allocations with
+  student info and links - Add NetworkRangeDetails.vue showing VNI allocations with student info -
+  Add test connection button with Proxmox credentials verification - Add navigation to detail pages
+  from management dialogs - Progress bars use orange color with border for visibility
+
+- **frontend**: Api clients and types for cluster management
+  ([`08316a7`](https://github.com/SimonLou-Dev/labomatics/commit/08316a7f012f56148bd63654ac663336410c82ac))
+
+- Add clusters.ts with CRUD operations, credential, range attachment, config upload - Add
+  ipRanges.ts with CRUD and allocation retrieval - Add vxlanRanges.ts with CRUD and allocation
+  retrieval - Add type definitions for all DTOs (ClusterDTO, IpRangeDTO, VxlanRangeDTO) - Add type
+  definitions for credentials and allocations - All list operations support pagination
+
+- **frontend**: Créer interface utilisateur complète avec primevue
+  ([`5d7a851`](https://github.com/SimonLou-Dev/labomatics/commit/5d7a8512418728d71730e5118eebd93903d232a0))
+
+- Layout responsive: SidebarLayout, MainLayout avec navigation par rôle - Pages: Login (minimal),
+  Dashboard (palette couleurs), Students (empty) - Theme system: light/dark/dyslexia modes avec
+  localStorage persistence - Design system: couleur primaire orange (#FF6B00), surface steel - CSS
+  variables RGB-space et Tailwind primary-lab/error-lab palette - PrimeVue Aura preset configuré
+  avec custom theming - PrimeUI Community License management (.env.local) - Composables: useTheme
+  (dark/dyslexia), useSidebar - Assets: logo.svg, logo-large.svg
+
+Fixes #18
+
+Co-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>
+
+- **frontend**: Routes and global components for admin UI
+  ([`3af904b`](https://github.com/SimonLou-Dev/labomatics/commit/3af904bb4f3c453e5f4efcc52840c89bf64a4d5f))
+
+- Add routes for /admin/cluster, /admin/wan, /admin/networks, /lab/:userId - Add routes for
+  WanRangeDetails and NetworkRangeDetails with :rangeId param - Mount Toast and ConfirmDialog
+  components globally for notifications - Add breadcrumb navigation in MainLayout - Export new API
+  clients and types from index files
+
+- **frontend**: Tableau Students avec pagination backend et coloration cohort
+  ([`4a6d907`](https://github.com/SimonLou-Dev/labomatics/commit/4a6d9074a6ac19a37a738e416f9dbf234ecef300))
+
+- Service API pour récupérer liste paginée des étudiants du backend - Refactor Students.vue:
+  DataTable paginée + colonnes IP WAN + VNI - Utility getCohortColor() pour colorer badges cohort de
+  manière stable (hash) - Ajout credentials: 'include' pour envoyer cookies auth avec requête -
+  Colonnes: ID | Login | Nom | Email | Promo (badge) | IP WAN | VNI | Actions
+
+Co-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>
+
+- **install**: Cli v0.4 complet + cloud-init + setup Keycloak + OIDC
+  ([`80f2dc1`](https://github.com/SimonLou-Dev/labomatics/commit/80f2dc1c457be83c98dc71dd512b0db87e32d180))
+
+- **install**: Implémentation complète - Proxmox API + SSH upload + verification + error handling
+  ([`fc369e7`](https://github.com/SimonLou-Dev/labomatics/commit/fc369e7d39d3261927b96accdabc28658db91e3e))
+
+### Refactoring
+
+- Cleanup and improve Proxmox helper clients
+  ([`4761893`](https://github.com/SimonLou-Dev/labomatics/commit/47618930d7e6b07da99a7334be0296f23112bec8))
+
+- Remove unused import (re) from _root.py - Use contextlib.suppress for error handling in ACL client
+  - Fix error messages to use actual userid variable - Add proper docstrings and error handling
+
+Co-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>
+
+- Exports et types API range (aucun changement de logique)
+  ([`f99c9de`](https://github.com/SimonLou-Dev/labomatics/commit/f99c9deeaa93b51a7650836a9236989851417e32))
+
+- Simplifie detail pages et ranges list, utilise GET /id au lieu de lister
+  ([`369bed5`](https://github.com/SimonLou-Dev/labomatics/commit/369bed54e2aaa2f25a1c57b29726bfe7903d878c))
+
+Frontend: - WanRangeDetails, NetworkRangeDetails: utilise getIpRange(id) / getVxlanRange(id) au lieu
+  de lister tout et chercher - Clusters.vue: corrigé nom champ 'storage' -> 'default_storage' dans
+  formData - WanRanges, NetworkRanges: remplacé ProgressBar slot template (inexistant) par div avec
+  linear gradient pour affichage du %
+
+- **backend**: Use generic pagination and fix repository patterns
+  ([`c50bcd3`](https://github.com/SimonLou-Dev/labomatics/commit/c50bcd3012cef7e3dc1adadc6025ff6fec9c184a))
+
+- Use BaseRepository.paginate() with relations for StudentService - Remove
+  StudentRepository.list_with_pagination (replaced by generic paginate) - Add order_by support to
+  BaseRepository.paginate() - Add IntegrityError handling to BaseRepository.delete() returning 409 -
+  Normalize IP allocation filters for consistency - Student pagination now uses generic selectinload
+  for relations
+
+- **frontend**: Standardize student API to use http client
+  ([`5a2727b`](https://github.com/SimonLou-Dev/labomatics/commit/5a2727b59fd35e97602fe7bc9702ebf1df0f8b04))
+
+- Add listStudents() returning PaginatedResponse<StudentListItem> - Add StudentListItem interface
+  for list responses - Use http.ts client instead of direct fetch - Maintain pagination fields
+  (page, per_page, total, total_pages) - Follow consistent API naming conventions across all domains
+
+- **monorepo**: Déplacer labomatics/ → old_cli/labomatics/ pour v0.4
+  ([`10aa56c`](https://github.com/SimonLou-Dev/labomatics/commit/10aa56c8fccf4f6935dede9d39ded31a0c4d66e3))
+
+- **monorepo**: Pyproject.toml → old_cli/, supprimer systemd/
+  ([`6ed9723`](https://github.com/SimonLou-Dev/labomatics/commit/6ed972322d0bf57d6c4a84e862ba006c9465745b))
+
+
 ## v0.3.0 (2026-03-27)
 
 ### Bug Fixes
