@@ -40,11 +40,14 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ github.token }}
 
+      - name: Set image repository
+        run: echo "IMAGE_REPO=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
       - uses: docker/build-push-action@v5
         with:
           context: ${{ matrix.context }}
           file: ${{ matrix.file }}
           push: true
           tags: |
-            ghcr.io/${{ github.repository | lower }}/labomatics-${{ matrix.name }}:v${{ inputs.version }}${{ inputs.tag_suffix }}
-            ghcr.io/${{ github.repository | lower }}/labomatics-${{ matrix.name }}:latest${{ inputs.tag_suffix }}
+            ghcr.io/${{ env.IMAGE_REPO }}/labomatics-${{ matrix.name }}:v${{ inputs.version }}${{ inputs.tag_suffix }}
+            ghcr.io/${{ env.IMAGE_REPO }}/labomatics-${{ matrix.name }}:latest${{ inputs.tag_suffix }}
