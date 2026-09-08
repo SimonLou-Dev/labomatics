@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.4.0-rc.3 (2026-09-08)
+
+### Bug Fixes
+
+- Update doc
+  ([`e5f27e2`](https://github.com/SimonLou-Dev/labomatics/commit/e5f27e202cac3a7981a62ba87fecef96a9668920))
+
+
 ## v0.4.0-rc.2 (2026-09-08)
 
 ### Bug Fixes
