@@ -12,6 +12,7 @@ from labomatics.api.dto.student import (
     StudentListItemDTO,
     StudentListResponseDTO,
 )
+from labomatics.core.config.settings import settings
 from labomatics.core.db.models import Student
 from labomatics.core.db.repository.student import StudentRepository
 from labomatics.utils.login_helper import (
@@ -19,7 +20,6 @@ from labomatics.utils.login_helper import (
     generate_password,
     get_school_year,
 )
-from labomatics.core.config.settings import settings
 
 logger = logging.getLogger(__name__)
 

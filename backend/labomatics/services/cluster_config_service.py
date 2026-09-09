@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from ipaddress import IPv4Address, IPv4Network
 from pathlib import Path
 
 import yaml
@@ -35,6 +36,45 @@ class ClusterConfigService:
         self.cluster_service = cluster_service or ClusterService()
         self.ip_range_service = ip_range_service or IpRangeService()
         self.vxlan_range_service = vxlan_range_service or VxlanRangeService()
+
+    def _add_first_ip_exclusion(
+        self, exclusions: list | None, network_str: str
+    ) -> list:
+        """Ajoute la première IP utilisable du réseau aux exclusions."""
+        exclusions = exclusions or []
+        network = IPv4Network(network_str, strict=False)
+        usable_addresses = list(network.hosts())
+
+        if not usable_addresses:
+            return exclusions
+
+        first_ip_addr = usable_addresses[0]
+        first_ip_str = str(first_ip_addr)
+
+        # Vérifier si la première IP est déjà exclue
+        is_already_excluded = False
+        for ex in exclusions:
+            if isinstance(ex, str):
+                if "-" in ex:
+                    # Plage IP: "ip1-ip2"
+                    start_str, end_str = ex.split("-", 1)
+                    try:
+                        start = IPv4Address(start_str.strip())
+                        end = IPv4Address(end_str.strip())
+                        if start <= first_ip_addr <= end:
+                            is_already_excluded = True
+                            break
+                    except ValueError:
+                        pass
+                elif ex == first_ip_str:
+                    # IP individuelle
+                    is_already_excluded = True
+                    break
+
+        if not is_already_excluded:
+            exclusions.append(first_ip_str)
+
+        return exclusions
 
     async def parse(self, yaml_text: str) -> ClusterConfigFileDTO:
         """Parse un texte YAML en configuration de clusters."""
@@ -85,13 +125,16 @@ class ClusterConfigService:
                         ),
                     )
                 else:
-                    # Créer nouveau
+                    # Créer nouveau — ajouter la première IP du réseau aux exclusions
+                    exclusions = self._add_first_ip_exclusion(
+                        wan_config.exclusions or [], wan_config.network
+                    )
                     dto = await self.ip_range_service.create_ip_range(
                         IpRangeCreateDTO(
                             name=wan_config.name,
                             network=wan_config.network,
                             gateway=wan_config.gateway,
-                            exclusions=wan_config.exclusions or [],
+                            exclusions=exclusions,
                         )
                     )
                 wan_by_name[wan_config.name] = dto
