@@ -4,4 +4,5 @@ RUN pip install poetry
 COPY pyproject.toml poetry.lock ./
 RUN poetry install --only main --no-directory
 COPY labomatics ./labomatics
+
 CMD ["poetry", "run", "scheduler-worker"]
