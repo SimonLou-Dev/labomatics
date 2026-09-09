@@ -132,7 +132,7 @@ services:
       - proxy
     restart: unless-stopped
     entrypoint: ["/bin/sh", "-c"]
-    command: ["sh /app/init-backend.sh && python -um labomatics.api.main --host 0.0.0.0 --port 8000"]
+    command: ["sh /app/init-backend.sh && poetry run api"]
     labels:
       - traefik.enable=true
       - traefik.http.routers.api-https.rule=Host(`api.labomatics.{{ DOMAIN }}`)
