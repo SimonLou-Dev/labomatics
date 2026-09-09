@@ -1,6 +1,17 @@
 # CHANGELOG
 
 
+## v0.4.0-rc.6 (2026-09-09)
+
+### Bug Fixes
+
+- Lors de l'init du cluster, exclusion de la première IP WAN
+  ([`7b65b24`](https://github.com/SimonLou-Dev/labomatics/commit/7b65b2446b2d6958b4ed547565a06075b8a16d50))
+
+- Template de l'env du backend
+  ([`23c462d`](https://github.com/SimonLou-Dev/labomatics/commit/23c462d19f02e604f4ab9ad4e0fa2e1efa4f8096))
+
+
 ## v0.4.0-rc.5 (2026-09-08)
 
 ### Bug Fixes
