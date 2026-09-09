@@ -226,19 +226,34 @@ def collect_step_6_download_image(
     state: InstallState, pve: ProxmoxClient, node: str, storage: str
 ) -> str:
     """Étape 6: Téléchargement image cloud-init."""
+    import subprocess
+    from pathlib import Path
+
     step(6, 9, "Téléchargement image cloud-init")
     image_type = "fedora-server"
     image_info = CloudInitImageManager.IMAGES[image_type]
     image_filename = image_info["filename"]
+    image_url = image_info["url"]
 
-    # Download to Proxmox storage
-    info(f"Téléchargement {image_filename}...")
-    pve.download_iso_to_storage(
-        node, storage, image_info["url"], image_filename, content_type="import"
-    )
-    success(f"Image téléchargée: {image_filename}")
+    # Télécharger dans /tmp/ avec wget
+    tmp_path = Path("/tmp") / image_filename
+    if not tmp_path.exists():
+        info(f"Téléchargement {image_filename}...")
+        result = subprocess.run(
+            ["wget", "-q", "-O", str(tmp_path), image_url],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if result.returncode != 0:
+            raise RuntimeError(
+                f"Erreur téléchargement: {result.stderr or result.stdout}"
+            )
+        success(f"Image téléchargée: {tmp_path}")
+    else:
+        info(f"Image existante: {tmp_path}")
 
-    state.set_step(6, {"image_filename": image_filename})
+    state.set_step(6, {"image_filename": image_filename, "image_path": str(tmp_path)})
     return image_filename
 
 

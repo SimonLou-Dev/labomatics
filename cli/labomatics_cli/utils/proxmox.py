@@ -498,5 +498,25 @@ class ProxmoxClient:
         except Exception:
             self.proxmox.pools.post(poolid=pool_name)
 
+    def import_disk_to_vm(
+        self, node: str, vmid: int, disk_path: str, storage: str, format: str = "qcow2"
+    ) -> str:
+        """Importer un disque dans une VM avec qm importdisk."""
+        import subprocess
+
+        cmd = ["qm", "importdisk", str(vmid), disk_path, storage, "-format", format]
+        result = subprocess.run(cmd, capture_output=True, text=True, check=False)
+        if result.returncode != 0:
+            raise RuntimeError(f"Erreur importdisk: {result.stderr or result.stdout}")
+        return result.stdout.strip()
+
+    def attach_disk_to_vm(
+        self, node: str, vmid: int, storage: str, disk_id: int = 0
+    ) -> None:
+        """Attacher un disque importé à une VM."""
+        disk_ref = f"{storage}:vm-{vmid}-disk-{disk_id}"
+        data = {"scsi0": disk_ref}
+        self.proxmox.nodes(node).qemu(vmid).config.put(**data)
+
     def moove_vm_to_pool(self, pool_name: str, vmid: int) -> None:
         self.proxmox.pools(pool_name).put(vms=str(vmid))

@@ -29,6 +29,7 @@ class VMDeployer:
         wan_config: dict,
         vm_password: str,
         ssh_pubkeys: str,
+        image_path: str = "/tmp/Fedora-Cloud-Base-44.qcow2",
     ) -> str:
         """Déployer la VM et retourner son IP."""
         existing = self.pve.find_vm_by_name(self.node, vm_name)
@@ -40,12 +41,8 @@ class VMDeployer:
                 return vm_ip
 
         vmid = self.pve.get_available_vmid(self.node)
-        info("Création VM...")
+        info("Création VM vide...")
 
-        boot_image = (
-            f"{storage}:0,import-from={storage}:import/{image_filename},"
-            f"format=qcow2,cache=writethrough,size=20G"
-        )
         upid = self.pve.create_vm(
             self.node,
             vmid,
@@ -54,16 +51,19 @@ class VMDeployer:
             cores,
             storage,
             ciuser="labomatics",
-            boot_image=boot_image,
             cpu="x86-64-v2-AES",
         )
         if not self.pve.wait_for_task(self.node, upid, timeout=120):
             raise RuntimeError("Timeout création VM")
         success("VM créée")
 
-        info("Redimensionnement disque...")
-        self.pve.resize_disk(self.node, vmid, "scsi0", "+20G")
-        success("Disque redimensionné")
+        info("Import du disque qcow2...")
+        self.pve.import_disk_to_vm(self.node, vmid, image_path, storage, "qcow2")
+        success("Disque importé")
+
+        info("Attache du disque...")
+        self.pve.attach_disk_to_vm(self.node, vmid, storage, 0)
+        success("Disque attaché")
 
         vm_ip = allocate_first_wan_ip(wan_config)
         self._configure_cloudinit(vmid, vm_ip, wan_config, vm_password, ssh_pubkeys)

@@ -65,6 +65,12 @@ def run_installation(state: InstallState) -> int:
         ssh_privkey_path,
     ) = collect_step_5_vm_config(state)
     image_filename = collect_step_6_download_image(state, pve, node, storage)
+    image_step = state.get_step(6)
+    image_path: str = (
+        image_step.get("image_path", "/tmp/Fedora-Cloud-Base-44.qcow2")
+        if image_step
+        else "/tmp/Fedora-Cloud-Base-44.qcow2"
+    )
     (
         pg_root_password,
         labomatics_db_password,
@@ -103,6 +109,7 @@ def run_installation(state: InstallState) -> int:
         wan_config,
         vm_password,
         ssh_pubkeys,
+        image_path,
     )
 
     # Setup on VM
