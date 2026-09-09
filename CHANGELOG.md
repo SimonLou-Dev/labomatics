@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.4.0-rc.5 (2026-09-09)
+
+### Bug Fixes
+
+- Disable release
+  ([`771ca67`](https://github.com/SimonLou-Dev/labomatics/commit/771ca67c8e0a6362e4f3479eb1fa9205e6df81d4))
+
+
 ## v0.4.0-rc.4 (2026-09-09)
 
 ### Bug Fixes
