@@ -11,4 +11,5 @@ WORKDIR /app
 COPY --from=builder /root/.local /root/.local
 COPY --from=builder /app/labomatics ./labomatics
 ENV PATH=/root/.local/bin:$PATH
+
 CMD ["python", "-m","labomatics.worker"]
