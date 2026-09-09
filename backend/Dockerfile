@@ -11,4 +11,4 @@ WORKDIR /app
 COPY --from=builder /root/.local /root/.local
 COPY --from=builder /app/labomatics ./labomatics
 ENV PATH=/root/.local/bin:$PATH
-CMD ["uvicorn", "-u", "labomatics.api.main:run", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["python", "-um", "labomatics.api.main", "--host", "0.0.0.0", "--port", "8000"]

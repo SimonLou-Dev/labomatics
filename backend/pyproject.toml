@@ -30,6 +30,7 @@ psycopg2-binary = "^2.9"
 # Schemas / Validation
 pydantic = { extras = ["email"], version = "^2.10" }
 pydantic-settings = "^2.6"
+typing-extensions = "^4.12"
 
 # Security / Crypto
 cryptography = "^44.0"
