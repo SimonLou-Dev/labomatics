@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.4.0-rc.4 (2026-09-09)
+
+### Bug Fixes
+
+- Use poetry
+  ([`eb9f5ea`](https://github.com/SimonLou-Dev/labomatics/commit/eb9f5eac1da4b9ed06b1803868ca7f5079963371))
+
+
 ## v0.4.0-rc.3 (2026-09-09)
 
 ### Bug Fixes
