@@ -62,7 +62,7 @@ class VMDeployer:
         success("Disque importé")
 
         info("Attache du disque...")
-        self.pve.attach_disk_to_vm(self.node, vmid, storage, 0)
+        self.pve.attach_disk_to_vm(self.node, vmid, storage)
         success("Disque attaché")
 
         vm_ip = allocate_first_wan_ip(wan_config)

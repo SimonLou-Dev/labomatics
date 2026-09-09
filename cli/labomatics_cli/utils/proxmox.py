@@ -510,13 +510,15 @@ class ProxmoxClient:
             raise RuntimeError(f"Erreur importdisk: {result.stderr or result.stdout}")
         return result.stdout.strip()
 
-    def attach_disk_to_vm(
-        self, node: str, vmid: int, storage: str, disk_id: int = 0
-    ) -> None:
-        """Attacher un disque importé à une VM."""
-        disk_ref = f"{storage}:vm-{vmid}-disk-{disk_id}"
-        data = {"scsi0": disk_ref}
-        self.proxmox.nodes(node).qemu(vmid).config.put(**data)
+    def attach_disk_to_vm(self, node: str, vmid: int, storage: str) -> None:
+        """Attacher le premier disque unused à scsi0."""
+        config = self.proxmox.nodes(node).qemu(vmid).config.get()
+        for key, value in config.items():
+            if key.startswith("unused"):
+                data = {"scsi0": value}
+                self.proxmox.nodes(node).qemu(vmid).config.put(**data)
+                return
+        raise RuntimeError(f"Pas de disque unused trouvé pour la VM {vmid}")
 
     def moove_vm_to_pool(self, pool_name: str, vmid: int) -> None:
         self.proxmox.pools(pool_name).put(vms=str(vmid))
