@@ -19,6 +19,7 @@ from labomatics.utils.login_helper import (
     generate_password,
     get_school_year,
 )
+from labomatics.core.config.settings import settings
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +41,7 @@ class StudentService:
         self.cohort_repo = cohort_repo
         self.enrollment_repo = enrollment_repo
         self.mail_service = mail_service
+        self.config = settings
 
     async def list_students(
         self,
@@ -323,10 +325,14 @@ class StudentService:
             subject = f"Accès laboratoire - {data.first_name} {data.last_name}"
             body = f"""Bonjour {data.first_name} {data.last_name},
 
-Voici vos identifiants d'accès au laboratoire:
+Voici vos identifiants d'accès à labomatics:
 
-Login: {login}
-Mot de passe: {password}
+URL : {self.config.front_url}
+
+Login : {login}
+Mot de passe temporaire : {password}
+
+Ces identifiants vous sont utiles pour le WIFI, le VPN, l'accès aux noeuds proxmox.
 
 Veuillez changer votre mot de passe lors de votre première connexion.
 

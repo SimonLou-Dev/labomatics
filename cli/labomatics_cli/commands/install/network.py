@@ -273,6 +273,11 @@ docker --version || (echo "Docker installation failed" && exit 1)
                     ),
                 }
             )
+
+        # Store passwords in state for later use in env files
+        self.state.set("keycloak_admin_password", keycloak_admin_password)
+        self.state.set("labomatics_db_password", labomatics_db_password)
+
         return context
 
     def _upload_compose_files(self, context: dict):
@@ -311,6 +316,64 @@ docker --version || (echo "Docker installation failed" && exit 1)
         )
 
         success("Fichiers de configuration uploadés")
+
+    def upload_env_files(self, pg_user: str = "labomatics") -> None:
+        """Rendre et uploader les fichiers .env après setup Keycloak."""
+        import secrets
+
+        info("Upload fichiers .env...")
+
+        # Vérifier que les données requises sont dans state
+        domain = self.state.get("domain") or self.domain
+        kc_client_secret = self.state.get("labomatics_client_secret")
+        labomatics_db_password = self.state.get("labomatics_db_password")
+        keycloak_admin_password = self.state.get("keycloak_admin_password")
+
+        if not kc_client_secret or not labomatics_db_password:
+            raise RuntimeError("Les données requises manquent. Setup Keycloak d'abord.")
+
+        # Générer encryption_key si elle n'existe pas
+        encryption_key = self.state.get("encryption_key")
+        if not encryption_key:
+            encryption_key = secrets.token_urlsafe(32)
+            self.state.set("encryption_key", encryption_key)
+
+        # Contexte pour les .env files
+        env_context = {
+            "pg_user": pg_user,
+            "pg_password": labomatics_db_password,
+            "domain": domain,
+            "kc_client_secret": kc_client_secret,
+            "kc_admin_password": keycloak_admin_password,
+            "encryption_key": encryption_key,
+        }
+
+        # Rendre backend.env
+        backend_env = render_template(".env.backend", env_context)
+        # Ne pas réécrire si le fichier existe
+        check_cmd = (
+            "test -f /etc/labomatics/backend.env && echo 'exists' || echo 'missing'"
+        )
+        stdout, _, _ = self.ssh.exec_command(check_cmd)
+        if "missing" in stdout:
+            self.ssh.put_file_content("/etc/labomatics/backend.env", backend_env)
+            success("  backend.env créé")
+        else:
+            info("  backend.env existe déjà, non réécrit")
+
+        # Rendre frontend.env
+        frontend_env = render_template(".env.frontend", env_context)
+        check_cmd = (
+            "test -f /etc/labomatics/frontend.env && echo 'exists' || echo 'missing'"
+        )
+        stdout, _, _ = self.ssh.exec_command(check_cmd)
+        if "missing" in stdout:
+            self.ssh.put_file_content("/etc/labomatics/frontend.env", frontend_env)
+            success("  frontend.env créé")
+        else:
+            info("  frontend.env existe déjà, non réécrit")
+
+        success("Fichiers .env configurés")
 
     def _setup_certificates(self, node):
         """Configurer certificats."""

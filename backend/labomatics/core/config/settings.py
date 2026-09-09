@@ -63,6 +63,8 @@ class Settings(BaseSettings):
     app_url: str = Field(alias="APP_URL", default="localhost:8000")
     url_prefix: str | None = Field(alias="URL_PREFIX", default=None)
 
+    front_url: str  = Field(alias="FRONT_URL", default="http://localhost:5173")
+
     # --- Keycloak admin ---
     keycloak_admin_username: str = Field(alias="KEYCLOAK_ADMIN_USERNAME")
     keycloak_admin_password: str = Field(alias="KEYCLOAK_ADMIN_PASSWORD")

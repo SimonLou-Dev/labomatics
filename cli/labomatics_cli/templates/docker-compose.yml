@@ -116,15 +116,9 @@ services:
       retries: 5
 
   api:
-    build:
-      context: ../../backend
-      dockerfile: Dockerfile
+    image: ghcr.io/simonlou-dev/labomatics/labomatics-backend:latest-rc
+    env_file: backend.env
     container_name: labomatics-api
-    environment:
-      DATABASE_URL: postgresql://api:{{ API_DB_PASSWORD }}@postgres:5432/labomatics
-      REDIS_URL: redis://redis:6379/0
-      LOG_LEVEL: info
-      DOMAIN: {{ DOMAIN }}
     volumes:
       - ./init-backend.sh:/app/init-backend.sh:ro
     depends_on:
@@ -140,7 +134,7 @@ services:
     command: ["sh /app/init-backend.sh && uvicorn labomatics.app:app --host 0.0.0.0 --port 8000"]
     labels:
       - traefik.enable=true
-      - traefik.http.routers.api-https.rule=Host(`api.{{ DOMAIN }}`)
+      - traefik.http.routers.api-https.rule=Host(`api.labomatics.{{ DOMAIN }}`)
       - traefik.http.routers.api-https.entrypoints=websecure
       - traefik.http.routers.api-https.tls=true
       - traefik.http.routers.api-https.service=api
@@ -152,14 +146,9 @@ services:
       retries: 5
 
   worker:
-    build:
-      context: ../../backend
-      dockerfile: Dockerfile.worker
+    image: ghcr.io/simonlou-dev/labomatics/labomatics-worker:latest-rc
+    env_file: backend.env
     container_name: labomatics-worker
-    environment:
-      DATABASE_URL: postgresql://api:{{ API_DB_PASSWORD }}@postgres:5432/labomatics
-      REDIS_URL: redis://redis:6379/0
-      LOG_LEVEL: info
     depends_on:
       postgres:
         condition: service_healthy
@@ -170,13 +159,9 @@ services:
     restart: unless-stopped
 
   frontend:
-    build:
-      context: ../../frontend
-      dockerfile: Dockerfile
+    image: ghcr.io/simonlou-dev/labomatics/labomatics-frontend:latest-rc
+    env_file: frontend.env
     container_name: labomatics-frontend
-    environment:
-      VITE_API_URL: https://api.{{ DOMAIN }}/v1
-      VITE_BASE_URL: https://app.{{ DOMAIN }}
     depends_on:
       - api
     networks:
@@ -184,7 +169,7 @@ services:
     restart: unless-stopped
     labels:
       - traefik.enable=true
-      - traefik.http.routers.frontend-https.rule=Host(`app.{{ DOMAIN }}`)
+      - traefik.http.routers.frontend-https.rule=Host(`labomatics.{{ DOMAIN }}`)
       - traefik.http.routers.frontend-https.entrypoints=websecure
       - traefik.http.routers.frontend-https.tls=true
       - traefik.http.routers.frontend-https.service=frontend

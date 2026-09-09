@@ -133,6 +133,13 @@ def run_installation(state: InstallState) -> int:
     )
     kc_setup.setup(admin_first_name, admin_last_name, admin_email)
 
+    # Upload .env files after Keycloak setup (with new SSH connection)
+    network_setup_env = NetworkSetup(pve, domain, vm_ip, ssh_privkey_path, state)
+    try:
+        network_setup_env.upload_env_files()
+    finally:
+        network_setup_env.ssh.disconnect()
+
     oidc_setup = ProxmoxOIDCSetup(pve, domain, state)
     oidc_setup.setup(admin_first_name, admin_last_name, admin_email)
 
