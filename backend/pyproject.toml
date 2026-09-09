@@ -51,6 +51,7 @@ aioboto3 = "^15.5"
 python-multipart = "^0.0.22"
 aiomqtt = "^2.5"
 cachetools = "^7.1.8"
+brevo-python = "^5.0.2"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3"

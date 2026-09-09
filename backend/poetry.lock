@@ -593,6 +593,24 @@ urllib3 = {version = ">=1.25.4,<2.2.0 || >2.2.0,<3", markers = "python_version >
 crt = ["awscrt (==0.27.6)"]
 
 [[package]]
+name = "brevo-python"
+version = "5.0.2"
+description = ""
+optional = false
+python-versions = "<4.0,>=3.8"
+groups = ["main"]
+files = [
+    {file = "brevo_python-5.0.2-py3-none-any.whl", hash = "sha256:4addd8cfb8e685c9a339643c5d1c79cd420407c85f1b925b3b539f20b0836d67"},
+    {file = "brevo_python-5.0.2.tar.gz", hash = "sha256:e317dd78bba01210123dc46d94efb1faf3635f9d58e88fec350c8e33caa75279"},
+]
+
+[package.dependencies]
+httpx = ">=0.21.2"
+pydantic = ">=1.9.2"
+pydantic-core = ">=2.18.2"
+typing_extensions = ">=4.0.0"
+
+[[package]]
 name = "cachetools"
 version = "7.1.8"
 description = "Extensible memoizing collections and decorators"
@@ -3728,4 +3746,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.11"
-content-hash = "726ca1a055ac8e7036b3dea131d101019fd5a7bfbe55ba4ba21df6903000a120"
+content-hash = "e697cacb2ddad4fec9a14e13dcfcf01a86acd76b5b10dfe68d3d6fbf77eb05f3"

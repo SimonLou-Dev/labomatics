@@ -6,6 +6,7 @@ from typing import Annotated
 
 from fastapi import Depends
 
+from labomatics.core.config.settings import settings
 from labomatics.services.audit_service import AuditService
 from labomatics.services.auth_service import AuthService
 from labomatics.services.cluster_config_service import ClusterConfigService
@@ -62,7 +63,7 @@ def get_auth_service() -> AuthService:
 
 def get_mail_service() -> MailService:
     """Factory pour MailService."""
-    return MailService()
+    return MailService(settings)
 
 
 def get_student_service() -> StudentService:

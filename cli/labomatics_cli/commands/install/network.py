@@ -339,6 +339,13 @@ docker --version || (echo "Docker installation failed" && exit 1)
             self.state.set("encryption_key", encryption_key)
 
         # Contexte pour les .env files
+        brevo_api_key = self.state.get("brevo_api_key") or ""
+        self.state.get("smtp_host") or ""
+        self.state.get("smtp_port") or "587"
+        smtp_user = self.state.get("smtp_user") or ""
+        self.state.get("smtp_password") or ""
+        smtp_tls = self.state.get("smtp_tls") or "true"
+
         env_context = {
             "pg_user": pg_user,
             "pg_password": labomatics_db_password,
@@ -346,6 +353,9 @@ docker --version || (echo "Docker installation failed" && exit 1)
             "kc_client_secret": kc_client_secret,
             "kc_admin_password": keycloak_admin_password,
             "encryption_key": encryption_key,
+            "brevo_api_key": brevo_api_key,
+            "smtp_user": smtp_user,
+            "smtp_tls": smtp_tls,
         }
 
         # Rendre backend.env

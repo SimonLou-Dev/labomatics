@@ -148,8 +148,7 @@ class KeycloakSetup:
         # Create labomatics (web frontend) client - confidential with authorization
         labomatics_redirect_uris = [
             f"https://api.labomatics.{self.domain}/v1/auth/callback",
-            f"https://labomatics.{self.domain}/v1/auth/callback"
-            "http://localhost:5173/",
+            f"https://labomatics.{self.domain}/v1/auth/callbackhttp://localhost:5173/",
             "http://localhost:8001/",
         ]
         try:

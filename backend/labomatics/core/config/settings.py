@@ -72,6 +72,20 @@ class Settings(BaseSettings):
     # --- Cluster Config ---
     cluster_config_path: str | None = Field(default=None, alias="CLUSTER_CONFIG_PATH")
 
+    # --- SMTP (optionnel pour Keycloak) ---
+    smtp_host: str | None = Field(default=None, alias="SMTP_HOST")
+    smtp_port: int = Field(default=587, alias="SMTP_PORT")
+    smtp_user: str | None = Field(default=None, alias="SMTP_USER")
+    smtp_password: str | None = Field(default=None, alias="SMTP_PASSWORD")
+    smtp_tls: bool = Field(default=True, alias="SMTP_TLS")
+
+    # --- Brevo API ---
+    brevo_api_key: str | None = Field(default=None, alias="BREVO_API_KEY")
+    brevo_from_email: str = Field(
+        default="noreply@labomatics.local", alias="BREVO_FROM_EMAIL"
+    )
+    brevo_from_name: str = Field(default="Labomatics", alias="BREVO_FROM_NAME")
+
     # --- Misc ---
     environment: str = Field(default="development", alias="ENVIRONMENT")
 
