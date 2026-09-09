@@ -3,6 +3,6 @@ set -e
 
 echo "Exécution des migrations Alembic..."
 cd /app
-alembic upgrade head
+poetry run alembic upgrade head
 
 echo "Migrations terminées!"
