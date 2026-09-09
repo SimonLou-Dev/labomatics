@@ -281,20 +281,12 @@ def collect_step_7_secrets(state: InstallState) -> tuple[str, str, str, str]:
         "Clé API Brevo (optionnel, laisser vide pour désactiver)", default=""
     )
 
-    smtp_host = prompt_with_retry(
-        "Hôte SMTP", default="smtp.gmail.com"
-    )
-    smtp_port = prompt_with_retry(
-        "Port SMTP", default="587"
-    )
-    smtp_user = prompt_with_retry(
-        "Utilisateur SMTP", default=""
-    )
+    smtp_host = prompt_with_retry("Hôte SMTP", default="smtp.gmail.com")
+    smtp_port = prompt_with_retry("Port SMTP", default="587")
+    smtp_user = prompt_with_retry("Utilisateur SMTP", default="")
     smtp_password = Prompt.ask("  Mot de passe SMTP", password=True, default="")
 
-    smtp_tls_str = prompt_with_retry(
-        "SMTP TLS (true/false)", default="true"
-    )
+    smtp_tls_str = prompt_with_retry("SMTP TLS (true/false)", default="true")
     smtp_tls = smtp_tls_str.lower() in ("true", "yes", "1")
 
     state.set_step(

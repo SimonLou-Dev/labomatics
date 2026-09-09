@@ -310,7 +310,9 @@ class OpenWRTBuilder:
                     check=False,
                 )
                 if ret.returncode != 0:
-                    raise RuntimeError(f"qm importdisk a échoué (exit {ret.returncode})")
+                    raise RuntimeError(
+                        f"qm importdisk a échoué (exit {ret.returncode})"
+                    )
             else:
                 OpenWRTBuilder._run(["qm", "importdisk", str(vmid), str(img), storage])
 
