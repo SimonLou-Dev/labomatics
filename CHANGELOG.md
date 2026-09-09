@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.4.0-rc.8 (2026-09-09)
+
+### Bug Fixes
+
+- Docker images
+  ([`d982e3d`](https://github.com/SimonLou-Dev/labomatics/commit/d982e3d3bbcfa2b580e3b377494dd290d428c43c))
+
+
 ## v0.4.0-rc.7 (2026-09-09)
 
 ### Bug Fixes
