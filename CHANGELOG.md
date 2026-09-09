@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.4.0-rc.9 (2026-09-09)
+
+### Bug Fixes
+
+- Append migrations to docker image
+  ([`1ef8560`](https://github.com/SimonLou-Dev/labomatics/commit/1ef85609c127777acf303a96a1c8976b6a2ec176))
+
+
 ## v0.4.0-rc.8 (2026-09-09)
 
 ### Bug Fixes
