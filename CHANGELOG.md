@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.4.0-rc.2 (2026-09-09)
+
+### Bug Fixes
+
+- Compose
+  ([`eed1467`](https://github.com/SimonLou-Dev/labomatics/commit/eed1467da089e5167afd9d1ebe888ace35e286d6))
+
+
 ## v0.4.0-rc.1 (2026-09-09)
 
 ### Bug Fixes
