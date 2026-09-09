@@ -77,6 +77,16 @@ def run_installation(state: InstallState) -> int:
         keycloak_db_password,
         keycloak_admin_password,
     ) = collect_step_7_secrets(state)
+
+    # Récupérer les credentials des services externes (depuis step 7)
+    step_7_data = state.get_step(7)
+    brevo_api_key = step_7_data.get("brevo_api_key", "") if step_7_data else ""
+    smtp_host = step_7_data.get("smtp_host", "") if step_7_data else ""
+    smtp_port = step_7_data.get("smtp_port", "587") if step_7_data else "587"
+    smtp_user = step_7_data.get("smtp_user", "") if step_7_data else ""
+    smtp_password = step_7_data.get("smtp_password", "") if step_7_data else ""
+    smtp_tls = step_7_data.get("smtp_tls", True) if step_7_data else True
+
     admin_email, admin_first_name, admin_last_name = collect_step_8_admin_account(state)
     ldap_radius_secrets = collect_step_9_ldap_radius(state)
 
@@ -124,6 +134,12 @@ def run_installation(state: InstallState) -> int:
         keycloak_db_password,
         keycloak_admin_password,
         ldap_radius_secrets,
+        brevo_api_key,
+        smtp_host,
+        smtp_port,
+        smtp_user,
+        smtp_password,
+        smtp_tls,
     )
 
     # Wait for LDAP to be ready
@@ -140,12 +156,12 @@ def run_installation(state: InstallState) -> int:
     )
     kc_setup.setup(admin_first_name, admin_last_name, admin_email)
 
-    # Upload .env files after Keycloak setup (with new SSH connection)
-    network_setup_env = NetworkSetup(pve, domain, vm_ip, ssh_privkey_path, state)
+    # Update .env files with Keycloak client secret (after Keycloak setup)
+    network_setup_update_env = NetworkSetup(pve, domain, vm_ip, ssh_privkey_path, state)
     try:
-        network_setup_env.upload_env_files()
+        network_setup_update_env.update_env_files_with_keycloak_secret()
     finally:
-        network_setup_env.ssh.disconnect()
+        network_setup_update_env.ssh.disconnect()
 
     oidc_setup = ProxmoxOIDCSetup(pve, domain, state)
     oidc_setup.setup(admin_first_name, admin_last_name, admin_email)

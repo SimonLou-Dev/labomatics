@@ -258,7 +258,7 @@ def collect_step_6_download_image(
 
 
 def collect_step_7_secrets(state: InstallState) -> tuple[str, str, str, str]:
-    """Étape 7: Génération des secrets."""
+    """Étape 7: Génération des secrets (DB) et services externes (Brevo, SMTP)."""
     step_data = state.get_step(7)
     if step_data:
         return (
@@ -275,6 +275,28 @@ def collect_step_7_secrets(state: InstallState) -> tuple[str, str, str, str]:
     keycloak_admin_password = secrets.token_urlsafe(16)
     success("Secrets générés")
 
+    # Collect external services credentials
+    step(7, 9, "Services externes (Brevo, SMTP)")
+    brevo_api_key = prompt_with_retry(
+        "Clé API Brevo (optionnel, laisser vide pour désactiver)", default=""
+    )
+
+    smtp_host = prompt_with_retry(
+        "Hôte SMTP", default="smtp.gmail.com"
+    )
+    smtp_port = prompt_with_retry(
+        "Port SMTP", default="587"
+    )
+    smtp_user = prompt_with_retry(
+        "Utilisateur SMTP", default=""
+    )
+    smtp_password = Prompt.ask("  Mot de passe SMTP", password=True, default="")
+
+    smtp_tls_str = prompt_with_retry(
+        "SMTP TLS (true/false)", default="true"
+    )
+    smtp_tls = smtp_tls_str.lower() in ("true", "yes", "1")
+
     state.set_step(
         7,
         {
@@ -282,6 +304,12 @@ def collect_step_7_secrets(state: InstallState) -> tuple[str, str, str, str]:
             "labomatics_db_password": labomatics_db_password,
             "keycloak_db_password": keycloak_db_password,
             "keycloak_admin_password": keycloak_admin_password,
+            "brevo_api_key": brevo_api_key,
+            "smtp_host": smtp_host,
+            "smtp_port": smtp_port,
+            "smtp_user": smtp_user,
+            "smtp_password": smtp_password,
+            "smtp_tls": smtp_tls,
         },
     )
 

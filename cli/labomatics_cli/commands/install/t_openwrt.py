@@ -298,8 +298,22 @@ class OpenWRTBuilder:
             )
 
             console.print("[bold]==> Import du disque...[/bold]")
-            print(vmid, img, storage)
-            OpenWRTBuilder._run(["qm", "importdisk", str(vmid), str(img), storage])
+            img_size_mb = img.stat().st_size // 1024 // 1024
+            console.print(f"  Taille : {img_size_mb} MB")
+
+            # Import avec pv si disponible, sinon fallback simple
+            if shutil.which("pv"):
+                console.print("  [dim]Progression en temps réel :[/dim]")
+                ret = subprocess.run(
+                    f"pv -N 'Import' {img} | qm importdisk {vmid} - {storage}",
+                    shell=True,
+                    check=False,
+                )
+                if ret.returncode != 0:
+                    raise RuntimeError(f"qm importdisk a échoué (exit {ret.returncode})")
+            else:
+                OpenWRTBuilder._run(["qm", "importdisk", str(vmid), str(img), storage])
+
             # Lire le volume ID réel depuis qm config (ligne "unusedN: <volume>")
             cfg_out = OpenWRTBuilder._run(["qm", "config", str(vmid)]).stdout
             disk_id: str | None = None

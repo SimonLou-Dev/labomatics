@@ -43,6 +43,12 @@ class NetworkSetup:
         keycloak_db_password: str = "",
         keycloak_admin_password: str = "",
         ldap_radius_secrets: Optional[dict] = None,
+        brevo_api_key: str = "",
+        smtp_host: str = "",
+        smtp_port: str = "587",
+        smtp_user: str = "",
+        smtp_password: str = "",
+        smtp_tls: bool = True,
     ):
         """Configurer tout le réseau."""
         if ldap_radius_secrets is None:
@@ -62,8 +68,22 @@ class NetworkSetup:
             self._setup_proxmox_dns(node)
             self._setup_vm_dns()
 
-            # Install Docker and upload compose files
+            # Install Docker
             self._install_docker()
+
+            # Template and upload .env files BEFORE compose files
+            self._template_and_upload_env_files(
+                labomatics_db_password,
+                keycloak_admin_password,
+                brevo_api_key,
+                smtp_host,
+                smtp_port,
+                smtp_user,
+                smtp_password,
+                smtp_tls,
+            )
+
+            # Upload compose files
             context = self._build_compose_context(
                 wan_config,
                 pg_root_password,
@@ -317,8 +337,82 @@ docker --version || (echo "Docker installation failed" && exit 1)
 
         success("Fichiers de configuration uploadés")
 
+    def _template_and_upload_env_files(
+        self,
+        labomatics_db_password: str,
+        keycloak_admin_password: str,
+        brevo_api_key: str = "",
+        smtp_host: str = "",
+        smtp_port: str = "587",
+        smtp_user: str = "",
+        smtp_password: str = "",
+        smtp_tls: bool = True,
+        pg_user: str = "labomatics",
+    ) -> None:
+        """Template et upload les fichiers .env AVANT Keycloak setup."""
+        import secrets
+
+        info("Template et upload fichiers .env...")
+
+        domain = self.state.get("domain") or self.domain
+
+        # Générer encryption_key si elle n'existe pas
+        encryption_key = self.state.get("encryption_key")
+        if not encryption_key:
+            encryption_key = secrets.token_urlsafe(32)
+            self.state.set("encryption_key", encryption_key)
+
+        # Placeholder pour kc_client_secret (sera remplacé après Keycloak setup)
+        kc_client_secret = "PLACEHOLDER_TO_BE_REPLACED_AFTER_KEYCLOAK"
+
+        env_context = {
+            "pg_user": pg_user,
+            "pg_password": labomatics_db_password,
+            "domain": domain,
+            "kc_client_secret": kc_client_secret,
+            "kc_admin_password": keycloak_admin_password,
+            "encryption_key": encryption_key,
+            "brevo_api_key": brevo_api_key,
+            "smtp_user": smtp_user,
+            "smtp_tls": "true" if smtp_tls else "false",
+        }
+
+        # Upload backend.env
+        backend_env = render_template(".env.backend", env_context)
+        self.ssh.put_file_content("/etc/labomatics/backend.env", backend_env)
+        success("  backend.env uploadé")
+
+        # Upload frontend.env
+        frontend_env = render_template(".env.frontend", env_context)
+        self.ssh.put_file_content("/etc/labomatics/frontend.env", frontend_env)
+        success("  frontend.env uploadé")
+
+    def update_env_files_with_keycloak_secret(self) -> None:
+        """Mettre à jour backend.env avec le Keycloak client secret après setup."""
+        info("Mise à jour backend.env avec Keycloak client secret...")
+
+        kc_client_secret = self.state.get("labomatics_client_secret")
+        if not kc_client_secret:
+            warning("Keycloak client secret non trouvé, backend.env non mis à jour")
+            return
+
+        # Remplacer le placeholder par la vraie valeur dans backend.env
+        placeholder = "PLACEHOLDER_TO_BE_REPLACED_AFTER_KEYCLOAK"
+        read_cmd = "cat /etc/labomatics/backend.env"
+        stdout, stderr, rc = self.ssh.exec_command(read_cmd)
+
+        if rc == 0:
+            updated_content = stdout.replace(
+                f"KEYCLOAK_CLIENT_SECRET={placeholder}",
+                f"KEYCLOAK_CLIENT_SECRET={kc_client_secret}",
+            )
+            self.ssh.put_file_content("/etc/labomatics/backend.env", updated_content)
+            success("  backend.env mis à jour avec Keycloak client secret")
+        else:
+            warning(f"Impossible de lire backend.env: {stderr}")
+
     def upload_env_files(self, pg_user: str = "labomatics") -> None:
-        """Rendre et uploader les fichiers .env après setup Keycloak."""
+        """Legacy: Rendre et uploader les fichiers .env après setup Keycloak."""
         import secrets
 
         info("Upload fichiers .env...")
