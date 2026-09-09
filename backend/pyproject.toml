@@ -62,11 +62,12 @@ ruff = "^0.8"
 aiosqlite = "^0.20"
 wheel = "^0.44"
 mypy = "^1.14"
+poetry-plugin-export = "^1.8"
 
 [tool.poetry.scripts]
 api = "labomatics.api.main:run"
 api-dev = "labomatics.api.main:run_dev"
-scheduler-worker = "labomatics.worker.__main__:run"
+worker = "labomatics.worker.__main__:run"
 
 # ============================================================================
 # RUFF CONFIGURATION
