@@ -73,6 +73,7 @@ app.include_router(router_v1)
 allowed_origins = [
     f"http://{settings.app_url}",
     f"https://{settings.app_url}",
+    settings.front_url,
     # Dev front (exemples)
     "http://localhost:8000",
     "http://localhost:8001",
