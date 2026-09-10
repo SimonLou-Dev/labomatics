@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.4.0-rc.12 (2026-09-10)
+
+### Bug Fixes
+
+- Add trusted host config and PrimeUI license key to build
+  ([`ce98c2f`](https://github.com/SimonLou-Dev/labomatics/commit/ce98c2fe079e0df1cd34a5c34cb64c38cb09257a))
+
+
 ## v0.4.0-rc.11 (2026-09-10)
 
 ### Bug Fixes
