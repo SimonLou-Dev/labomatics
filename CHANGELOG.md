@@ -1,6 +1,25 @@
 # CHANGELOG
 
 
+## v0.4.0-rc.14 (2026-09-10)
+
+### Bug Fixes
+
+- Add front_url to CORS allowed origins
+  ([`31030e8`](https://github.com/SimonLou-Dev/labomatics/commit/31030e88cf9bc5b3cbc20938a2d34ace5df7d0cd))
+
+- Linting
+  ([`a32c837`](https://github.com/SimonLou-Dev/labomatics/commit/a32c83785d981410e4ccde969242e6a89d206475))
+
+- Linting
+  ([`6a72f47`](https://github.com/SimonLou-Dev/labomatics/commit/6a72f47dfb8ab5a8344006862410044861bea1f5))
+
+### Features
+
+- Ajout des templates
+  ([`77070e7`](https://github.com/SimonLou-Dev/labomatics/commit/77070e7b55f5287f9cb7a724ea594b70fc5d9076))
+
+
 ## v0.4.0-rc.13 (2026-09-10)
 
 ### Bug Fixes
