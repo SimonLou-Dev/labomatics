@@ -1,6 +1,39 @@
 # CHANGELOG
 
 
+## v0.4.0-rc.10 (2026-09-10)
+
+### Bug Fixes
+
+- Import types directly from submodules
+  ([`d36ea24`](https://github.com/SimonLou-Dev/labomatics/commit/d36ea24720658a23fddb46c8161b48e8b493bd8a))
+
+- Remove unused delete_by_vmid method
+  ([`417eb0c`](https://github.com/SimonLou-Dev/labomatics/commit/417eb0c09e1e4a814950f3654feaec40f42901fe))
+
+- Typescript - remove duplicate types, handle null exclusions
+  ([`1b887c7`](https://github.com/SimonLou-Dev/labomatics/commit/1b887c7cdd8acf4b6084f671135eaedde093ff29))
+
+- Typescript types - add proxmox_url, remove duplicate LabDataDTO, add createLab
+  ([`67115ab`](https://github.com/SimonLou-Dev/labomatics/commit/67115ab51b2c451c753c8552350c300e9b724443))
+
+- Vm stop/delete with proper task wait and node selection
+  ([`4fb5b1f`](https://github.com/SimonLou-Dev/labomatics/commit/4fb5b1f60ba2f74f288ee92ed5ae186af25cc7cd))
+
+- Fixed VM stop to wait for task completion before returning - Removed skiplock parameter (requires
+  root), use simple stop API - Added logging for VM stop/delete operations - Fixed pick_node() to
+  disable cache and properly calculate node load - Removed manual LabVm deletion (cascade on
+  LabProvisioning delete) - Added confirmation dialogs for redeploy lab and delete user - Improved
+  node selection by memory availability
+
+Backend changes: - vm.stop() now awaits task completion - vm.delete() calls stop before deletion -
+  pick_node() uses live CLUSTER_RESOURCES data, selects by memory - Student cleanup simplified
+  (removed unused LabVmRepository calls)
+
+Frontend changes: - Added confirmation popups for redeploy/delete actions - Uses global
+  ConfirmDialog from App.vue
+
+
 ## v0.4.0-rc.9 (2026-09-09)
 
 ### Bug Fixes
