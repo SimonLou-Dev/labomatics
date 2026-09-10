@@ -6,4 +6,4 @@ COPY pyproject.toml poetry.lock alembic.ini ./
 COPY labomatics ./labomatics
 COPY alembic ./alembic
 RUN poetry install --only main --no-directory
-CMD ["poetry", "run", "api"]
+CMD ["sh", "-c", "poetry run alembic upgrade head && poetry run api"]
