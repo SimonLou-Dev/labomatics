@@ -250,7 +250,7 @@ import {
   InputText,
   Tag,
 } from 'primevue'
-import type { IpRangeDTO, IpAllocationPaginatedDTO } from '@/api/types'
+import type { IpRangeDTO, IpAllocationPaginatedDTO } from '@/api/types/ipRanges'
 import * as ipRangeApi from '@/api/ipRanges'
 
 const router = useRouter()

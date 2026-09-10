@@ -7,7 +7,7 @@ import type {
   IpRangeCreateDTO,
   IpRangeUpdateDTO,
   IpAllocationPaginatedDTO,
-} from './types'
+} from './types/ipRanges'
 import type { PaginatedResponse } from './types'
 
 export async function listIpRanges(

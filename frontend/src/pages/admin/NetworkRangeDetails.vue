@@ -250,7 +250,7 @@ import {
   InputText,
   Tag,
 } from 'primevue'
-import type { VxlanRangeDTO, VxlanAllocationPaginatedDTO } from '@/api/types'
+import type { VxlanRangeDTO, VxlanAllocationPaginatedDTO } from '@/api/types/vxlanRanges'
 import * as vxlanRangeApi from '@/api/vxlanRanges'
 
 const router = useRouter()

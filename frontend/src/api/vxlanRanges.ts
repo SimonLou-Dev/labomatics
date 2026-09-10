@@ -7,7 +7,7 @@ import type {
   VxlanRangeCreateDTO,
   VxlanRangeUpdateDTO,
   VxlanAllocationPaginatedDTO,
-} from './types'
+} from './types/vxlanRanges'
 import type { PaginatedResponse } from './types'
 
 export async function listVxlanRanges(
