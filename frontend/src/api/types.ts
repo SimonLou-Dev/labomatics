@@ -2,6 +2,8 @@
  * API Response Types
  */
 
+export type { LabDataDTO } from './types/students'
+
 export interface JobDTO {
   jobId: string
 }
@@ -195,14 +197,6 @@ export interface LabVmDTO {
   disk: number
   created_at: string
   notes?: string | null
-}
-
-export interface LabDataDTO {
-  student: StudentDTO | null
-  vms: LabVmDTO[]
-  wan_ip: string | null
-  vxlan_tag: number | null
-  openwrt_link: string | null
 }
 
 // UI Events and Types

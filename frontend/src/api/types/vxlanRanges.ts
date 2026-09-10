@@ -2,6 +2,8 @@
  * VXLAN Ranges types
  */
 
+import type { StudentSimpleDTO } from './ipRanges'
+
 export interface VxlanRangeDTO {
   id: string
   name: string
@@ -32,13 +34,6 @@ export interface VxlanRangeUpdateDTO {
   vni_min?: number
   vni_max?: number
   exclusions?: string[]
-}
-
-export interface StudentSimpleDTO {
-  id: string
-  login: string
-  first_name: string
-  last_name: string
 }
 
 export interface VxlanAllocationDTO {

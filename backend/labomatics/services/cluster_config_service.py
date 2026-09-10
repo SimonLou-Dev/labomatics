@@ -103,7 +103,7 @@ class ClusterConfigService:
         # Vérifier si cette plage est déjà exclue
         is_already_excluded = False
         for ex in exclusions:
-            if isinstance(ex, (int, str)) and str(ex) == exclusion_range:
+            if isinstance(ex, int | str) and str(ex) == exclusion_range:
                 is_already_excluded = True
                 break
 

@@ -97,6 +97,11 @@ export async function forceCreateStudentLab(studentId: string): Promise<{ jobId:
   return res.data
 }
 
+export async function createLab(): Promise<{ jobId: string }> {
+  const res = await http.post<{ jobId: string }>('/labs')
+  return res.data
+}
+
 export async function deleteStudent(studentId: string): Promise<void> {
   await http.delete(`/students/${studentId}`)
 }

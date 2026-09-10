@@ -75,4 +75,3 @@ class LabVmRepository(BaseRepository[LabVm]):
             stmt = select(self.model).where(self.model.state == state)
             result = await session.execute(stmt)
             return result.scalars().all()
-

@@ -108,4 +108,5 @@ export interface LabDataDTO {
   wan_ip: string | null
   vxlan_tag: number | null
   openwrt_link: string | null
+  proxmox_url: string | null
 }

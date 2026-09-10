@@ -407,7 +407,6 @@ class StudentService:
                 logger.warning(f"Erreur mise à jour Keycloak pour {login}: {e}")
 
     async def delete_student(self, data: StudentImportItemDTO) -> None:
-
         # Récupérer le student
         student = await self.repo.get_by_external_id(int(data.id))
         if not student:
