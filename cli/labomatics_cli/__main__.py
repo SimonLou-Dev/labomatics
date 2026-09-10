@@ -8,6 +8,7 @@ import warnings
 from rich.console import Console
 
 from .commands.install import cmd_install
+from .commands.templates import cmd_templates
 
 # Suppress SSL warnings for self-signed certs (Proxmox, etc)
 warnings.filterwarnings("ignore", message="Unverified HTTPS request")
@@ -29,12 +30,17 @@ def main() -> int:
         "install",
         help="Initialiser le cluster central",
     )
+    tempaltes_parser = subparsers.add_parser(
+        "template",
+        help="Gestion des templates",
+    )
     install_parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Afficher les actions sans les exécuter",
     )
     install_parser.set_defaults(func=cmd_install)
+    tempaltes_parser.set_defaults(func=cmd_templates)
 
     args = parser.parse_args()
 

@@ -17,6 +17,7 @@ jinja2 = "^3.0"
 pyyaml = "^6.0"
 proxmoxer = "^2.0"
 typing-extensions = "^4.16.0"
+readchar = "^4.2.2"
 
 [tool.poetry.scripts]
 labomatics = "labomatics_cli.__main__:main"

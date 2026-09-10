@@ -99,6 +99,17 @@ class ProxmoxClient:
         except Exception:
             return False
 
+    def find_vm_node(self, vmid: int) -> Optional[str]:
+        """Trouver le nœud hébergeant une VM par son vmid."""
+        try:
+            resources = self.proxmox.cluster.resources.get(type="vm")
+            for resource in resources:
+                if resource.get("vmid") == vmid:
+                    return resource.get("node")
+        except Exception:
+            pass
+        return None
+
     def find_vm_by_name(self, node: str, name: str) -> Optional[Dict[str, Any]]:
         """Trouver une VM par son nom."""
         try:
@@ -176,6 +187,17 @@ class ProxmoxClient:
 
         upid = self.proxmox.nodes(node).qemu.create(**data)
         return upid
+
+    def create_vm_from_data(self, node: str, vmid: str, data :str) -> str:
+        """Créer une VM vide et retourner le UPID."""
+        if self.vm_exists(node, vmid):
+            raise RuntimeError(f"VM {vmid} existe déjà sur le nœud {node}")
+
+        data["vmid"] = vmid
+
+        upid = self.proxmox.nodes(node).qemu.create(**data)
+        return upid
+
 
     def wait_for_task(self, node: str, upid: str, timeout: int = 300) -> bool:
         """Attendre qu'une tâche soit complète."""
@@ -522,3 +544,10 @@ class ProxmoxClient:
 
     def moove_vm_to_pool(self, pool_name: str, vmid: int) -> None:
         self.proxmox.pools(pool_name).put(vms=str(vmid))
+
+    def ensure_pool(self, pool_name: str) -> None:
+        """Crée le pool template s'il n'existe pas encore."""
+        try:
+            self.proxmox.pools(pool_name).get()
+        except Exception:
+            self.proxmox.pools.post(poolid=pool_name)

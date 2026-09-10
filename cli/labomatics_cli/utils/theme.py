@@ -4,6 +4,14 @@ from typing import Optional
 
 from rich.console import Console
 from rich.theme import Theme
+from rich.prompt import Prompt
+
+ 
+import readchar
+from rich.console import Console
+from rich.live import Live
+from rich.table import Table
+
 
 # Tokens du design system
 COLORS = {
@@ -71,3 +79,53 @@ def panel(text: str, title: Optional[str] = None, style: Optional[str] = None) -
     style = style or f"bold {COLORS['primary']}"
     p = Panel(text, title=title, style=style, expand=False)
     console.print(p)
+
+
+def _render_table(options: list[str], cursor: int, selected: set[int]) -> Table:
+    """Construit la table Rich representant l'etat courant du menu."""
+    table = Table(show_header=False, box=None)
+    for i, option in enumerate(options):
+        case = "[x]" if i in selected else "[ ]"
+        style = "bold cyan" if i == cursor else "white"
+        prefix = "> " if i == cursor else "  "
+        table.add_row(f"{prefix}{case} {option}", style=style)
+    return table
+
+
+def multi_select(choices) -> list[str]:
+    """Retourne la liste des options cochees par l'utilisateur."""
+    choices = list(choices)
+    cursor = 0
+    selected: set[int] = set()
+
+ 
+    with Live(_render_table(choices, cursor, selected), console=console, auto_refresh=False) as live:
+        while True:
+            key = readchar.readkey()
+ 
+            if key == readchar.key.UP:
+                cursor = (cursor - 1) % len(choices)
+            elif key == readchar.key.DOWN:
+                cursor = (cursor + 1) % len(choices)
+            elif key == " ":
+                if cursor in selected:
+                    selected.remove(cursor)
+                else:
+                    selected.add(cursor)
+            elif key == readchar.key.ENTER:
+                break
+ 
+            live.update(_render_table(choices, cursor, selected), refresh=True)
+ 
+    return [choices[i] for i in selected]
+
+
+def prompt_with_retry(
+    prompt_text: str, default: Optional[str] = None, max_retries: int = 3
+) -> str:
+    """Prompt avec retry."""
+    for _ in range(max_retries):
+        value = Prompt.ask(f"  {prompt_text}", default=default)
+        if value or default:
+            return value or default or ""  # type: ignore
+    raise RuntimeError(f"Impossible de récupérer: {prompt_text}")

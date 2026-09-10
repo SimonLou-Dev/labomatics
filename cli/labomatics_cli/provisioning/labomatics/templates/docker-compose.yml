@@ -1,0 +1,114 @@
+services:
+  # PostgreSQL - base de données unique pour toutes les apps
+  postgres:
+    image: postgres:15-alpine
+    container_name: labomatics-postgres
+    environment:
+      POSTGRES_PASSWORD: ${PG_ROOT_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh:ro
+    networks:
+      - labomatics
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Keycloak - SSO
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+    container_name: labomatics-keycloak
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KC_PROXY: edge
+      KC_HOSTNAME_STRICT: false
+      KC_HOSTNAME: keycloak.${DOMAIN}
+    command:
+      - start
+      - --optimized
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - keycloak_data:/opt/keycloak/data
+    networks:
+      - labomatics
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.keycloak.rule: Host(`keycloak.${DOMAIN}`)
+      traefik.http.services.keycloak.loadbalancer.server.port: "8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # PowerDNS - DNS server
+  powerdns:
+    image: powerdns/pdns-alpine:latest
+    container_name: labomatics-powerdns
+    environment:
+      PDNS_gsqlite3_database: /etc/powerdns/pdns.sqlite3
+      PDNS_api: "yes"
+      PDNS_api_key: ${POWERDNS_API_KEY}
+      PDNS_webserver: "yes"
+      PDNS_webserver_port: "8001"
+    volumes:
+      - ./powerdns.conf:/etc/powerdns/pdns.conf:ro
+      - powerdns_data:/var/lib/powerdns
+    networks:
+      - labomatics
+    ports:
+      - "53:53/udp"
+      - "53:53/tcp"
+      - "8001:8001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Traefik - Reverse proxy
+  traefik:
+    image: traefik:v3.0
+    container_name: labomatics-traefik
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.selfsigned.acme.storage=/etc/traefik/acme.json"
+      - "--certificatesresolvers.selfsigned.acme.httpchallenge=true"
+      - "--certificatesresolvers.selfsigned.acme.httpchallenge.entrypoint=web"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik_data:/etc/traefik
+      - ./traefik.yaml:/etc/traefik/dynamic_conf.yaml:ro
+    networks:
+      - labomatics
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.traefik.rule: Host(`traefik.${DOMAIN}`)
+      traefik.http.services.traefik.loadbalancer.server.port: "8080"
+
+volumes:
+  postgres_data:
+  keycloak_data:
+  powerdns_data:
+  traefik_data:
+
+networks:
+  labomatics:
+    driver: bridge

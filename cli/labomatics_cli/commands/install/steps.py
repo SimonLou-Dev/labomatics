@@ -29,7 +29,7 @@ def collect_step_1_basic_config(state: InstallState) -> tuple[str, str, str]:
     step(1, 9, "Configuration domaine et interfaces réseau")
     domain = prompt_with_retry("Domaine root", default="esgi.local")
     network_iface = prompt_with_retry("Interface réseau (ex: vmbr0)", default="vmbr0")
-    wan_iface = prompt_with_retry("Interface WAN (ex: vmbr0, vmbr1)", default="vmbr0")
+    wan_iface = prompt_with_retry("Interface WAN (ex: vmbr0, vmbr1)", default="vmbr1")
 
     state.set_step(
         1, {"domain": domain, "network_iface": network_iface, "wan_iface": wan_iface}

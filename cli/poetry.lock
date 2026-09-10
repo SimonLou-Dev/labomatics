@@ -1265,6 +1265,18 @@ files = [
 ]
 
 [[package]]
+name = "readchar"
+version = "4.2.2"
+description = "Library to easily read single chars and key strokes"
+optional = false
+python-versions = ">=3.8"
+groups = ["main"]
+files = [
+    {file = "readchar-4.2.2-py3-none-any.whl", hash = "sha256:92daf7e42c52b0787e6c75d01ecfb9a94f4ceff3764958b570c1dddedd47b200"},
+    {file = "readchar-4.2.2.tar.gz", hash = "sha256:e3b270fe16fc90c50ac79107700330a133dd4c63d22939f5b03b4f24564d5dd8"},
+]
+
+[[package]]
 name = "requests"
 version = "2.34.2"
 description = "Python HTTP for Humans."
@@ -1439,4 +1451,4 @@ zstd = ["backports-zstd (>=1.0.0) ; python_version < \"3.14\""]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.10"
-content-hash = "fc042c9261e823d8b5e89475a80a1f3d2320e3af067e82f83a8e12f43a549653"
+content-hash = "fb524972e0e1677fdac4d41e4338b45ce01d61e11ff07a9edd3e614757474628"
