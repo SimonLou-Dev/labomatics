@@ -285,7 +285,7 @@ function openEditDialog(range: IpRangeDTO) {
     gateway: range.gateway,
     exclusions: range.exclusions,
   }
-  exclusionsText.value = range.exclusions.join('\n')
+  exclusionsText.value = range.exclusions ? range.exclusions.join('\n') : ''
   showFormDialog.value = true
 }
 

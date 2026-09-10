@@ -2,7 +2,27 @@
  * API Response Types
  */
 
-export type { LabDataDTO } from './types/students'
+import type { IpRangeDTO } from './types/ipRanges'
+import type { VxlanRangeDTO } from './types/vxlanRanges'
+import type { StudentListItem } from './types/students'
+
+// Re-export types from their respective modules
+export type { LabDataDTO, StudentListItem } from './types/students'
+export type {
+  IpRangeDTO,
+  IpRangeCreateDTO,
+  IpRangeUpdateDTO,
+  IpAllocationDTO,
+  IpAllocationPaginatedDTO,
+  StudentSimpleDTO,
+} from './types/ipRanges'
+export type {
+  VxlanRangeDTO,
+  VxlanRangeCreateDTO,
+  VxlanRangeUpdateDTO,
+  VxlanAllocationDTO,
+  VxlanAllocationPaginatedDTO,
+} from './types/vxlanRanges'
 
 export interface JobDTO {
   jobId: string
@@ -26,71 +46,6 @@ export interface StudentImportMapping {
   first_name_column: string
   email_column: string
   cohort_column: string
-}
-
-export interface IpRangeDTO {
-  id: string
-  name: string
-  network: string
-  gateway: string
-  exclusions: string[] | null
-  total_ips: number
-  used_count: number
-  free_count: number
-  utilization_percent: number
-}
-
-export interface IpRangeCreateDTO {
-  name: string
-  network: string
-  gateway: string
-  exclusions?: string[]
-}
-
-export type IpRangeUpdateDTO = IpRangeCreateDTO
-
-export interface IpAllocationDTO {
-  ip_address: string
-  student_login: string | null
-  student_first_name: string | null
-  student_last_name: string | null
-  wan_ip_taken_by: string | null
-  is_taken: boolean
-  openwrt_link?: string | null
-}
-
-export interface VxlanRangeDTO {
-  id: string
-  name: string
-  vni_min: number
-  vni_max: number
-  base_network: string
-  mtu: number
-  exclusions: string[] | null
-  total_vnis: number
-  used_count: number
-  free_count: number
-  utilization_percent: number
-}
-
-export interface VxlanRangeCreateDTO {
-  name: string
-  base_network: string
-  mtu?: number
-  vni_min?: number
-  vni_max?: number
-  exclusions?: string[]
-}
-
-export type VxlanRangeUpdateDTO = VxlanRangeCreateDTO
-
-export interface VxlanAllocationDTO {
-  vni: number | null
-  student_login: string | null
-  student_first_name: string | null
-  student_last_name: string | null
-  vxlan_tag_taken_by: string | null
-  is_taken: boolean
 }
 
 export interface MeDTO {
@@ -137,17 +92,6 @@ export interface PaginatedResponse<T> {
   total: number
   page: number
   per_page: number
-}
-
-export interface StudentListItem {
-  id: string
-  external_id: number
-  last_name: string
-  first_name: string
-  email: string
-  login: string
-  is_active: boolean
-  cohort_name?: string
 }
 
 export interface ImportStudentRow {

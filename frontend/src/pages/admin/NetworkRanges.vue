@@ -326,7 +326,7 @@ function openEditDialog(range: VxlanRangeDTO) {
     vni_max: range.vni_max,
     exclusions: range.exclusions,
   }
-  exclusionsText.value = range.exclusions.join('\n')
+  exclusionsText.value = range.exclusions ? range.exclusions.join('\n') : ''
   showFormDialog.value = true
 }
 

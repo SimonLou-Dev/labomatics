@@ -18,14 +18,14 @@ export interface IpRangeCreateDTO {
   name: string
   network: string
   gateway: string
-  exclusions?: string[]
+  exclusions?: string[] | null
 }
 
 export interface IpRangeUpdateDTO {
   name?: string
   network?: string
   gateway?: string
-  exclusions?: string[]
+  exclusions?: string[] | null
 }
 
 export interface StudentSimpleDTO {

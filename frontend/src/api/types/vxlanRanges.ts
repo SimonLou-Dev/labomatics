@@ -24,7 +24,7 @@ export interface VxlanRangeCreateDTO {
   mtu: number
   vni_min: number
   vni_max: number
-  exclusions?: string[]
+  exclusions?: string[] | null
 }
 
 export interface VxlanRangeUpdateDTO {
@@ -33,7 +33,7 @@ export interface VxlanRangeUpdateDTO {
   mtu?: number
   vni_min?: number
   vni_max?: number
-  exclusions?: string[]
+  exclusions?: string[] | null
 }
 
 export interface VxlanAllocationDTO {
