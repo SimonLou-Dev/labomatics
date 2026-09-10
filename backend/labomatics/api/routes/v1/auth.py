@@ -29,12 +29,15 @@ async def login(redirect: str = Query(default="/")):
     # Stocke le state -> redirect_url mapping en Redis (expire après 10 min)
     await redis_connector.set(f"oauth2:state:{state}", redirect, ex=600)
 
+    app_base = (settings.url_prefix or "").strip("/")
+    parts = [p for p in [app_base, "v1", "auth", "callback"] if p]
+    redirect_uri_path = "/" + "/".join(parts)
     keycloak_auth_url = (
         f"{settings.keycloak_url.rstrip('/')}/realms/{settings.keycloak_realm}"
         f"/protocol/openid-connect/auth"
         f"?client_id={settings.keycloak_client_id}"
         f"&response_type=code"
-        f"&redirect_uri={settings.app_url.rstrip('/')}/api/v1/auth/callback"
+        f"&redirect_uri={settings.app_url.rstrip('/')}{redirect_uri_path}"
         f"&scope=openid%20profile%20email"
         f"&state={state}"
     )

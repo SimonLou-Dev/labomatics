@@ -96,12 +96,15 @@ class AuthService:
             f"{settings.keycloak_url.rstrip('/')}/realms/"
             f"{settings.keycloak_realm}/protocol/openid-connect/token"
         )
+        app_base = (settings.url_prefix or "").strip("/")
+        parts = [p for p in [app_base, "v1", "auth", "callback"] if p]
+        redirect_uri_path = "/" + "/".join(parts)
         data = {
             "grant_type": "authorization_code",
             "client_id": settings.keycloak_client_id,
             "client_secret": settings.keycloak_client_secret,
             "code": code,
-            "redirect_uri": f"{settings.app_url.rstrip('/')}/api/v1/auth/callback",
+            "redirect_uri": f"{settings.app_url.rstrip('/')}{redirect_uri_path}",
         }
         resp = requests.post(token_url, data=data, verify=False, timeout=10)  # noqa: S501
         resp.raise_for_status()
