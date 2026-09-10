@@ -15,9 +15,7 @@ def cmd_templates(args) -> int:
     # Check for in-progress installation
     if state.is_in_progress():
         domain = state.get("domain")
-        console.print(
-            f"\n[yellow]Vous êtres sur le cluster de {domain} "
-        )
+        console.print(f"\n[yellow]Vous êtres sur le cluster de {domain} ")
 
         if Confirm.ask("Confirmez vous?", default=True):
             console.print("[dim]Démarage du gestionaire de tempaltes...[/dim]\n")

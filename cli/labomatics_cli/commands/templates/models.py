@@ -1,6 +1,3 @@
-
-
-
 from pydantic import BaseModel, Field
 
 
@@ -20,6 +17,3 @@ class TempalteConfig(BaseModel):
     extra_packages: list[str] = Field(default_factory=list)
     qcow_size: str | None = None
     uefi: bool = True
-
-
-

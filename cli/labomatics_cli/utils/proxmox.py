@@ -188,7 +188,7 @@ class ProxmoxClient:
         upid = self.proxmox.nodes(node).qemu.create(**data)
         return upid
 
-    def create_vm_from_data(self, node: str, vmid: str, data :str) -> str:
+    def create_vm_from_data(self, node: str, vmid: str, data: str) -> str:
         """Créer une VM vide et retourner le UPID."""
         if self.vm_exists(node, vmid):
             raise RuntimeError(f"VM {vmid} existe déjà sur le nœud {node}")
@@ -197,7 +197,6 @@ class ProxmoxClient:
 
         upid = self.proxmox.nodes(node).qemu.create(**data)
         return upid
-
 
     def wait_for_task(self, node: str, upid: str, timeout: int = 300) -> bool:
         """Attendre qu'une tâche soit complète."""

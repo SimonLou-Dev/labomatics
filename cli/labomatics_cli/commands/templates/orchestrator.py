@@ -14,6 +14,7 @@ console = Console()
 
 _DISK_IMAGE_EXTENSIONS = {".img", ".qcow2", ".vmdk", ".raw", ".vhd", ".vhdx"}
 
+
 def _iso_filename_from_url(url: str) -> str:
     return url.rstrip("/").split("/")[-1]
 
@@ -33,6 +34,7 @@ def _image_volid(storage: str, filename: str) -> str:
         return f"{storage}:import/{filename}"
     return f"{storage}:iso/{filename}"
 
+
 def _get_storage_base_path(client: ProxmoxClient, storage: str) -> str:
     """Retourne le chemin de base du stockage (vide si non directory)."""
     try:
@@ -42,6 +44,7 @@ def _get_storage_base_path(client: ProxmoxClient, storage: str) -> str:
     except Exception:
         pass
     return ""
+
 
 def _find_image_path(node: str, storage_path: str, filename: str) -> str:
     """Localise le fichier image sur le nœud via SSH (find récursif)."""
@@ -76,9 +79,11 @@ def _resize_image(node: str, image_path: str, size: str) -> None:
     if result.returncode != 0:
         console.print(f"  [yellow]⚠  Resize image : {result.stderr.strip()}[/yellow]")
     else:
-        console.print(f"  [green]✓ Image redimensionnée[/green]")
+        console.print("  [green]✓ Image redimensionnée[/green]")
+
 
 # ── Helpers pool ──────────────────────────────────────────────────────────────
+
 
 def _virt_customize_image(node: str, image_path: str, packages: list[str]) -> None:
     """Pré-installe des packages dans l'image via virt-customize (SSH root@node).
@@ -128,13 +133,15 @@ def _virt_customize_image(node: str, image_path: str, packages: list[str]) -> No
         text=True,
     )
     if result.returncode != 0:
-        console.print(f"    [red]Erreur virt-customize :[/red]")
+        console.print("    [red]Erreur virt-customize :[/red]")
         console.print(f"    {result.stderr.strip()}")
         raise RuntimeError(f"virt-customize failed:\n{result.stderr.strip()}")
-    console.print(f"  [green]✓ virt-customize terminé[/green]")
+    console.print("  [green]✓ virt-customize terminé[/green]")
 
 
-def _shutdown_vm(client: ProxmoxClient, node: str, vmid: int, timeout: int = 60) -> None:
+def _shutdown_vm(
+    client: ProxmoxClient, node: str, vmid: int, timeout: int = 60
+) -> None:
     """Arrête une VM et attend qu'elle soit complètement arrêtée."""
     console.print(f"  [yellow]Arrêt VM vmid={vmid}...[/yellow]")
     try:
@@ -168,7 +175,10 @@ def _delete_existing_template(client: ProxmoxClient, vmid: int) -> None:
     except Exception as e:
         console.print(f"  [yellow]⚠  Suppression template vmid={vmid} : {e}[/yellow]")
 
-def _delete_existing_iso(client: ProxmoxClient, node: str, storage: str, filename: str) -> None:
+
+def _delete_existing_iso(
+    client: ProxmoxClient, node: str, storage: str, filename: str
+) -> None:
     volid = _image_volid(storage, filename)
     try:
         contents = client.proxmox.nodes(node).storage(storage).content.get()
@@ -178,7 +188,10 @@ def _delete_existing_iso(client: ProxmoxClient, node: str, storage: str, filenam
     except Exception as e:
         console.print(f"  [yellow]⚠  Suppression image {volid} : {e}[/yellow]")
 
-def _download_image(client: ProxmoxClient, node: str, storage: str, url: str, filename: str) -> str:
+
+def _download_image(
+    client: ProxmoxClient, node: str, storage: str, url: str, filename: str
+) -> str:
     """Télécharge l'image sur le stockage Proxmox via l'API. Retourne le volid."""
     console.print(f"  [cyan]Téléchargement : {url}[/cyan]")
     task = (
@@ -195,8 +208,16 @@ def _download_image(client: ProxmoxClient, node: str, storage: str, url: str, fi
     console.print(f"  [green]✓ Image téléchargée : {volid}[/green]")
     return volid
 
+
 def _create_vm(
-    client: ProxmoxClient, node: str, tmpl, iso_volid: str, dest_storage: str, bridge: str, eff_user: str = "", eff_pass: str = ""
+    client: ProxmoxClient,
+    node: str,
+    tmpl,
+    iso_volid: str,
+    dest_storage: str,
+    bridge: str,
+    eff_user: str = "",
+    eff_pass: str = "",
 ) -> None:
     """Crée la VM avec import-from.
 
@@ -221,7 +242,9 @@ def _create_vm(
     )
     if tmpl.uefi:
         kwargs["bios"] = "ovmf"
-        kwargs["efidisk0"] = f"{dest_storage}:1,efitype=4m,pre-enrolled-keys=1,format=qcow2"
+        kwargs["efidisk0"] = (
+            f"{dest_storage}:1,efitype=4m,pre-enrolled-keys=1,format=qcow2"
+        )
         kwargs["boot"] = "order=virtio0;net0"
     if tmpl.cloudinit:
         kwargs["ide2"] = f"{dest_storage}:cloudinit"
@@ -251,7 +274,9 @@ def _start_vm(client: ProxmoxClient, node: str, vmid: int) -> None:
     console.print(f"  [green]✓ VM vmid={vmid} démarrée[/green]")
 
 
-def _wait_for_guest_agent(client: ProxmoxClient, node: str, vmid: int, timeout: int = 300) -> bool:
+def _wait_for_guest_agent(
+    client: ProxmoxClient, node: str, vmid: int, timeout: int = 300
+) -> bool:
     """Attend que le guest agent soit disponible (VM bootée + cloud-init terminé)."""
     import sys
 
@@ -274,7 +299,9 @@ def _wait_for_guest_agent(client: ProxmoxClient, node: str, vmid: int, timeout: 
     return False
 
 
-def _wait_vm_stopped(client: ProxmoxClient, node: str, vmid: int, timeout: int = 60) -> bool:
+def _wait_vm_stopped(
+    client: ProxmoxClient, node: str, vmid: int, timeout: int = 60
+) -> bool:
     """Attend que la VM soit à l'état 'stopped'."""
     start = time.time()
     while time.time() - start < timeout:
@@ -288,7 +315,9 @@ def _wait_vm_stopped(client: ProxmoxClient, node: str, vmid: int, timeout: int =
     return False
 
 
-def _wait_vm_unlocked(client: ProxmoxClient, node: str, vmid: int, timeout: int = 30) -> None:
+def _wait_vm_unlocked(
+    client: ProxmoxClient, node: str, vmid: int, timeout: int = 30
+) -> None:
     """Attend que le verrou Proxmox de la VM se libère (après un shutdown échoué)."""
     start = time.time()
     while time.time() - start < timeout:
@@ -362,13 +391,18 @@ def _convert_to_template(
                 if field in cfg:
                     to_delete.append(field)
         if to_delete:
-            proxmox.proxmox.nodes(node).qemu(vmid).config.put(delete=",".join(to_delete))
+            proxmox.proxmox.nodes(node).qemu(vmid).config.put(
+                delete=",".join(to_delete)
+            )
         if update:
             proxmox.proxmox.nodes(node).qemu(vmid).config.put(**update)
     except Exception as e:
         console.print(f"  [yellow]⚠  Nettoyage config : {e}[/yellow]")
     proxmox.proxmox.nodes(node).qemu(vmid).template.post()
-    console.print(f"  [green]✓ vmid={vmid} converti en template (cloud-init prêt)[/green]")
+    console.print(
+        f"  [green]✓ vmid={vmid} converti en template (cloud-init prêt)[/green]"
+    )
+
 
 def run_installation(state: InstallState) -> int:
     """Orchestrer l'installation."""
@@ -385,39 +419,46 @@ def run_installation(state: InstallState) -> int:
         ciuser = "labomatics"
         cipassword = "labomatics"
         iso_storage_pool = "local"
-    else :
+    else:
         ciuser = prompt_with_retry("Utilisateur cloud init", default="labomatics")
         cipassword = prompt_with_retry("Mot de passe cloud init", default="labomatics")
         iso_storage_pool = prompt_with_retry("Storage des iso", default="local")
 
-        state.set_step(10, {
-            "ciuser": ciuser,
-            "cipassword": cipassword,
-            "iso_storage_pool": iso_storage_pool
-        })
-    
+        state.set_step(
+            10,
+            {
+                "ciuser": ciuser,
+                "cipassword": cipassword,
+                "iso_storage_pool": iso_storage_pool,
+            },
+        )
+
     state_2 = state.get_step(2)
 
-
     pve = ProxmoxClient(
-        state_2.get("proxmox_url"), state_2.get("proxmox_user"), state_2.get("proxmox_token_id"), state_2.get("proxmox_token_secret")
+        state_2.get("proxmox_url"),
+        state_2.get("proxmox_user"),
+        state_2.get("proxmox_token_id"),
+        state_2.get("proxmox_token_secret"),
     )
 
     templates = images_list
 
-    templates_for_choice = { tmpl.name:tmpl for tmpl in templates }
+    templates_for_choice = {tmpl.name: tmpl for tmpl in templates}
 
     console.print("Choisir les templates à créer")
     selected = multi_select(templates_for_choice.keys())
 
-    selected_templates = [ tmpl for name, tmpl in templates_for_choice.items() if name in selected]
+    selected_templates = [
+        tmpl for name, tmpl in templates_for_choice.items() if name in selected
+    ]
     console.print(f"Construction de [yellow] {len(selected_templates)}[/yellow]")
     pve.ensure_pool(templates_pool)
 
-    
-
     for tmpl in selected_templates:
-        console.print(f"\n[bold cyan]═══ Template : {tmpl.name} (vmid={tmpl.vmid}) ═══[/bold cyan]")
+        console.print(
+            f"\n[bold cyan]═══ Template : {tmpl.name} (vmid={tmpl.vmid}) ═══[/bold cyan]"
+        )
         if tmpl.cloudinit:
             console.print(f"  [dim]cloud-init user : {ciuser}[/dim]")
             console.print(f"  [dim]cloud-init password : {cipassword}[/dim]")
@@ -427,7 +468,7 @@ def run_installation(state: InstallState) -> int:
 
         # 1. Supprimer template existante
         _delete_existing_template(pve, tmpl.vmid)
-        
+
         # 2. Supprimer image existante
         _delete_existing_iso(pve, node, iso_storage_pool, filename)
 
@@ -469,7 +510,16 @@ def run_installation(state: InstallState) -> int:
 
         # 4. Créer la VM
         try:
-            _create_vm(pve, node, tmpl, iso_volid, bridge=bridge, dest_storage=shared_pool, eff_user=ciuser, eff_pass=cipassword)
+            _create_vm(
+                pve,
+                node,
+                tmpl,
+                iso_volid,
+                bridge=bridge,
+                dest_storage=shared_pool,
+                eff_user=ciuser,
+                eff_pass=cipassword,
+            )
         except Exception as e:
             console.print(f"[red]❌ Création VM échouée : {e}[/red]")
             continue
@@ -485,7 +535,9 @@ def run_installation(state: InstallState) -> int:
                 console.print(f"[red]❌ Démarrage VM : {e}[/red]")
                 continue
 
-            if not _wait_for_guest_agent(pve, node, tmpl.vmid, timeout=tmpl.boot_timeout):
+            if not _wait_for_guest_agent(
+                pve, node, tmpl.vmid, timeout=tmpl.boot_timeout
+            ):
                 # Premier boot parfois bloqué (ex: Alpine/OpenRC) — reset et nouvel essai
                 console.print(
                     "  [yellow]⚠  Timeout guest agent — reset VM et nouvel essai...[/yellow]"
@@ -493,7 +545,7 @@ def run_installation(state: InstallState) -> int:
                 try:
                     task = pve.proxmox.nodes(node).qemu(tmpl.vmid).status.reset.post()
                     if task:
-                        pve.wait_for_task( node, task, timeout=30)
+                        pve.wait_for_task(node, task, timeout=30)
                 except Exception as e:
                     console.print(f"  [yellow]⚠  Reset : {e}[/yellow]")
                 if not _wait_for_guest_agent(
@@ -550,10 +602,3 @@ def run_installation(state: InstallState) -> int:
         console.print(
             f"\n[bold green]✓ Template '{tmpl.name}' construite avec succès (vmid={tmpl.vmid})[/bold green]"
         )
-
-
-
-
-
-
-

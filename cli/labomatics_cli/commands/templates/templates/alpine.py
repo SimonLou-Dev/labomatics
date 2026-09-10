@@ -1,5 +1,3 @@
-
-
 from ..models import TempalteConfig
 
 
@@ -13,8 +11,5 @@ alpine_3_24_server: TempalteConfig = TempalteConfig(
     disk_size="10G",
     boot_timeout=100,
     cloudinit=False,
-    uefi=False
+    uefi=False,
 )
-
-
-

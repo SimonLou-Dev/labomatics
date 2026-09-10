@@ -1,5 +1,3 @@
-
-
 from ..models import TempalteConfig
 
 
@@ -10,7 +8,5 @@ resolute_server: TempalteConfig = TempalteConfig(
     iso_filename="resolute-server-cloudimg-amd64.img",
     memory=2048,
     cores=2,
-    disk_size="10G"
+    disk_size="10G",
 )
-
-

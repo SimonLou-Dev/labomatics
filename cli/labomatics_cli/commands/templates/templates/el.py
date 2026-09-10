@@ -1,5 +1,3 @@
-
-
 from ..models import TempalteConfig
 
 
@@ -11,6 +9,5 @@ fedora_44_server: TempalteConfig = TempalteConfig(
     memory=2048,
     cores=2,
     disk_size="10G",
-    uefi=False
+    uefi=False,
 )
-

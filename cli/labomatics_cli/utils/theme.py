@@ -6,9 +6,8 @@ from rich.console import Console
 from rich.theme import Theme
 from rich.prompt import Prompt
 
- 
+
 import readchar
-from rich.console import Console
 from rich.live import Live
 from rich.table import Table
 
@@ -98,11 +97,12 @@ def multi_select(choices) -> list[str]:
     cursor = 0
     selected: set[int] = set()
 
- 
-    with Live(_render_table(choices, cursor, selected), console=console, auto_refresh=False) as live:
+    with Live(
+        _render_table(choices, cursor, selected), console=console, auto_refresh=False
+    ) as live:
         while True:
             key = readchar.readkey()
- 
+
             if key == readchar.key.UP:
                 cursor = (cursor - 1) % len(choices)
             elif key == readchar.key.DOWN:
@@ -114,9 +114,9 @@ def multi_select(choices) -> list[str]:
                     selected.add(cursor)
             elif key == readchar.key.ENTER:
                 break
- 
+
             live.update(_render_table(choices, cursor, selected), refresh=True)
- 
+
     return [choices[i] for i in selected]
 
 
