@@ -51,3 +51,4 @@ jobs:
           tags: |
             ghcr.io/${{ env.IMAGE_REPO }}/labomatics-${{ matrix.name }}:v${{ inputs.version }}${{ inputs.tag_suffix }}
             ghcr.io/${{ env.IMAGE_REPO }}/labomatics-${{ matrix.name }}:latest${{ inputs.tag_suffix }}
+          build-args: ${{ matrix.name == 'frontend' && format('VITE_PRIMEUI_LICENSE_KEY={0}', secrets.VITE_PRIMEUI_LICENSE_KEY) || '' }}

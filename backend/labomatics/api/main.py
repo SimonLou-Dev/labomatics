@@ -96,11 +96,19 @@ allowed_origins = [
 # ---------------------------------------------------------------------------
 
 
+def _extract_hostname(url: str) -> str:
+    """Extract hostname from URL, removing protocol and port."""
+    url = url.removeprefix("https://").removeprefix("http://")
+    return url.split(":")[0]
+
+
 allowed_hosts = [
-    f"{settings.app_url}",
+    _extract_hostname(settings.app_url),
+    _extract_hostname(settings.front_url),
     "localhost",
     "127.0.0.1",
     "*.localhost",
+    "*.esgi.local",
 ]
 
 # 1. TrustedHostMiddleware (innermost)
