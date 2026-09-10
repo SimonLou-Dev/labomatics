@@ -1,6 +1,22 @@
 # CHANGELOG
 
 
+## v0.4.0-rc.11 (2026-09-10)
+
+### Bug Fixes
+
+- Docker endpoint - add root /health for health checks
+  ([`e8d09f8`](https://github.com/SimonLou-Dev/labomatics/commit/e8d09f88f44bc369957acced77e2e1b47bed01de))
+
+- Docker endpoint - run migrations on startup
+  ([`8291b12`](https://github.com/SimonLou-Dev/labomatics/commit/8291b12462f49444889a65015f17b6400ed08609))
+
+### Chores
+
+- Add curl to backend container for health checks
+  ([`161146b`](https://github.com/SimonLou-Dev/labomatics/commit/161146b782dc7fb91fb24cfcd7135766fd0902f8))
+
+
 ## v0.4.0-rc.10 (2026-09-10)
 
 ### Bug Fixes
