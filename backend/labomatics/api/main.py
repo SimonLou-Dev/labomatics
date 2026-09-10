@@ -59,6 +59,14 @@ async def lifespan(app: FastAPI):
 root_path = settings.url_prefix or ""
 
 app = FastAPI(title="Labomatics API", root_path=root_path, lifespan=lifespan)
+
+
+@app.get("/health")
+def health() -> dict:
+    """Health check endpoint for Docker/Kubernetes."""
+    return {"status": "ok"}
+
+
 app.include_router(router_v1)
 
 
