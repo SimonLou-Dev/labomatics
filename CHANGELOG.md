@@ -1,6 +1,17 @@
 # CHANGELOG
 
 
+## v0.4.0-rc.13 (2026-09-10)
+
+### Bug Fixes
+
+- Keycloak redirect uri construction with url_prefix
+  ([`3684e61`](https://github.com/SimonLou-Dev/labomatics/commit/3684e61540eb95558e010971f5836797c826e210))
+
+- Modifying ruff ingores
+  ([`1173ed5`](https://github.com/SimonLou-Dev/labomatics/commit/1173ed539fcbe29670caa231e0fdf5d4982bdbfe))
+
+
 ## v0.4.0-rc.12 (2026-09-10)
 
 ### Bug Fixes

@@ -1,6 +1,6 @@
 [project]
 name = "labomatics"
-version = "0.4.0-rc.12"
+version = "0.4.0-rc.13"
 
 [tool.semantic_release]
 version_toml = ["pyproject.toml:project.version", "cli/pyproject.toml:tool.poetry.version"]
