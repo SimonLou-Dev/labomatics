@@ -61,6 +61,7 @@ class StudentRepository(BaseRepository[Student]):
 
         from labomatics.core.db.models import (
             Enrollment,
+            LabProvisioning,
         )
 
         async with async_session_local() as session:
@@ -71,7 +72,12 @@ class StudentRepository(BaseRepository[Student]):
                     selectinload(self.model.enrollments).selectinload(
                         Enrollment.cohort
                     ),
-                    selectinload(self.model.lab_provisioning),
+                    selectinload(self.model.lab_provisioning).selectinload(
+                        LabProvisioning.ip_allocation
+                    ),
+                    selectinload(self.model.lab_provisioning).selectinload(
+                        LabProvisioning.vxlan_allocation
+                    ),
                 )
                 .order_by(self.model.created_at.desc())
                 .offset((page - 1) * size)
@@ -109,6 +115,7 @@ class StudentRepository(BaseRepository[Student]):
         from sqlalchemy.orm import selectinload
 
         from labomatics.core.db.models import (
+            Cluster,
             Enrollment,
             LabProvisioning,
         )
@@ -130,6 +137,9 @@ class StudentRepository(BaseRepository[Student]):
                     selectinload(self.model.lab_provisioning).selectinload(
                         LabProvisioning.vms
                     ),
+                    selectinload(self.model.lab_provisioning)
+                    .selectinload(LabProvisioning.cluster)
+                    .selectinload(Cluster.credential),
                 )
             )
             result = await session.execute(stmt)

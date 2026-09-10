@@ -65,7 +65,9 @@ class StudentImportService:
         data, parse_errors = self.parse_csv(csv_content, column_mapping)
 
         # Récupérer les étudiants existants et indexer par external_id (ID numérique)
-        existing_students = await self.repo.list()
+        existing_students = await self.repo.list(
+            relations=["enrollments", "enrollments.cohort"]
+        )
         existing_by_id = {s.external_id: s for s in existing_students}
 
         added = []

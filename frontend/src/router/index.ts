@@ -3,7 +3,6 @@ import { useAuthStore } from '@/stores/auth'
 import MainLayout from '@/layouts/MainLayout.vue'
 import LoginPage from '@/pages/Login.vue'
 import ForbiddenPage from '@/pages/Forbidden.vue'
-import DashboardPage from '@/pages/Dashboard.vue'
 import StudentsAdminPage from '@/pages/admin/Students.vue'
 import ClustersPage from '@/pages/admin/Clusters.vue'
 import WanRangesPage from '@/pages/admin/WanRanges.vue'
@@ -34,7 +33,7 @@ const routes = [
       {
         path: '',
         name: 'Dashboard',
-        component: DashboardPage,
+        component: LabPage,
       },
       {
         path: 'admin/students',

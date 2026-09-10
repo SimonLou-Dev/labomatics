@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime
-from ipaddress import IPv4Network
+from ipaddress import IPv4Address, IPv4Network
 from uuid import UUID
 
 from labomatics.constants.enums import EventType, OwnerRole
@@ -118,14 +118,16 @@ async def _create_lab(
                     )
                     return
                 elif existing_lab.status == "error":
-                    # Supprimer l'ancien lab en erreur et créer un nouveau
+                    # Marquer l'ancien lab en erreur comme released et créer un nouveau
                     if existing_lab.ip_allocation_id:
-                        await IpAllocationRepository().delete(
-                            existing_lab.ip_allocation_id
+                        await IpAllocationRepository().update(
+                            existing_lab.ip_allocation_id,
+                            {"released_at": datetime.utcnow()},
                         )
                     if existing_lab.vxlan_allocation_id:
-                        await VxlanAllocationRepository().delete(
-                            existing_lab.vxlan_allocation_id
+                        await VxlanAllocationRepository().update(
+                            existing_lab.vxlan_allocation_id,
+                            {"released_at": datetime.utcnow()},
                         )
                     await lab_prov_repo.delete(existing_lab.id)
                     logger.info(
@@ -153,18 +155,41 @@ async def _create_lab(
 
         # 5. Allocation IP WAN
         ip_svc = IpRangeService()
-        wan_ip = await ip_svc.get_first_available_ip(
-            ip_range_cluster.ip_range_id, cluster.id
-        )
+        alloc_repo = IpAllocationRepository()
 
-        ip_alloc = IpAllocation(
-            ip_range_cluster_id=ip_range_cluster.id,
-            owner_keycloak_id=UUID(owner_keycloak_id),
-            owner_role=owner_role,
-            student_id=UUID(student_id) if student_id else None,
-            ip_address=str(wan_ip),
-        )
-        ip_alloc = await IpAllocationRepository().add(ip_alloc)
+        # Check if student already has an active allocation (idempotency)
+        existing_alloc = None
+        if student_id:
+            existing_alloc = await alloc_repo.get_active_for_student(
+                UUID(student_id), ip_range_cluster.id
+            )
+            logger.info(
+                f"[DEBUG] Checking idempotency for student {student_id}, range_cluster {ip_range_cluster.id}: existing={existing_alloc is not None}"
+            )
+
+        if existing_alloc:
+            ip_alloc = existing_alloc
+            wan_ip = IPv4Address(ip_alloc.ip_address)
+            logger.info(f"[DEBUG] Reusing existing allocation: {wan_ip}")
+        else:
+            logger.info(
+                f"[DEBUG] Requesting new IP for student {student_id}, range_cluster {ip_range_cluster.id}"
+            )
+            wan_ip = await ip_svc.get_first_available_ip(
+                ip_range_cluster.ip_range_id, cluster.id
+            )
+            logger.info(f"[DEBUG] Got IP: {wan_ip}")
+
+            ip_alloc = IpAllocation(
+                ip_range_cluster_id=ip_range_cluster.id,
+                owner_keycloak_id=UUID(owner_keycloak_id),
+                owner_role=owner_role,
+                student_id=UUID(student_id) if student_id else None,
+                ip_address=str(wan_ip),
+            )
+            logger.info(f"[DEBUG] Creating new allocation for IP {wan_ip}")
+            ip_alloc = await alloc_repo.add(ip_alloc)
+            logger.info(f"[DEBUG] New allocation created: {ip_alloc.id}")
         await lab_prov_repo.update(
             lab_provisioning.id, {"ip_allocation_id": ip_alloc.id}
         )
@@ -181,24 +206,38 @@ async def _create_lab(
 
         # 6. Allocation VNI + subnet
         vxlan_svc = VxlanRangeService()
-        vni = await vxlan_svc.get_first_available_vni(
-            vxlan_range_cluster.vxlan_range_id, cluster.id
-        )
+        vxlan_alloc_repo = VxlanAllocationRepository()
 
-        base_net = IPv4Network(
-            vxlan_range_cluster.vxlan_range.base_network, strict=False
-        )
-        subnet = NetworkRangeService._calculate_subnet(base_net, vni)
+        # Check if student already has an active allocation (idempotency)
+        existing_vxlan_alloc = None
+        if student_id:
+            existing_vxlan_alloc = await vxlan_alloc_repo.get_active_for_student(
+                UUID(student_id), vxlan_range_cluster.id
+            )
 
-        vxlan_alloc = VxlanAllocation(
-            vxlan_range_cluster_id=vxlan_range_cluster.id,
-            owner_keycloak_id=UUID(owner_keycloak_id),
-            owner_role=owner_role,
-            student_id=UUID(student_id) if student_id else None,
-            vni=vni,
-            subnet=str(subnet),
-        )
-        vxlan_alloc = await VxlanAllocationRepository().add(vxlan_alloc)
+        if existing_vxlan_alloc:
+            vxlan_alloc = existing_vxlan_alloc
+            vni = vxlan_alloc.vni
+            subnet = IPv4Network(vxlan_alloc.subnet, strict=False)
+        else:
+            vni = await vxlan_svc.get_first_available_vni(
+                vxlan_range_cluster.vxlan_range_id, cluster.id
+            )
+
+            base_net = IPv4Network(
+                vxlan_range_cluster.vxlan_range.base_network, strict=False
+            )
+            subnet = NetworkRangeService._calculate_subnet(base_net, vni)
+
+            vxlan_alloc = VxlanAllocation(
+                vxlan_range_cluster_id=vxlan_range_cluster.id,
+                owner_keycloak_id=UUID(owner_keycloak_id),
+                owner_role=owner_role,
+                student_id=UUID(student_id) if student_id else None,
+                vni=vni,
+                subnet=str(subnet),
+            )
+            vxlan_alloc = await vxlan_alloc_repo.add(vxlan_alloc)
         await lab_prov_repo.update(
             lab_provisioning.id, {"vxlan_allocation_id": vxlan_alloc.id}
         )
@@ -232,7 +271,7 @@ async def _create_lab(
         # Calculer la gateway (dernière IP utilisable du subnet)
         gateway_ip = subnet[-2]  # subnet[-1] est le broadcast
 
-        await proxmox.create_user_with_deps(
+        token_result = await proxmox.create_user_with_deps(
             user_name=user_name,
             realm=settings.keycloak_realm,
             zone=cluster.sdn_zone,
@@ -240,6 +279,8 @@ async def _create_lab(
             gateway=str(gateway_ip),
             subnet=str(subnet),
         )
+        # Extraire le token (tuple de (token_id, token_secret))
+        token_id, token_secret = token_result.get("token", ("", ""))
         await emit(job_id, "step_done", step="proxmox_user_created")
 
         # 9. Clone la VM OpenWRT (ou récupérer si elle existe déjà)
@@ -337,6 +378,36 @@ async def _create_lab(
             resource_id=str(lab_provisioning.id),
             details={"vmid": vmid, "node": dest_node, "vnet": vnet_name},
         )
+
+        # 15. Envoyer mail à l'étudiant avec les infos du lab
+        if student_id:
+            try:
+                from labomatics.services.email_templates import EmailType
+                from labomatics.services.mail_service import MailService
+
+                student_repo = StudentRepository()
+                student = await student_repo.get(UUID(student_id))
+
+                if student:
+                    mail_svc = MailService()
+                    await mail_svc.send_templated_mail(
+                        to=student.email,
+                        subject=f"Votre lab est prêt - {cluster.name}",
+                        email_type=EmailType.LAB_PROVISIONED,
+                        context={
+                            "student_name": student.first_name,
+                            "wan_ip": str(wan_ip),
+                            "cluster_name": cluster.name,
+                            "proxmox_url": cluster.url
+                            or f"https://{cluster.host}:8006",
+                            "token_id": token_id,
+                            "token_secret": token_secret,
+                        },
+                    )
+                    logger.info(f"Lab provisioned email sent to {student.email}")
+            except Exception as e:
+                logger.warning(f"Failed to send lab provisioned email: {e}")
+
         await emit(job_id, "done", message="Lab created successfully")
 
         logger.info(f"Lab created for {owner_username}: vmid={vmid}, vnet={vnet_name}")

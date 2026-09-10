@@ -13,6 +13,7 @@ from labomatics.api.dto.ip_range import (
     IpRangeDTO,
     IpRangeUpdateDTO,
 )
+from labomatics.api.dto.student import StudentSimpleDTO
 from labomatics.core.db.models.ip_allocation import IpAllocation
 from labomatics.core.db.models.ip_range import IpRange
 from labomatics.core.db.repository.ip_allocation import IpAllocationRepository
@@ -98,6 +99,52 @@ class IpRangeService:
         # Convertir en DTOs
         return [self._allocation_to_dto(alloc) for alloc in allocations]
 
+    async def get_allocations_paginated(
+        self,
+        ip_range_id: UUID,
+        page: int = 1,
+        per_page: int = 20,
+        search: str | None = None,
+    ) -> dict:
+        """Récupère les allocations IP d'une plage avec pagination et filtres."""
+        # Vérifier que la plage existe
+        ip_range = await self.repo.get(ip_range_id)
+        if not ip_range:
+            raise HTTPException(404, "IP Range not found")
+
+        # Récupérer toutes les allocations
+        allocations = await self.alloc_repo.list_by_ip_range(ip_range_id)
+
+        # Filtrer si search est fourni
+        if search:
+            search_lower = search.lower()
+            allocations = [
+                a
+                for a in allocations
+                if (
+                    search_lower in str(a.ip_address).lower()
+                    or (a.student and search_lower in a.student.login.lower())
+                    or (a.student and search_lower in a.student.first_name.lower())
+                    or (a.student and search_lower in a.student.last_name.lower())
+                )
+            ]
+
+        # Paginer
+        total = len(allocations)
+        offset = (page - 1) * per_page
+        paginated = allocations[offset : offset + per_page]
+
+        # Convertir en DTOs
+        items = [self._allocation_to_dto(alloc) for alloc in paginated]
+
+        return {
+            "items": items,
+            "total": total,
+            "page": page,
+            "per_page": per_page,
+            "total_pages": (total + per_page - 1) // per_page,
+        }
+
     # -------------------------------------------------------------------------
     # Helpers
     # -------------------------------------------------------------------------
@@ -161,7 +208,10 @@ class IpRangeService:
                     404,
                     f"IP Range {ip_range_id} not assigned to cluster {cluster_id}",
                 )
-            allocations = await self.alloc_repo.list_by_cluster(cluster_id)
+            all_allocations = await self.alloc_repo.list_by_cluster(cluster_id)
+            allocations = [
+                a for a in all_allocations if a.ip_range_cluster_id == range_cluster.id
+            ]
         else:
             allocations = await self.alloc_repo.list_by_ip_range(ip_range_id)
 
@@ -225,7 +275,10 @@ class IpRangeService:
                     404,
                     f"IP Range {ip_range_id} not assigned to cluster {cluster_id}",
                 )
-            allocations = await self.alloc_repo.list_by_cluster(cluster_id)
+            all_allocations = await self.alloc_repo.list_by_cluster(cluster_id)
+            allocations = [
+                a for a in all_allocations if a.ip_range_cluster_id == range_cluster.id
+            ]
         else:
             allocations = await self.alloc_repo.list_by_ip_range(ip_range_id)
 
@@ -263,12 +316,17 @@ class IpRangeService:
 
     def _allocation_to_dto(self, allocation: IpAllocation) -> IpAllocationDTO:
         """Convertit une allocation IP en DTO."""
+
         student = allocation.student
         return IpAllocationDTO(
             ip_address=str(allocation.ip_address),
-            student_login=student.login if student else None,
-            student_first_name=student.first_name if student else None,
-            student_last_name=student.last_name if student else None,
-            wan_ip_taken_by=student.login if student else None,
+            student=StudentSimpleDTO(
+                id=str(student.id),
+                login=student.login,
+                first_name=student.first_name,
+                last_name=student.last_name,
+            )
+            if student
+            else None,
             is_taken=student is not None,
         )

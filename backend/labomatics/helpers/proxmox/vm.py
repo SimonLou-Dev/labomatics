@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import re
 from collections.abc import Callable
 
@@ -12,6 +13,8 @@ from labomatics.helpers.proxmox.api import (
     ProxmoxServerError,
     urls,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class ProxmoxVMClient:
@@ -53,10 +56,12 @@ class ProxmoxVMClient:
         return int(data)
 
     async def pick_node(self) -> str:
-        """Sélectionne le nœud avec le plus de mémoire disponible.
+        """Sélectionne le nœud avec le moins de ressources utilisées.
+
+        Priorité: mémoire disponible > CPU disponible
 
         Returns:
-            Nom du nœud Proxmox ayant le plus de RAM libre.
+            Nom du nœud Proxmox le moins chargé.
 
         Raises:
             RuntimeError: Si aucun nœud n'est en ligne.
@@ -64,18 +69,36 @@ class ProxmoxVMClient:
         """
         async with self._proxmox_client.get_context_manager() as client:
             try:
-                resp = await client.get(urls.NODES, cache=True)
-                nodes = resp.get("data", [])
+                resp = await client.get(urls.CLUSTER_RESOURCES, cache=False)
+                resources = resp.get("data", [])
             except ProxmoxServerError as e:
-                raise RuntimeError(f"Failed to fetch nodes list: {e}") from e
+                raise RuntimeError(f"Failed to fetch cluster resources: {e}") from e
 
-        online = [n for n in nodes if n.get("status") == "online"]
-        if not online:
+        # Grouper par node et récupérer les stats
+        nodes_stats = {}
+        for r in resources:
+            if r.get("type") == "node" and r.get("status") == "online":
+                node_name = r.get("node")
+                if node_name:
+                    mem_available = r.get("maxmem", 1) - r.get("mem", 0)
+                    cpu_available = (1 - r.get("cpu", 0)) if r.get("maxcpu") else 1
+                    nodes_stats[node_name] = {
+                        "mem_available": mem_available,
+                        "cpu_available": cpu_available,
+                        "score": mem_available,
+                    }
+
+        if not nodes_stats:
             raise RuntimeError("No online Proxmox nodes available in cluster")
 
-        return str(
-            max(online, key=lambda n: n.get("maxmem", 0) - n.get("mem", 0))["node"]
+        # Sélectionner le nœud avec le plus de mémoire disponible
+        best_node = max(nodes_stats.items(), key=lambda x: x[1]["score"])
+        logger.info(
+            f"Selected node {best_node[0]}: "
+            f"mem={best_node[1]['mem_available']} bytes, "
+            f"cpu={best_node[1]['cpu_available']:.1%}"
         )
+        return best_node[0]
 
     async def local_node(self, host: str) -> str:
         """Retourne le nœud correspondant à l'hôte de connexion.
@@ -400,28 +423,35 @@ class ProxmoxVMClient:
         logger.info(f"Extracted UPID: {upid} (type: {type(upid).__name__})")
 
         if self._wait_for_task_fn:
-            self._wait_for_task_fn(source_node, upid)
+            await self._wait_for_task_fn(source_node, upid)
         else:
             raise RuntimeError("No wait_for_task function provided")
 
         # Résoudre le vmid réel (rechercher par nom sur dest_node)
-        # Laisser le temps à Proxmox de mettre à jour l'index
-        await asyncio.sleep(1)
+        # Attendre avec polling que la VM soit indexée par Proxmox
+        max_retries = 30  # 30 secondes max
+        for attempt in range(max_retries):
+            await asyncio.sleep(1)
 
-        async with self._proxmox_client.get_context_manager() as client:
-            try:
-                resp = await client.get(
-                    urls.CLUSTER_RESOURCES, params={"type": "vm"}, cache=False
+            async with self._proxmox_client.get_context_manager() as client:
+                try:
+                    resp = await client.get(
+                        urls.CLUSTER_RESOURCES, params={"type": "vm"}, cache=False
+                    )
+                except ProxmoxServerError as e:
+                    if attempt < max_retries - 1:
+                        continue
+                    raise RuntimeError(f"Failed to find cloned VM: {e}") from e
+
+            resources = resp.get("data", [])
+            for r in resources:
+                if r.get("node") == dest_node and r.get("name") == vm_name:
+                    return dest_node, int(r.get("vmid"))
+
+            if attempt == max_retries - 1:
+                raise RuntimeError(
+                    f"Cloned VM {vm_name} not found on {dest_node} after {max_retries}s"
                 )
-            except ProxmoxServerError as e:
-                raise RuntimeError(f"Failed to find cloned VM: {e}") from e
-
-        resources = resp.get("data", [])
-        for r in resources:
-            if r.get("node") == dest_node and r.get("name") == vm_name:
-                return dest_node, int(r.get("vmid"))
-
-        raise RuntimeError(f"Cloned VM {vm_name} not found on {dest_node}")
 
     async def config(self, node: str, vmid: int, **args) -> None:
         """Configure une VM (cloud-init, hardware, etc.).
@@ -462,6 +492,31 @@ class ProxmoxVMClient:
         if upid and self._wait_for_task_fn:
             await self._wait_for_task_fn(node, upid)
 
+    async def stop(self, node: str, vmid: int) -> str | None:
+        """Arrête une VM de force (hard stop) et attent la fin de la tâche.
+
+        Args:
+            node: Nœud hébergeant la VM.
+            vmid: ID de la VM.
+
+        Returns:
+            L'UPID de la tâche d'arrêt.
+
+        Raises:
+            RuntimeError: Si l'arrêt échoue.
+        """
+        async with self._proxmox_client.get_context_manager() as client:
+            try:
+                resp = await client.post(urls.qemu_status_stop(node, vmid))
+            except ProxmoxServerError as e:
+                raise RuntimeError(f"Failed to stop VM {vmid} on {node}: {e}") from e
+
+        upid = resp.get("data")
+        if upid and self._wait_for_task_fn:
+            await self._wait_for_task_fn(node, upid)
+
+        return upid
+
     async def get_config(self, node: str, vmid: int) -> dict:
         """Récupère la configuration actuelle d'une VM.
 
@@ -484,3 +539,43 @@ class ProxmoxVMClient:
                 ) from e
 
         return resp.get("data", {})
+
+    async def delete(self, node: str, vmid: int) -> None:
+        """Supprime une VM ou conteneur LXC après l'avoir arrêté.
+
+        Args:
+            node: Nœud hébergeant la VM.
+            vmid: ID de la VM ou conteneur.
+
+        Raises:
+            RuntimeError: Si la suppression échoue.
+        """
+        # Stop the VM first (hard stop)
+        logger.info(f"Stopping VM {vmid} on node {node} before deletion")
+        try:
+            await self.stop(node=node, vmid=vmid)
+        except Exception as e:
+            logger.warning(f"VM stop failed (may already be stopped): {e}")
+
+        async with self._proxmox_client.get_context_manager() as client:
+            try:
+                # Essayer d'abord QEMU
+                try:
+                    upid = await client.delete(urls.qemu_vm_path(node, vmid))
+                    if self._wait_for_task_fn:
+                        upid_str = (
+                            upid.get("data") if isinstance(upid, dict) else str(upid)
+                        )
+                        await self._wait_for_task_fn(node, upid_str)
+                except ProxmoxServerError:
+                    # Si QEMU échoue, essayer LXC
+                    upid = await client.delete(urls.lxc_vm_path(node, vmid))
+                    if self._wait_for_task_fn:
+                        upid_str = (
+                            upid.get("data") if isinstance(upid, dict) else str(upid)
+                        )
+                        await self._wait_for_task_fn(node, upid_str)
+            except ProxmoxServerError as e:
+                raise RuntimeError(
+                    f"Failed to delete VM/CT {vmid} on {node}: {e}"
+                ) from e

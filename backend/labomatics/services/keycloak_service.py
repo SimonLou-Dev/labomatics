@@ -24,38 +24,6 @@ class KeycloakService:
             client_id="admin-cli",
             verify=False,
         )
-        if settings.smtp_host:
-            self._configure_smtp_realm()
-
-    def _configure_smtp_realm(self) -> None:
-        """Configure SMTP sur le realm Keycloak."""
-        try:
-            realm = self.admin_client.get_realm()
-            smtp_config = {
-                "smtpServer": {
-                    "host": settings.smtp_host,
-                    "port": str(settings.smtp_port),
-                    "from": "noreply@labomatics.local",
-                }
-            }
-            if settings.smtp_user:
-                smtp_config["smtpServer"]["auth"] = "true"
-                smtp_config["smtpServer"]["user"] = settings.smtp_user
-                smtp_config["smtpServer"]["password"] = settings.smtp_password
-            if settings.smtp_tls:
-                smtp_config["smtpServer"]["ssl"] = "false"
-                smtp_config["smtpServer"]["starttls"] = "true"
-            else:
-                smtp_config["smtpServer"]["ssl"] = "true"
-                smtp_config["smtpServer"]["starttls"] = "false"
-
-            realm.update(smtp_config)
-            self.admin_client.update_realm(settings.keycloak_realm, realm)
-            logger.info(
-                "Configuré SMTP Keycloak: %s:%s", settings.smtp_host, settings.smtp_port
-            )
-        except KeycloakError as e:
-            logger.error("Erreur lors de la configuration SMTP Keycloak: %s", str(e))
 
     async def create_user(
         self, login: str, email: str, first_name: str, last_name: str

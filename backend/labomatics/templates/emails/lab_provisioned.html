@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Votre lab est prêt</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+            color: #333;
+        }
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #ff8832 0%, #ff6b00 100%);
+            padding: 40px 20px;
+            text-align: center;
+            color: white;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            letter-spacing: 1px;
+        }
+        .logo-icon {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            background-color: rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            line-height: 40px;
+            text-align: center;
+            margin-right: 10px;
+            font-size: 20px;
+        }
+        .header-subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+        .header-success {
+            font-size: 32px;
+            margin-top: 15px;
+        }
+        .content {
+            padding: 40px 30px;
+        }
+        .greeting {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #222;
+        }
+        .message {
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #555;
+            line-height: 1.7;
+        }
+        .credentials-section {
+            background-color: #f9f9f9;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 4px;
+        }
+        .credentials-section {
+            background-color: #f9f9f9;
+            border-left: 4px solid #ff8832;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 4px;
+        }
+        .credentials-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #222;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        .credentials-title-icon {
+            margin-right: 8px;
+            font-size: 18px;
+        }
+        .credential-item {
+            margin: 12px 0;
+            padding: 10px;
+            background-color: white;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            word-break: break-all;
+        }
+        .credential-label {
+            font-weight: 600;
+            color: #ff6b00;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto;
+        }
+        .credential-value {
+            color: #333;
+            margin-top: 4px;
+            word-break: break-all;
+        }
+        .access-link {
+            display: inline-block;
+            margin-top: 8px;
+            padding: 8px 12px;
+            background-color: #fff3e0;
+            border-radius: 4px;
+            text-decoration: none;
+            color: #ff6b00;
+            font-weight: 600;
+            font-size: 13px;
+        }
+        .access-link:hover {
+            background-color: #ffe0b2;
+        }
+        .info-box {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #856404;
+        }
+        .divider {
+            height: 1px;
+            background-color: #eee;
+            margin: 30px 0;
+        }
+        .quick-start {
+            background-color: #e8f5e9;
+            border-left: 4px solid #4caf50;
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #2e7d32;
+        }
+        .quick-start strong {
+            color: #1b5e20;
+        }
+        .footer {
+            background-color: #f9f9f9;
+            padding: 20px 30px;
+            border-top: 1px solid #eee;
+            font-size: 12px;
+            color: #888;
+            text-align: center;
+        }
+        .footer a {
+            color: #ff8832;
+            text-decoration: none;
+        }
+        .footer-text {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">
+                <span class="logo-icon">⚙️</span>
+                <span>Labomatics</span>
+            </div>
+            <div class="header-success">🎉 Ton lab est prêt !</div>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+            <div class="greeting">Tout est configuré {{ student_name }} !</div>
+
+            <div class="message">
+                Ton lab personnel a été déployé avec succès sur le cluster Proxmox.
+                Tu peux maintenant accéder à tes ressources avec les identifiants ci-dessous.
+            </div>
+
+            <!-- WAN IP & Router -->
+            <div class="credentials-section">
+                <div class="credentials-title">
+                    <span class="credentials-title-icon">🌐</span>
+                    Accès Réseau & Routeur
+                </div>
+
+                <div class="credential-item">
+                    <div class="credential-label">IP WAN (Ton adresse publique):</div>
+                    <div class="credential-value">{{ wan_ip }}</div>
+                </div>
+
+                <div class="credential-item">
+                    <div class="credential-label">Routeur OpenWRT</div>
+                    <div class="credential-value">
+                        <strong>Utilisateur:</strong> root<br>
+                        <strong>Mot de passe:</strong> labomatics
+                    </div>
+                    <a href="https://{{ wan_ip }}:1337/cgi-bin/luci/" class="access-link" target="_blank">
+                        → Accéder à l'interface Routeur
+                    </a>
+                </div>
+
+                <div class="info-box">
+                    ⚠️ L'interface est en HTTPS auto-signé. Acceptez le certificat de sécurité pour y accéder.
+                </div>
+            </div>
+
+            <!-- Proxmox Access -->
+            <div class="credentials-section">
+                <div class="credentials-title">
+                    <span class="credentials-title-icon">💻</span>
+                    Accès Proxmox ({{ cluster_name }})
+                </div>
+
+                <div class="message" style="margin: 0 0 15px 0;">
+                    Tu peux accéder à ton cluster Proxmox via SSO (Single Sign-On, choisir le realm labomatics).
+                    Aucun identifiant supplémentaire n'est requis.
+                </div>
+
+                <div class="credential-item">
+                    <div class="credential-label">URL Proxmox:</div>
+                    <div class="credential-value">{{ proxmox_url }}</div>
+                </div>
+
+                <div class="credential-item">
+                    <div class="credential-label">Token ID (API):</div>
+                    <div class="credential-value">{{ token_id }}</div>
+                </div>
+
+                <div class="credential-item">
+                    <div class="credential-label">Token Secret (API):</div>
+                    <div class="credential-value">{{ token_secret }}</div>
+                </div>
+
+                <div class="info-box" style="background-color: #fce4ec; border-left-color: #e91e63; color: #880e4f;">
+                    🔒 Conserve tes tokens API en sécurité. Ne les partage pas.
+                </div>
+            </div>
+
+            <!-- Quick Start -->
+            <div class="quick-start">
+                <strong>🚀 Premiers pas:</strong><br>
+                1. Accède au routeur pour configurer ton réseau<br>
+                2. Consulte le portail Labomatics pour gérer tes VMs<br>
+                3. Utilise les tokens API pour l'automatisation
+            </div>
+
+            <div class="divider"></div>
+
+            <div style="text-align: center;">
+                <a href="https://simonlou-dev.github.io/labomatics/" style="display: inline-block; background: linear-gradient(135deg, #ff8832 0%, #ff6b00 100%); color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 14px;">
+                    📖 Consulter la documentation
+                </a>
+            </div>
+
+            <div class="message" style="font-size: 13px; color: #666; margin-top: 20px;">
+                <strong>Des questions?</strong><br>
+                N'hésite pas à poser tes questions sur Discord ou consulte la documentation.
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <div class="footer-text">
+                Labomatics - Laboratoire d'automatisation Proxmox
+            </div>
+            <div class="footer-text" style="margin-top: 10px; color: #aaa;">
+                Cet email contient des informations sensibles. Conserve-le en sécurité.
+            </div>
+        </div>
+    </div>
+</body>
+</html>

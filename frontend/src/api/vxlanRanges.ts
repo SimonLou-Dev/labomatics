@@ -2,7 +2,12 @@
  * VXLAN Ranges API endpoints
  */
 import http from './http'
-import type { VxlanRangeDTO, VxlanRangeCreateDTO, VxlanRangeUpdateDTO, VxlanAllocationDTO } from './types'
+import type {
+  VxlanRangeDTO,
+  VxlanRangeCreateDTO,
+  VxlanRangeUpdateDTO,
+  VxlanAllocationPaginatedDTO,
+} from './types'
 import type { PaginatedResponse } from './types'
 
 export async function listVxlanRanges(
@@ -37,7 +42,18 @@ export async function getVxlanRange(rangeId: string): Promise<VxlanRangeDTO> {
   return res.data
 }
 
-export async function getVxlanRangeAllocations(rangeId: string): Promise<VxlanAllocationDTO[]> {
-  const res = await http.get<VxlanAllocationDTO[]>(`/vxlan-ranges/${rangeId}/allocations`)
+export async function getVxlanRangeAllocations(
+  rangeId: string,
+  page: number = 1,
+  size: number = 20,
+  search?: string
+): Promise<VxlanAllocationPaginatedDTO> {
+  const res = await http.get<VxlanAllocationPaginatedDTO>(`/vxlan-ranges/${rangeId}/allocations`, {
+    params: {
+      page,
+      size,
+      ...(search && { search }),
+    },
+  })
   return res.data
 }

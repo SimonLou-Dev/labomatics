@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from brevo import AsyncBrevo
 from brevo.core.api_error import ApiError
@@ -13,6 +13,7 @@ from brevo.transactional_emails import (
 )
 
 from labomatics.core.config.settings import settings
+from labomatics.services.email_templates import EmailTemplateService, EmailType
 
 if TYPE_CHECKING:
     pass
@@ -31,6 +32,7 @@ class MailService:
         """
         self.settings = settings
         self._client = AsyncBrevo(api_key=settings.brevo_api_key)
+        self._template_service = EmailTemplateService()
 
     async def send_mail(
         self, to: str, subject: str, body: str, from_name: str | None = None
@@ -69,3 +71,23 @@ class MailService:
         except ApiError as e:
             logger.error("Erreur lors de l'envoi du mail à %s: %s", to, str(e))
             raise
+
+    async def send_templated_mail(
+        self,
+        to: str,
+        subject: str,
+        email_type: EmailType,
+        context: dict[str, Any],
+        from_name: str | None = None,
+    ) -> None:
+        """Envoie un mail templé via Brevo.
+
+        Args:
+            to: Adresse email destinataire
+            subject: Sujet du mail
+            email_type: Type de template à utiliser
+            context: Variables pour le rendu Jinja2
+            from_name: Nom de l'expéditeur (utilise BREVO_FROM_NAME par défaut)
+        """
+        html_content = self._template_service.render(email_type, context)
+        return await self.send_mail(to, subject, html_content, from_name)

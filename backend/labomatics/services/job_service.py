@@ -24,6 +24,7 @@ class JobService:
         create_job_id = new_job_id()
         student_tasks.create_students.delay(added_dicts)
         delete_job_id = new_job_id()
+
         student_tasks.delete_students.delay(deleted_dicts)
 
         return [

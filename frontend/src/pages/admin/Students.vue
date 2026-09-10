@@ -191,12 +191,16 @@
               icon="pi pi-replay"
               severity="secondary"
               size="small"
+              :loading="deployingStudentId === data.id"
+              @click="confirmForceCreateLab(data)"
             />
             <Button
               v-tooltip="'Supprimer'"
               icon="pi pi-trash"
               severity="danger"
               size="small"
+              :loading="deletingStudentId === data.id"
+              @click="confirmDeleteStudent(data)"
             />
           </div>
         </template>
@@ -214,6 +218,7 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
 import { useToast } from 'primevue/usetoast'
+import { useConfirm } from 'primevue/useconfirm'
 import {
   DataTable,
   Column,
@@ -226,12 +231,13 @@ import {
 } from 'primevue'
 import { FilterMatchMode } from '@primevue/core/api'
 import { Search } from '@primeicons/vue'
-import { listStudents, type StudentListItem } from '@/api/students'
+import { listStudents, forceCreateStudentLab, deleteStudent as deleteStudentApi, type StudentListItem } from '@/api/students'
 import type { DataTablePageChangeEvent } from '@/api/types'
 import { getCohortColor } from '@/utils/colors'
 import StudentImportDialog from './StudentImportDialog.vue'
 
 const toast = useToast()
+const confirm = useConfirm()
 
 const students = ref<StudentListItem[]>([])
 const totalRecords = ref(0)
@@ -240,6 +246,8 @@ const currentPage = ref(1)
 const pageSize = ref(20)
 const cohortOptions = ref<{ label: string; value: string | null }[]>([])
 const importDialog = ref<InstanceType<typeof StudentImportDialog>>()
+const deployingStudentId = ref<string | null>(null)
+const deletingStudentId = ref<string | null>(null)
 let _debounceTimer: ReturnType<typeof setTimeout> | null = null
 
 const filters = ref({
@@ -328,5 +336,74 @@ function onImportSuccess() {
 
 function onImportClose() {
   // Nothing to do on close
+}
+
+function confirmForceCreateLab(student: StudentListItem) {
+  confirm.require({
+    message: `Êtes-vous sûr de vouloir ${
+      student.wan_ip ? 'recréer' : 'créer'
+    } le lab pour ${student.first_name} ${student.last_name} ?`,
+    header: 'Confirmation',
+    icon: 'pi pi-exclamation-triangle',
+    accept: () => forceCreateLab(student),
+  })
+}
+
+async function forceCreateLab(student: StudentListItem) {
+  deployingStudentId.value = student.id
+  try {
+    await forceCreateStudentLab(student.id)
+    toast.add({
+      severity: 'success',
+      summary: 'Succès',
+      detail: `Lab de ${student.first_name} ${student.last_name} en cours de création`,
+      life: 3000,
+    })
+    fetchStudents(currentPage.value)
+  } catch (error) {
+    toast.add({
+      severity: 'error',
+      summary: 'Erreur',
+      detail: 'Impossible de créer le lab',
+      life: 3000,
+    })
+    console.error('Failed to create lab:', error)
+  } finally {
+    deployingStudentId.value = null
+  }
+}
+
+function confirmDeleteStudent(student: StudentListItem) {
+  confirm.require({
+    message: `Êtes-vous sûr de vouloir supprimer ${student.first_name} ${student.last_name} ? Cette action ne peut pas être annulée.`,
+    header: 'Confirmation de suppression',
+    icon: 'pi pi-exclamation-triangle',
+    acceptClass: 'p-button-danger',
+    accept: () => deleteStudent(student),
+  })
+}
+
+async function deleteStudent(student: StudentListItem) {
+  deletingStudentId.value = student.id
+  try {
+    await deleteStudentApi(student.id)
+    toast.add({
+      severity: 'success',
+      summary: 'Supprimé',
+      detail: `${student.first_name} ${student.last_name} a été supprimé`,
+      life: 3000,
+    })
+    fetchStudents(currentPage.value)
+  } catch (error) {
+    toast.add({
+      severity: 'error',
+      summary: 'Erreur',
+      detail: 'Impossible de supprimer l\'étudiant',
+      life: 3000,
+    })
+    console.error('Failed to delete student:', error)
+  } finally {
+    deletingStudentId.value = null
+  }
 }
 </script>

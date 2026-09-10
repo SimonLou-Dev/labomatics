@@ -67,6 +67,81 @@
 
     <!-- Content -->
     <div v-if="labData?.student">
+      <!-- Quick Access Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <!-- OpenWRT Router Access -->
+        <Card>
+          <template #title>
+            <i class="pi pi-wifi mr-2" /> Routeur OpenWRT
+          </template>
+          <template #content>
+            <div class="space-y-4">
+              <p class="text-sm text-surface-600 dark:text-surface-400">
+                Accédez à l'interface de gestion de votre routeur
+              </p>
+              <div
+                v-if="labData.openwrt_link"
+                class="space-y-2"
+              >
+                <p class="text-xs text-surface-500 break-all">
+                  {{ labData.openwrt_link }}
+                </p>
+                <Button
+                  label="Accéder au routeur"
+                  icon="pi pi-external-link"
+                  :href="labData.openwrt_link"
+                  target="_blank"
+                  severity="info"
+                  size="small"
+                />
+              </div>
+              <div
+                v-else
+                class="text-sm text-surface-400"
+              >
+                Aucune IP WAN disponible
+              </div>
+            </div>
+          </template>
+        </Card>
+
+        <!-- Proxmox Access -->
+        <Card>
+          <template #title>
+            <i class="pi pi-server mr-2" /> Proxmox
+          </template>
+          <template #content>
+            <div class="space-y-4">
+              <p class="text-sm text-surface-600 dark:text-surface-400">
+                Accédez à votre cluster Proxmox via SSO
+              </p>
+              <div
+                v-if="labData.proxmox_url"
+                class="space-y-2"
+              >
+                <p class="text-xs text-surface-500 break-all">
+                  {{ labData.proxmox_url }}
+                </p>
+                <Button
+                  label="Accéder à Proxmox"
+                  icon="pi pi-external-link"
+                  :href="labData.proxmox_url"
+                  target="_blank"
+                  severity="warning"
+                  size="small"
+                />
+              </div>
+              <div
+                v-else
+                class="text-sm text-surface-400"
+              >
+                Proxmox non disponible
+              </div>
+            </div>
+          </template>
+        </Card>
+      </div>
+
       <!-- Student Info Card -->
       <Card class="mb-6">
         <template #title>
@@ -166,7 +241,7 @@
       <!-- VMs Table -->
       <Card class="mb-6">
         <template #title>
-          Machines Virtuelles Provisionnées
+          Machines Virtuelles & Conteneurs
         </template>
         <template #content>
           <DataTable
@@ -175,7 +250,7 @@
             :loading="loading"
           >
             <template #empty>
-              Aucune VM provisionnée
+              Aucune VM/CT provisionnée
             </template>
             <Column
               field="name"
@@ -246,40 +321,6 @@
           </DataTable>
         </template>
       </Card>
-
-      <!-- TODO Section -->
-      <Card class="bg-amber-900/20 border-2 border-amber-700">
-        <template #title>
-          À compléter
-        </template>
-        <template #content>
-          <ul class="space-y-2 text-sm text-amber-800 dark:text-amber-200">
-            <li class="flex items-start gap-2">
-              <i class="pi pi-times-circle text-amber-500 text-xs mt-1 flex-shrink-0" />
-              <span>[ ] Affichage des VMs provisionnées depuis le backend</span>
-            </li>
-            <li class="flex items-start gap-2">
-              <i class="pi pi-times-circle text-amber-500 text-xs mt-1 flex-shrink-0" />
-              <span>[ ] Affichage des allocations réseau détaillées</span>
-            </li>
-            <li class="flex items-start gap-2">
-              <i class="pi pi-times-circle text-amber-500 text-xs mt-1 flex-shrink-0" />
-              <span>[ ] Accès OpenWRT (lien))</span>
-            </li>
-            <li class="flex items-start gap-2">
-              <i class="pi pi-times-circle text-amber-500 text-xs mt-1 flex-shrink-0" />
-              <span>[ ] Bouton de création VM (futur)</span>
-            </li>
-            <li class="flex items-start gap-2">
-              <i class="pi pi-times-circle text-amber-500 text-xs mt-1 flex-shrink-0" />
-              <span>[ ] Logs de provisioning</span>
-            </li>
-          </ul>
-          <p class="text-xs text-amber-700 dark:text-amber-300 mt-3 italic">
-            Cette page affiche le détail du lab étudiant. Les données seront complétées progressivement.
-          </p>
-        </template>
-      </Card>
     </div>
   </div>
 </template>
@@ -298,7 +339,6 @@ import {
 } from 'primevue'
 import type { LabDataDTO } from '@/api/types'
 import * as studentsApi from '@/api/students'
-import * as labsApi from '@/api/labs'
 
 const router = useRouter()
 const route = useRoute()
@@ -343,11 +383,11 @@ async function fetchLabData() {
   loading.value = true
   error.value = null
   try {
-    const userId = route.params.userId as string | undefined
+    const studentId = route.params.userId as string | undefined
 
-    if (userId) {
+    if (studentId) {
       // Admin viewing student's lab
-      labData.value = await studentsApi.getLabData(userId)
+      labData.value = await studentsApi.getLabData(studentId)
     } else {
       // Student viewing their own lab
       labData.value = await studentsApi.getLabDataForMe()
@@ -371,7 +411,7 @@ async function requestLabCreation() {
   creatingLab.value = true
   error.value = null
   try {
-    await labsApi.createLab()
+    await studentsApi.createLab()
     toast.add({
       severity: 'success',
       summary: 'Succès',

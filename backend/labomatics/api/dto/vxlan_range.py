@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pydantic import BaseModel
 
+from labomatics.api.dto.student import StudentSimpleDTO
+
 
 class VxlanRangeDTO(BaseModel):
     """Plage de VNI VXLAN."""
@@ -47,8 +49,15 @@ class VxlanAllocationDTO(BaseModel):
     """Allocation de VNI VXLAN à un étudiant."""
 
     vni: int | None
-    student_login: str | None
-    student_first_name: str | None
-    student_last_name: str | None
-    vxlan_tag_taken_by: str | None
+    student: StudentSimpleDTO | None
     is_taken: bool
+
+
+class VxlanAllocationPaginatedDTO(BaseModel):
+    """Réponse paginée pour les allocations VXLAN."""
+
+    items: list[VxlanAllocationDTO]
+    total: int
+    page: int
+    per_page: int
+    total_pages: int

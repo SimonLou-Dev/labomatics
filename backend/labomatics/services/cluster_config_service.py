@@ -40,39 +40,75 @@ class ClusterConfigService:
     def _add_first_ip_exclusion(
         self, exclusions: list | None, network_str: str
     ) -> list:
-        """Ajoute la première IP utilisable du réseau aux exclusions."""
+        """Ajoute les 10 premières IPs utilisables du réseau aux exclusions."""
+
         exclusions = exclusions or []
         network = IPv4Network(network_str, strict=False)
         usable_addresses = list(network.hosts())
 
-        if not usable_addresses:
+        if len(usable_addresses) < 10:
             return exclusions
 
-        first_ip_addr = usable_addresses[0]
-        first_ip_str = str(first_ip_addr)
+        # Prendre les 10 premières IPs
+        first_10_ips = usable_addresses[:10]
+        first_ip = first_10_ips[0]
+        last_ip = first_10_ips[-1]
+        exclusion_range = f"{first_ip!s}-{last_ip!s}"
 
-        # Vérifier si la première IP est déjà exclue
+        # Vérifier si ces 10 IPs sont déjà exclues (partiellement ou complètement)
+        all_excluded = True
+        for ip in first_10_ips:
+            ip_excluded = False
+            for ex in exclusions:
+                if isinstance(ex, str):
+                    if "-" in ex:
+                        # Plage IP: "ip1-ip2"
+                        start_str, end_str = ex.split("-", 1)
+                        try:
+                            start = IPv4Address(start_str.strip())
+                            end = IPv4Address(end_str.strip())
+                            if start <= ip <= end:
+                                ip_excluded = True
+                                break
+                        except ValueError:
+                            pass
+                    elif ex == str(ip):
+                        # IP individuelle
+                        ip_excluded = True
+                        break
+            if not ip_excluded:
+                all_excluded = False
+                break
+
+        if not all_excluded:
+            exclusions.append(exclusion_range)
+
+        return exclusions
+
+    def _add_first_vni_exclusion(
+        self, exclusions: list | None, vni_min: int, vni_max: int
+    ) -> list:
+        """Ajoute les 10 premiers VNIs de la plage aux exclusions."""
+        exclusions = exclusions or []
+        total_vnis = vni_max - vni_min + 1
+
+        if total_vnis < 10:
+            return exclusions
+
+        # Prendre les 10 premiers VNIs
+        first_vni = vni_min
+        last_vni = vni_min + 9
+        exclusion_range = f"{first_vni}-{last_vni}"
+
+        # Vérifier si cette plage est déjà exclue
         is_already_excluded = False
         for ex in exclusions:
-            if isinstance(ex, str):
-                if "-" in ex:
-                    # Plage IP: "ip1-ip2"
-                    start_str, end_str = ex.split("-", 1)
-                    try:
-                        start = IPv4Address(start_str.strip())
-                        end = IPv4Address(end_str.strip())
-                        if start <= first_ip_addr <= end:
-                            is_already_excluded = True
-                            break
-                    except ValueError:
-                        pass
-                elif ex == first_ip_str:
-                    # IP individuelle
-                    is_already_excluded = True
-                    break
+            if isinstance(ex, (int, str)) and str(ex) == exclusion_range:
+                is_already_excluded = True
+                break
 
         if not is_already_excluded:
-            exclusions.append(first_ip_str)
+            exclusions.append(exclusion_range)
 
         return exclusions
 
@@ -173,6 +209,10 @@ class ClusterConfigService:
 
             # 3. Créer/update les Cluster et attacher ranges
             processed = 0
+            # Vérifier s'il y a déjà un cluster par défaut
+            existing_default = await self.cluster_service.repo.get_default()
+            first_cluster = processed == 0
+
             for cluster_entry in config.clusters:
                 existing_cluster = await self.cluster_service.repo.get_by_name(
                     cluster_entry.name
@@ -190,14 +230,18 @@ class ClusterConfigService:
                         ),
                     )
                 else:
+                    # Marquer le premier cluster comme par défaut s'il n'y en a pas déjà un
+                    is_default = first_cluster and not existing_default
                     cluster_dto = await self.cluster_service.create_cluster(
                         ClusterCreateDTO(
                             name=cluster_entry.name,
                             url=cluster_entry.url,
                             default_storage="shared",
                             sdn_zone=cluster_entry.sdn_zone,
+                            is_default_for_new_cohorts=is_default,
                         )
                     )
+                    first_cluster = False
 
                 # Attacher WAN ranges
                 for wan_cfg in cluster_entry.wan_configs:

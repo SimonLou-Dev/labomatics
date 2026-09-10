@@ -7,7 +7,7 @@ export interface IpRangeDTO {
   name: string
   network: string
   gateway: string
-  exclusions: string[]
+  exclusions: string[] | null
   total_ips: number
   used_count: number
   free_count: number
@@ -28,10 +28,23 @@ export interface IpRangeUpdateDTO {
   exclusions?: string[]
 }
 
+export interface StudentSimpleDTO {
+  id: string
+  login: string
+  first_name: string
+  last_name: string
+}
+
 export interface IpAllocationDTO {
-  ip_address: string
-  student_login: string
-  student_first_name: string
-  student_last_name: string
-  openwrt_link?: string | null
+  ip_address: string | null
+  student: StudentSimpleDTO | null
+  is_taken: boolean
+}
+
+export interface IpAllocationPaginatedDTO {
+  items: IpAllocationDTO[]
+  total: number
+  page: number
+  per_page: number
+  total_pages: number
 }

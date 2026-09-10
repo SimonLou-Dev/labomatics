@@ -5,6 +5,15 @@ from __future__ import annotations
 from pydantic import BaseModel, Field
 
 
+class StudentSimpleDTO(BaseModel):
+    """Étudiant dans la liste."""
+
+    id: str
+    login: str
+    first_name: str
+    last_name: str
+
+
 class StudentListItemDTO(BaseModel):
     """Étudiant dans la liste."""
 

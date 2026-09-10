@@ -8,7 +8,9 @@ from uuid import UUID
 from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile, status
 
 from labomatics.api.deps.auth import CurrentUser, RequireManageUser
+from labomatics.api.dto.auth import AuthUser
 from labomatics.api.dto.lab import LabDataDTO
+from labomatics.api.dto.notification import JobDTO
 from labomatics.api.dto.student import (
     StudentImportDiffDTO as StudentImportDiffDTOXML,
 )
@@ -19,7 +21,13 @@ from labomatics.api.dto.student_import import (
     StudentImportDiffDTO,
     StudentImportMappingDTO,
 )
-from labomatics.services import StudentImportServiceDep, StudentServiceDep
+from labomatics.services import (
+    LabServiceDep,
+    StudentImportServiceDep,
+    StudentServiceDep,
+)
+from labomatics.tasks.student_cleanup import delete_student as delete_student_task
+from labomatics.worker.jobs import new_job_id
 
 router = APIRouter(prefix="/students", tags=["students"])
 
@@ -214,3 +222,76 @@ async def get_student_lab(
         )
 
     return lab_data
+
+
+@router.post("/{student_id}/lab/deploy")
+async def force_create_student_lab(
+    _user: RequireManageUser,
+    student_id: str,
+    student_svc: StudentServiceDep,
+    lab_svc: LabServiceDep,
+) -> JobDTO:
+    """Force la création/recréation du lab pour un étudiant."""
+    try:
+        target_id = UUID(student_id)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="ID d'étudiant invalide",
+        ) from e
+
+    student = await student_svc.repo.get(target_id)
+    if not student:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Étudiant non trouvé",
+        )
+
+    if not student.keycloak_user_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Étudiant sans Keycloak user ID",
+        )
+
+    # Utiliser LabService.create() avec l'étudiant comme propriétaire
+    auth_user = AuthUser(
+        subject=str(student.keycloak_user_id),
+        username=student.login,
+        email=student.email,
+        roles=["student"],
+    )
+
+    return await lab_svc.create(user=auth_user, access_origin="admin_force")
+
+
+@router.delete("/{student_id}")
+async def delete_student(
+    _user: RequireManageUser,
+    student_id: str,
+    service: StudentServiceDep,
+) -> JobDTO:
+    """Supprime un étudiant et toutes ses ressources Proxmox.
+
+    Lance une tâche async qui supprime les VMs, le user Proxmox,
+    le pool, et nettoie la DB (allocations, LabProvisioning, Student).
+    """
+    try:
+        target_id = UUID(student_id)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="ID d'étudiant invalide",
+        ) from e
+
+    student = await service.repo.get(target_id)
+    if not student:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Étudiant non trouvé",
+        )
+
+    # Enqueue la tâche de suppression
+    delete_job_id = new_job_id()
+    delete_student_task.delay(student_id=student_id, job_id=delete_job_id)
+
+    return JobDTO(jobId=delete_job_id)

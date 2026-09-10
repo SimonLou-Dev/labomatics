@@ -28,46 +28,52 @@
       class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6"
     >
       <Card class="p-6">
-        <div class="text-sm text-surface-500 dark:text-surface-400 mb-2">
-          Utilisation VNI
-        </div>
-        <div class="flex items-end justify-between">
-          <div>
-            <div class="text-2xl font-bold">
-              {{ utilizationPercent }}%
-            </div>
-            <div class="text-sm text-surface-400">
-              {{ vniCountUsed }} / {{ totalVnis }} VNIs
-            </div>
+        <template #content>
+          <div class="text-sm text-surface-500 dark:text-surface-400 mb-2">
+            Utilisation VNI
           </div>
-          <ProgressBar
-            :value="utilizationPercent"
-            class="flex-1 ml-4 h-8"
-            :style="{ backgroundColor: 'var(--surface-200)' }"
-          />
-        </div>
+          <div class="flex items-end justify-between">
+            <div>
+              <div class="text-2xl font-bold">
+                {{ range.utilization_percent }}%
+              </div>
+              <div class="text-sm text-surface-400">
+                {{ range.used_count }} / {{ range.total_vnis }} VNIs
+              </div>
+            </div>
+            <ProgressBar
+              :value="range.utilization_percent"
+              class="flex-1 ml-4 h-8"
+              :style="{ backgroundColor: 'var(--surface-200)' }"
+            />
+          </div>
+        </template>
       </Card>
 
       <Card class="p-6">
-        <div class="text-sm text-surface-500 dark:text-surface-400 mb-2">
-          VNIs Libres
-        </div>
-        <div class="text-2xl font-bold">
-          {{ vnisFree }}
-        </div>
+        <template #content>
+          <div class="text-sm text-surface-500 dark:text-surface-400 mb-2">
+            VNIs Libres
+          </div>
+          <div class="text-2xl font-bold">
+            {{ range.free_count }}
+          </div>
+        </template>
       </Card>
 
       <Card class="p-6">
-        <div class="text-sm text-surface-500 dark:text-surface-400 mb-2">
-          Statut
-        </div>
-        <div class="flex items-center gap-2">
-          <i
-            :class="statusIcon"
-            :style="{ color: statusColor }"
-          />
-          <span :style="{ color: statusColor }">{{ statusLabel }}</span>
-        </div>
+        <template #content>
+          <div class="text-sm text-surface-500 dark:text-surface-400 mb-2">
+            Statut
+          </div>
+          <div class="flex items-center gap-2">
+            <i
+              :class="statusIcon"
+              :style="{ color: statusColor }"
+            />
+            <span :style="{ color: statusColor }">{{ statusLabel }}</span>
+          </div>
+        </template>
       </Card>
     </div>
 
@@ -78,11 +84,11 @@
     >
       <div class="flex items-center gap-4">
         <ProgressBar
-          :value="utilizationPercent"
+          :value="range.utilization_percent"
           class="flex-1 h-6"
           :style="{ backgroundColor: progressBarBackground }"
         />
-        <span class="text-sm font-medium w-20">{{ utilizationPercent }}%</span>
+        <span class="text-sm font-medium w-20">{{ range.utilization_percent }}%</span>
       </div>
       <div class="flex gap-6 mt-3 text-xs">
         <div class="flex items-center gap-2">
@@ -114,99 +120,117 @@
       v-if="range"
       class="p-6"
     >
-      <h2 class="text-xl font-bold mb-4">
-        Allocations VXLAN
-      </h2>
-      <DataTable
-        paginator
-        :rows="pageSize"
-        :rows-per-page-options="[5, 10, 20]"
-        :value="allocations"
-        data-key="vni"
-        :loading="allocationsLoading"
-        :total-records="allocations.length"
-      >
-        <template #empty>
-          Aucune allocation trouvée
-        </template>
-        <Column
-          field="vni"
-          header="VNI"
-          style="width: 15%"
-        >
-          <template #body="{ data }">
-            <span class="font-mono font-bold">{{ data.vni }}</span>
-          </template>
-        </Column>
-        <Column
-          field="student_login"
-          header="Login"
-          style="width: 15%"
-        >
-          <template #body="{ data }">
-            <span class="font-semibold">{{ data.student_login }}</span>
-          </template>
-        </Column>
-        <Column
-          field="student_first_name"
-          header="Prénom"
-          style="width: 15%"
-        >
-          <template #body="{ data }">
-            <span>{{ data.student_first_name }}</span>
-          </template>
-        </Column>
-        <Column
-          field="student_last_name"
-          header="Nom"
-          style="width: 15%"
-        >
-          <template #body="{ data }">
-            <span>{{ data.student_last_name }}</span>
-          </template>
-        </Column>
-        <Column
-          field="openwrt_link"
-          header="OpenWRT"
-          style="width: 20%"
-        >
-          <template #body="{ data }">
-            <a
-              v-if="data.openwrt_link"
-              :href="data.openwrt_link"
-              target="_blank"
-              class="text-blue-500 hover:underline flex items-center gap-1"
-            >
-              <i
-                class="pi pi-external-link"
-                style="font-size: 0.75rem"
-              />
-              Accéder
-            </a>
-            <span
-              v-else
-              class="text-surface-400"
-            >—</span>
-          </template>
-        </Column>
-        <Column
-          field="actions"
-          header="Actions"
-          style="width: 15%"
-          frozen
-          align-frozen="right"
-        >
-          <template #body="{ data }">
-            <Button
-              v-tooltip="'Voir le lab étudiant'"
-              icon="pi pi-arrow-right"
-              severity="info"
-              size="small"
-              @click="goToStudentLab(data.student_login)"
+      <template #content>
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-xl font-bold">
+            Allocations VXLAN
+          </h2>
+          <InputGroup class="w-72">
+            <InputText
+              v-model="searchQuery"
+              placeholder="Chercher par VNI ou étudiant..."
+              @input="onSearchChange"
             />
+            <Button
+              icon="pi pi-search"
+              severity="secondary"
+            />
+          </InputGroup>
+        </div>
+        <DataTable
+          :value="allocationsData.items"
+          data-key="vni"
+          :loading="allocationsLoading"
+          :rows="pageSize"
+          :total-records="allocationsData.total"
+          paginator
+          :first="(currentPage - 1) * pageSize"
+          :rows-per-page-options="[5, 10, 20, 50]"
+          @page="onPageChange"
+        >
+          <template #empty>
+            Aucune allocation trouvée
           </template>
-        </Column>
-      </DataTable>
+          <Column
+            field="vni"
+            header="VNI"
+            style="width: 15%"
+          >
+            <template #body="{ data }">
+              <span class="font-mono font-bold">{{ data.vni }}</span>
+            </template>
+          </Column>
+          <Column
+            field="student.login"
+            header="Login"
+            style="width: 15%"
+          >
+            <template #body="{ data }">
+              <span
+                v-if="data.student"
+                class="font-semibold"
+              >{{ data.student.login }}</span>
+              <span
+                v-else
+                class="text-surface-400"
+              >—</span>
+            </template>
+          </Column>
+          <Column
+            field="student.first_name"
+            header="Prénom"
+            style="width: 15%"
+          >
+            <template #body="{ data }">
+              <span v-if="data.student">{{ data.student.first_name }}</span>
+              <span
+                v-else
+                class="text-surface-400"
+              >—</span>
+            </template>
+          </Column>
+          <Column
+            field="student.last_name"
+            header="Nom"
+            style="width: 15%"
+          >
+            <template #body="{ data }">
+              <span v-if="data.student">{{ data.student.last_name }}</span>
+              <span
+                v-else
+                class="text-surface-400"
+              >—</span>
+            </template>
+          </Column>
+          <Column
+            header="Statut"
+            style="width: 15%"
+          >
+            <template #body="{ data }">
+              <Tag
+                :value="data.is_taken ? 'Allouée' : 'Libre'"
+                :severity="data.is_taken ? 'warning' : 'success'"
+              />
+            </template>
+          </Column>
+          <Column
+            field="actions"
+            header="Actions"
+            style="width: 20%"
+          >
+            <template #body="{ data }">
+              <Button
+                v-if="data.student"
+                v-tooltip="'Voir le lab étudiant'"
+                icon="pi pi-arrow-right"
+                severity="info"
+                size="small"
+                @click="goToStudentLab(data.student.id)"
+              />
+            </template>
+          </Column>
+        </DataTable>
+      </template>
     </Card>
   </div>
 </template>
@@ -215,14 +239,18 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
+import type { AxiosError } from 'axios'
 import {
   Card,
   DataTable,
   Column,
   Button,
   ProgressBar,
+  InputGroup,
+  InputText,
+  Tag,
 } from 'primevue'
-import type { VxlanRangeDTO, VxlanAllocationDTO } from '@/api/types'
+import type { VxlanRangeDTO, VxlanAllocationPaginatedDTO } from '@/api/types'
 import * as vxlanRangeApi from '@/api/vxlanRanges'
 
 const router = useRouter()
@@ -230,44 +258,45 @@ const route = useRoute()
 const toast = useToast()
 
 const range = ref<VxlanRangeDTO | null>(null)
-const allocations = ref<VxlanAllocationDTO[]>([])
+const allocationsData = ref<VxlanAllocationPaginatedDTO>({
+  items: [],
+  total: 0,
+  page: 1,
+  per_page: 20,
+  total_pages: 0,
+})
 const loading = ref(false)
 const allocationsLoading = ref(false)
-const pageSize = ref(10)
-
-const totalVnis = computed(() => {
-  if (!range.value) return 0
-  return range.value.vni_max - range.value.vni_min + 1
-})
-
-const vniCountUsed = computed(() => allocations.value.length)
-const vnisFree = computed(() => Math.max(0, totalVnis.value - vniCountUsed.value))
-const utilizationPercent = computed(() => {
-  if (totalVnis.value === 0) return 0
-  return Math.round((vniCountUsed.value / totalVnis.value) * 100)
-})
+const pageSize = ref(20)
+const currentPage = ref(1)
+const searchQuery = ref('')
+const searchTimeout = ref<number | null>(null)
 
 const statusLabel = computed(() => {
-  if (utilizationPercent.value >= 80) return 'Critique'
-  if (utilizationPercent.value >= 50) return 'Attention'
+  if (!range.value) return 'Normal'
+  if (range.value.utilization_percent >= 80) return 'Critique'
+  if (range.value.utilization_percent >= 50) return 'Attention'
   return 'Normal'
 })
 
 const statusIcon = computed(() => {
-  if (utilizationPercent.value >= 80) return 'pi pi-exclamation-circle'
-  if (utilizationPercent.value >= 50) return 'pi pi-bell'
+  if (!range.value) return 'pi pi-check-circle'
+  if (range.value.utilization_percent >= 80) return 'pi pi-exclamation-circle'
+  if (range.value.utilization_percent >= 50) return 'pi pi-bell'
   return 'pi pi-check-circle'
 })
 
 const statusColor = computed(() => {
-  if (utilizationPercent.value >= 80) return 'var(--red-500)'
-  if (utilizationPercent.value >= 50) return 'var(--yellow-500)'
+  if (!range.value) return 'var(--green-500)'
+  if (range.value.utilization_percent >= 80) return 'var(--red-500)'
+  if (range.value.utilization_percent >= 50) return 'var(--yellow-500)'
   return 'var(--green-500)'
 })
 
 const progressBarBackground = computed(() => {
-  if (utilizationPercent.value >= 80) return 'var(--red-500)'
-  if (utilizationPercent.value >= 50) return 'var(--yellow-500)'
+  if (!range.value) return 'var(--green-500)'
+  if (range.value.utilization_percent >= 80) return 'var(--red-500)'
+  if (range.value.utilization_percent >= 50) return 'var(--yellow-500)'
   return 'var(--green-500)'
 })
 
@@ -275,32 +304,26 @@ async function fetchRange() {
   loading.value = true
   try {
     const rangeId = route.params.rangeId as string
-    await vxlanRangeApi
-      .getVxlanRange(rangeId)
-      .then(async (r) => {
-        range.value = r
-        await fetchAllocations()
-      })
-      .catch((error) => {
-        if (error.response?.status === 404) {
-          toast.add({
-            severity: 'error',
-            summary: 'Erreur',
-            detail: 'Plage VXLAN non trouvée',
-            life: 3000,
-          })
-        } else {
-          throw error
-        }
-        goBack()
-      })
+    range.value = await vxlanRangeApi.getVxlanRange(rangeId)
+    currentPage.value = 1
+    await fetchAllocations()
   } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: 'Erreur',
-      detail: 'Impossible de charger la plage VXLAN',
-      life: 3000,
-    })
+    if ((error as AxiosError).response?.status === 404) {
+      toast.add({
+        severity: 'error',
+        summary: 'Erreur',
+        detail: 'Plage VXLAN non trouvée',
+        life: 3000,
+      })
+      goBack()
+    } else {
+      toast.add({
+        severity: 'error',
+        summary: 'Erreur',
+        detail: 'Impossible de charger la plage VXLAN',
+        life: 3000,
+      })
+    }
     console.error('Failed to fetch VXLAN range:', error)
   } finally {
     loading.value = false
@@ -311,7 +334,12 @@ async function fetchAllocations() {
   if (!range.value) return
   allocationsLoading.value = true
   try {
-    allocations.value = await vxlanRangeApi.getVxlanRangeAllocations(range.value.id)
+    allocationsData.value = await vxlanRangeApi.getVxlanRangeAllocations(
+      range.value.id,
+      currentPage.value,
+      pageSize.value,
+      searchQuery.value || undefined
+    )
   } catch (error) {
     toast.add({
       severity: 'error',
@@ -323,6 +351,21 @@ async function fetchAllocations() {
   } finally {
     allocationsLoading.value = false
   }
+}
+
+function onPageChange(event: { page: number }) {
+  currentPage.value = event.page + 1
+  fetchAllocations()
+}
+
+function onSearchChange() {
+  currentPage.value = 1
+  if (searchTimeout.value) {
+    clearTimeout(searchTimeout.value)
+  }
+  searchTimeout.value = setTimeout(() => {
+    fetchAllocations()
+  }, 300)
 }
 
 function goBack() {

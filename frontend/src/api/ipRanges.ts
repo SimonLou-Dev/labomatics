@@ -2,7 +2,12 @@
  * IP Ranges API endpoints
  */
 import http from './http'
-import type { IpRangeDTO, IpRangeCreateDTO, IpRangeUpdateDTO, IpAllocationDTO } from './types'
+import type {
+  IpRangeDTO,
+  IpRangeCreateDTO,
+  IpRangeUpdateDTO,
+  IpAllocationPaginatedDTO,
+} from './types'
 import type { PaginatedResponse } from './types'
 
 export async function listIpRanges(
@@ -37,7 +42,18 @@ export async function getIpRange(rangeId: string): Promise<IpRangeDTO> {
   return res.data
 }
 
-export async function getIpRangeAllocations(rangeId: string): Promise<IpAllocationDTO[]> {
-  const res = await http.get<IpAllocationDTO[]>(`/ip-ranges/${rangeId}/allocations`)
+export async function getIpRangeAllocations(
+  rangeId: string,
+  page: number = 1,
+  size: number = 20,
+  search?: string
+): Promise<IpAllocationPaginatedDTO> {
+  const res = await http.get<IpAllocationPaginatedDTO>(`/ip-ranges/${rangeId}/allocations`, {
+    params: {
+      page,
+      size,
+      ...(search && { search }),
+    },
+  })
   return res.data
 }

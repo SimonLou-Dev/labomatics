@@ -7,6 +7,7 @@ from uuid import UUID
 
 from fastapi import HTTPException
 
+from labomatics.api.dto.student import StudentSimpleDTO
 from labomatics.api.dto.vxlan_range import (
     VxlanAllocationDTO,
     VxlanRangeCreateDTO,
@@ -109,6 +110,52 @@ class VxlanRangeService:
         # Convertir en DTOs
         return [self._allocation_to_dto(alloc) for alloc in allocations]
 
+    async def get_allocations_paginated(
+        self,
+        vxlan_range_id: UUID,
+        page: int = 1,
+        per_page: int = 20,
+        search: str | None = None,
+    ) -> dict:
+        """Récupère les allocations VXLAN d'une plage avec pagination et filtres."""
+        # Vérifier que la plage existe
+        vxlan_range = await self.repo.get(vxlan_range_id)
+        if not vxlan_range:
+            raise HTTPException(404, "VXLAN Range not found")
+
+        # Récupérer toutes les allocations
+        allocations = await self.alloc_repo.list_by_vxlan_range(vxlan_range_id)
+
+        # Filtrer si search est fourni
+        if search:
+            search_lower = search.lower()
+            allocations = [
+                a
+                for a in allocations
+                if (
+                    (a.vni and search_lower in str(a.vni).lower())
+                    or (a.student and search_lower in a.student.login.lower())
+                    or (a.student and search_lower in a.student.first_name.lower())
+                    or (a.student and search_lower in a.student.last_name.lower())
+                )
+            ]
+
+        # Paginer
+        total = len(allocations)
+        offset = (page - 1) * per_page
+        paginated = allocations[offset : offset + per_page]
+
+        # Convertir en DTOs
+        items = [self._allocation_to_dto(alloc) for alloc in paginated]
+
+        return {
+            "items": items,
+            "total": total,
+            "page": page,
+            "per_page": per_page,
+            "total_pages": (total + per_page - 1) // per_page,
+        }
+
     # -------------------------------------------------------------------------
     # Helpers
     # -------------------------------------------------------------------------
@@ -165,7 +212,12 @@ class VxlanRangeService:
                     f"VXLAN Range {vxlan_range_id} not assigned to cluster "
                     f"{cluster_id}",
                 )
-            allocations = await self.alloc_repo.list_by_cluster(cluster_id)
+            all_allocations = await self.alloc_repo.list_by_cluster(cluster_id)
+            allocations = [
+                a
+                for a in all_allocations
+                if a.vxlan_range_cluster_id == range_cluster.id
+            ]
         else:
             allocations = await self.alloc_repo.list_by_vxlan_range(vxlan_range_id)
 
@@ -211,7 +263,12 @@ class VxlanRangeService:
                     f"VXLAN Range {vxlan_range_id} not assigned to cluster "
                     f"{cluster_id}",
                 )
-            allocations = await self.alloc_repo.list_by_cluster(cluster_id)
+            all_allocations = await self.alloc_repo.list_by_cluster(cluster_id)
+            allocations = [
+                a
+                for a in all_allocations
+                if a.vxlan_range_cluster_id == range_cluster.id
+            ]
         else:
             allocations = await self.alloc_repo.list_by_vxlan_range(vxlan_range_id)
 
@@ -241,9 +298,13 @@ class VxlanRangeService:
         student = allocation.student
         return VxlanAllocationDTO(
             vni=allocation.vni,
-            student_login=student.login if student else None,
-            student_first_name=student.first_name if student else None,
-            student_last_name=student.last_name if student else None,
-            vxlan_tag_taken_by=student.login if student else None,
+            student=StudentSimpleDTO(
+                id=str(student.id),
+                login=student.login,
+                first_name=student.first_name,
+                last_name=student.last_name,
+            )
+            if student
+            else None,
             is_taken=student is not None,
         )

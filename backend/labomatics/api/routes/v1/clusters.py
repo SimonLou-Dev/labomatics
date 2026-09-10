@@ -71,7 +71,7 @@ async def delete_cluster(
     await service.delete_cluster(cluster_id)
 
 
-@router.post("/{cluster_id}/set-default")
+@router.patch("/{cluster_id}/set-default")
 async def set_default_cluster(
     _user: RequireManageCluster,
     service: ClusterServiceDep,

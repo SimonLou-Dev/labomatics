@@ -5,11 +5,11 @@
 export interface VxlanRangeDTO {
   id: string
   name: string
-  base_network: string
-  mtu: number
   vni_min: number
   vni_max: number
-  exclusions: string[]
+  base_network: string
+  mtu: number
+  exclusions: string[] | null
   total_vnis: number
   used_count: number
   free_count: number
@@ -34,10 +34,23 @@ export interface VxlanRangeUpdateDTO {
   exclusions?: string[]
 }
 
+export interface StudentSimpleDTO {
+  id: string
+  login: string
+  first_name: string
+  last_name: string
+}
+
 export interface VxlanAllocationDTO {
-  vni: number
-  student_login: string
-  student_first_name: string
-  student_last_name: string
-  openwrt_link?: string | null
+  vni: number | null
+  student: StudentSimpleDTO | null
+  is_taken: boolean
+}
+
+export interface VxlanAllocationPaginatedDTO {
+  items: VxlanAllocationDTO[]
+  total: number
+  page: number
+  per_page: number
+  total_pages: number
 }

@@ -91,3 +91,12 @@ export async function applyStudentImport(formData: FormData): Promise<StudentImp
   const res = await http.post<StudentImportDiffXML>('/students/import-csv/apply', formData)
   return res.data
 }
+
+export async function forceCreateStudentLab(studentId: string): Promise<{ jobId: string }> {
+  const res = await http.post<{ jobId: string }>(`/students/${studentId}/lab/deploy`)
+  return res.data
+}
+
+export async function deleteStudent(studentId: string): Promise<void> {
+  await http.delete(`/students/${studentId}`)
+}

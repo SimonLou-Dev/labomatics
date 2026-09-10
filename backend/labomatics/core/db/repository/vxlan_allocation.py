@@ -55,37 +55,58 @@ class VxlanAllocationRepository(BaseRepository[VxlanAllocation]):
     async def list_by_cluster(self, cluster_id: UUID) -> list[VxlanAllocation]:
         """Liste les allocations VXLAN actives d'un cluster."""
         async with async_session_local() as session:
+            from sqlalchemy.orm import selectinload
+
             from labomatics.core.db.models import VxlanRangeCluster
 
+            # Get all vxlan_range_cluster IDs for this cluster
+            range_cluster_stmt = select(VxlanRangeCluster.id).where(
+                VxlanRangeCluster.cluster_id == cluster_id
+            )
+            range_cluster_result = await session.execute(range_cluster_stmt)
+            range_cluster_ids = [row[0] for row in range_cluster_result.all()]
+
+            if not range_cluster_ids:
+                return []
+
+            # Get all active allocations for these range_clusters
             stmt = (
                 select(self.model)
-                .join(VxlanRangeCluster)
+                .options(selectinload(self.model.student))
                 .where(
-                    (self.model.vxlan_range_cluster_id == VxlanRangeCluster.id)
-                    & (VxlanRangeCluster.cluster_id == cluster_id)
-                    & (self.model.released_at is None)
+                    (self.model.vxlan_range_cluster_id.in_(range_cluster_ids))
+                    & (self.model.released_at.is_(None))
                 )
             )
             result = await session.execute(stmt)
-            return result.scalars().all()
+            return result.scalars().unique().all()
 
     async def list_by_vxlan_range(self, vxlan_range_id: UUID) -> list[VxlanAllocation]:
-        """Liste les allocations VXLAN d'une plage VXLAN (tous les clusters)."""
+        """Liste les allocations VXLAN actives d'une plage VXLAN (tous les clusters)."""
         async with async_session_local() as session:
             from sqlalchemy.orm import selectinload
 
             from labomatics.core.db.models import VxlanRangeCluster
 
+            # Get all vxlan_range_cluster IDs for this range
+            range_cluster_stmt = select(VxlanRangeCluster.id).where(
+                VxlanRangeCluster.vxlan_range_id == vxlan_range_id
+            )
+            range_cluster_result = await session.execute(range_cluster_stmt)
+            range_cluster_ids = [row[0] for row in range_cluster_result.all()]
+
+            if not range_cluster_ids:
+                return []
+
+            # Get all active allocations for these range_clusters
             stmt = (
                 select(self.model)
-                .join(VxlanRangeCluster)
                 .options(selectinload(self.model.student))
                 .where(
-                    (self.model.vxlan_range_cluster_id == VxlanRangeCluster.id)
-                    & (VxlanRangeCluster.vxlan_range_id == vxlan_range_id)
-                    & (self.model.released_at is None)
+                    (self.model.vxlan_range_cluster_id.in_(range_cluster_ids))
+                    & (self.model.released_at.is_(None))
                 )
                 .order_by(self.model.allocated_at)
             )
             result = await session.execute(stmt)
-            return result.scalars().all()
+            return result.scalars().unique().all()

@@ -41,3 +41,4 @@ class LabDataDTO(BaseModel):
     wan_ip: str | None = None
     vxlan_tag: int | None = None
     openwrt_link: str | None = None
+    proxmox_url: str | None = None

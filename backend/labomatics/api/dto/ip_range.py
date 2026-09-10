@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pydantic import BaseModel
 
+from labomatics.api.dto.student import StudentSimpleDTO
+
 
 class IpRangeDTO(BaseModel):
     """Plage d'IP WAN."""
@@ -41,8 +43,15 @@ class IpAllocationDTO(BaseModel):
     """Allocation d'IP publique à un étudiant."""
 
     ip_address: str | None
-    student_login: str | None
-    student_first_name: str | None
-    student_last_name: str | None
-    wan_ip_taken_by: str | None
+    student: StudentSimpleDTO | None
     is_taken: bool
+
+
+class IpAllocationPaginatedDTO(BaseModel):
+    """Réponse paginée pour les allocations IP."""
+
+    items: list[IpAllocationDTO]
+    total: int
+    page: int
+    per_page: int
+    total_pages: int

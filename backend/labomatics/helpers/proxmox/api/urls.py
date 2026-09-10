@@ -50,6 +50,17 @@ def qemu_status_start(node: str, vmid: int) -> str:
     return f"{qemu_vm_path(node, vmid)}/status/start"
 
 
+def qemu_status_stop(node: str, vmid: int) -> str:
+    """Chemin pour arrêter une VM QEMU."""
+    return f"{qemu_vm_path(node, vmid)}/status/stop"
+
+
+# ── LXC Containers ──────────────────────────────────────────────────────────────
+def lxc_vm_path(node: str, vmid: int) -> str:
+    """Chemin d'un conteneur LXC."""
+    return f"{node_path(node)}/lxc/{vmid}"
+
+
 # ── Access (Users, Tokens, ACLs) ─────────────────────────────────────────────
 ACCESS = f"{BASE}/access"
 ACCESS_USERS = f"{ACCESS}/users"

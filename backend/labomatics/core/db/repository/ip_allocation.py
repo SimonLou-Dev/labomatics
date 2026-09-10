@@ -55,37 +55,59 @@ class IpAllocationRepository(BaseRepository[IpAllocation]):
     async def list_by_cluster(self, cluster_id: UUID) -> list[IpAllocation]:
         """Liste les allocations IP actives d'un cluster."""
         async with async_session_local() as session:
+            from sqlalchemy.orm import selectinload
+
             from labomatics.core.db.models import IpRangeCluster
 
+            # Get all ip_range_cluster IDs for this cluster
+            range_cluster_stmt = select(IpRangeCluster.id).where(
+                IpRangeCluster.cluster_id == cluster_id
+            )
+            range_cluster_result = await session.execute(range_cluster_stmt)
+            range_cluster_ids = [row[0] for row in range_cluster_result.all()]
+
+            if not range_cluster_ids:
+                return []
+
+            # Get all active allocations for these range_clusters
             stmt = (
                 select(self.model)
-                .join(IpRangeCluster)
+                .options(selectinload(self.model.student))
                 .where(
-                    (self.model.ip_range_cluster_id == IpRangeCluster.id)
-                    & (IpRangeCluster.cluster_id == cluster_id)
-                    & (self.model.released_at is None)
+                    (self.model.ip_range_cluster_id.in_(range_cluster_ids))
+                    & (self.model.released_at.is_(None))
                 )
             )
             result = await session.execute(stmt)
-            return result.scalars().all()
+            allocations = result.scalars().unique().all()
+            return allocations
 
     async def list_by_ip_range(self, ip_range_id: UUID) -> list[IpAllocation]:
-        """Liste les allocations IP d'une plage IP (tous les clusters)."""
+        """Liste les allocations IP actives d'une plage IP (tous les clusters)."""
         async with async_session_local() as session:
             from sqlalchemy.orm import selectinload
 
             from labomatics.core.db.models import IpRangeCluster
 
+            # Get all ip_range_cluster IDs for this range
+            range_cluster_stmt = select(IpRangeCluster.id).where(
+                IpRangeCluster.ip_range_id == ip_range_id
+            )
+            range_cluster_result = await session.execute(range_cluster_stmt)
+            range_cluster_ids = [row[0] for row in range_cluster_result.all()]
+
+            if not range_cluster_ids:
+                return []
+
+            # Get all active allocations for these range_clusters
             stmt = (
                 select(self.model)
-                .join(IpRangeCluster)
                 .options(selectinload(self.model.student))
                 .where(
-                    (self.model.ip_range_cluster_id == IpRangeCluster.id)
-                    & (IpRangeCluster.ip_range_id == ip_range_id)
-                    & (self.model.released_at is None)
+                    (self.model.ip_range_cluster_id.in_(range_cluster_ids))
+                    & (self.model.released_at.is_(None))
                 )
                 .order_by(self.model.allocated_at)
             )
             result = await session.execute(stmt)
-            return result.scalars().all()
+            return result.scalars().unique().all()

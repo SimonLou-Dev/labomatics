@@ -8,7 +8,6 @@ from fastapi import APIRouter, Query
 
 from labomatics.api.deps.auth import CurrentUser, RequireManageCluster
 from labomatics.api.dto.ip_range import (
-    IpAllocationDTO,
     IpRangeCreateDTO,
     IpRangeDTO,
     IpRangeUpdateDTO,
@@ -76,6 +75,9 @@ async def get_ip_range_allocations(
     _user: CurrentUser,
     service: IpRangeServiceDep,
     ip_range_id: UUID,
-) -> list[IpAllocationDTO]:
-    """Récupère les allocations IP d'une plage avec infos étudiant."""
-    return await service.get_allocations(ip_range_id)
+    page: int = Query(1, ge=1),
+    size: int = Query(20, ge=1, le=100),
+    search: str | None = Query(None),
+) -> dict:
+    """Récupère les allocations IP d'une plage avec infos étudiant, pagination et recherche."""
+    return await service.get_allocations_paginated(ip_range_id, page, size, search)

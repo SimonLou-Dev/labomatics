@@ -63,6 +63,7 @@ services:
       LDAP_INIT_ORG_DN: "{{ LDAP_BASE_DN }}"
       LDAP_INIT_ORG_NAME: "labomatics"
       LDAP_INIT_ROOT_USER_PW: "{{ LDAP_ADMIN_PASSWORD }}"
+      LDAP_INIT_ALLOW_CONFIG_ACCESS: "true"
       LDAP_TLS_CA_CRT_FILENAME: ca.crt
       LDAP_TLS_CRT_FILENAME: ldap.{{ DOMAIN }}.crt
       LDAP_TLS_KEY_FILENAME: ldap.{{ DOMAIN }}.key
@@ -70,6 +71,7 @@ services:
       - ldap_data:/var/lib/ldap
       - ldap_config:/etc/ldap/slapd.d
       - ./ldap/bootstrap.ldif:/opt/ldifs/custom/01-bootstrap.ldif:ro
+      - ./ldap/setup-acls.sh:/opt/ldifs/custom/setup-acls.sh:ro
       - ./certs:/etc/ldap/certs
     ports:
       - "389:389"
@@ -82,6 +84,23 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  ldap-acl-setup:
+    image: osixia/openldap:latest
+    container_name: labomatics-ldap-acl-setup
+    depends_on:
+      ldap:
+        condition: service_healthy
+    environment:
+      LDAP_INIT_ORG_DN: "{{ LDAP_BASE_DN }}"
+      LDAP_INIT_ROOT_USER_PW: "{{ LDAP_ADMIN_PASSWORD }}"
+    volumes:
+      - ./ldap/setup-acls.sh:/setup-acls.sh:ro
+    networks:
+      - labomatics
+    entrypoint: ["/bin/bash"]
+    command: ["/setup-acls.sh"]
+    restart: "no"
 
   radius:
     image: freeradius/freeradius-server:3.2.10-alpine

@@ -15,6 +15,8 @@ from labomatics.api.dto.student import (
 from labomatics.core.config.settings import settings
 from labomatics.core.db.models import Student
 from labomatics.core.db.repository.student import StudentRepository
+from labomatics.services.email_templates import EmailType
+from labomatics.tasks.student_cleanup import delete_student
 from labomatics.utils.login_helper import (
     generate_login,
     generate_password,
@@ -143,6 +145,7 @@ class StudentService:
         wan_ip = None
         vxlan_tag = None
         vms: list[LabVmDTO] = []
+        proxmox_url = None
 
         if active_provisioning:
             # Charge les VMs
@@ -169,6 +172,10 @@ class StudentService:
             if active_provisioning.vxlan_allocation:
                 vxlan_tag = active_provisioning.vxlan_allocation.vni
 
+            # Récupère l'URL Proxmox
+            if active_provisioning.cluster:
+                proxmox_url = active_provisioning.cluster.url
+
         # Construis le DTO StudentDTO
         student_dto = StudentDTO(
             id=str(student.id),
@@ -180,12 +187,18 @@ class StudentService:
             created_at=student.created_at,
         )
 
+        # Construit l'URL du routeur
+        openwrt_link = None
+        if wan_ip:
+            openwrt_link = f"https://{wan_ip}:1337/cgi-bin/luci/"
+
         return LabDataDTO(
             student=student_dto,
             vms=vms,
             wan_ip=wan_ip,
             vxlan_tag=vxlan_tag,
-            openwrt_link=None,  # À implémenter plus tard
+            openwrt_link=openwrt_link,
+            proxmox_url=proxmox_url,
         )
 
     async def create_student(self, data: StudentImportItemDTO) -> None:
@@ -320,26 +333,30 @@ class StudentService:
             await keycloak_svc.set_user_password(login=login, password=password)
             logger.info(f"Password défini pour {login}")
 
-            # 7. Envoyer mail avec identifiants
+            # 7. Envoyer mail avec identifiants (templé)
             mail_svc = self.mail_service or MailService()
-            subject = f"Accès laboratoire - {data.first_name} {data.last_name}"
-            body = f"""Bonjour {data.first_name} {data.last_name},
+            subject = (
+                f"Labomatics ESGI Reims accès - {data.first_name} {data.last_name}"
+            )
 
-Voici vos identifiants d'accès à labomatics:
+            # Déterminer la cohort_name
+            cohort_name = data.cohort_name or "Non assigné"
 
-URL : {self.config.front_url}
-
-Login : {login}
-Mot de passe temporaire : {password}
-
-Ces identifiants vous sont utiles pour le WIFI, le VPN, l'accès aux noeuds proxmox.
-
-Veuillez changer votre mot de passe lors de votre première connexion.
-
-Cordialement,
-L'équipe du laboratoire"""
-
-            await mail_svc.send_mail(to=data.email, subject=subject, body=body)
+            await mail_svc.send_templated_mail(
+                to=data.email,
+                subject=subject,
+                email_type=EmailType.ENROLLMENT,
+                context={
+                    "student_name": data.first_name,
+                    "cohort_name": cohort_name,
+                    "login": login,
+                    "email": data.email,
+                    "password": password,
+                    "portal_url": self.config.front_url,
+                    "support_email": "support@labomatics.fr",
+                    "unsubscribe_url": f"{self.config.front_url}/preferences",
+                },
+            )
             logger.info(f"Mail d'accès envoyé à {data.email}")
 
         except Exception as e:
@@ -390,8 +407,6 @@ L'équipe du laboratoire"""
                 logger.warning(f"Erreur mise à jour Keycloak pour {login}: {e}")
 
     async def delete_student(self, data: StudentImportItemDTO) -> None:
-        """Supprime un étudiant (soft delete + Keycloak)."""
-        from labomatics.services.keycloak_service import KeycloakService
 
         # Récupérer le student
         student = await self.repo.get_by_external_id(int(data.id))
@@ -399,27 +414,4 @@ L'équipe du laboratoire"""
             logger.warning(f"Student introuvable pour suppression (id={data.id})")
             return
 
-        login = student.login
-
-        # Soft delete en DB
-        try:
-            await self.repo.update(
-                student.id,
-                {
-                    "is_active": False,
-                    "left_at": datetime.now(),
-                },
-            )
-            logger.info(f"Student marqué inactif: {login}")
-        except Exception as e:
-            logger.error(f"Erreur suppression Student {login}: {e}")
-            raise
-
-        # Supprimer de Keycloak
-        if student.keycloak_user_id:
-            try:
-                keycloak_svc = self.keycloak_service or KeycloakService()
-                await keycloak_svc.delete_user(login=login)
-                logger.info(f"User supprimé de Keycloak: {login}")
-            except Exception as e:
-                logger.warning(f"Erreur suppression Keycloak pour {login}: {e}")
+        delete_student.delay(student_id=str(student.id))

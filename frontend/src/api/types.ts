@@ -31,8 +31,11 @@ export interface IpRangeDTO {
   name: string
   network: string
   gateway: string
-  exclusions: string[]
-  utilization_percent?: number
+  exclusions: string[] | null
+  total_ips: number
+  used_count: number
+  free_count: number
+  utilization_percent: number
 }
 
 export interface IpRangeCreateDTO {
@@ -45,20 +48,27 @@ export interface IpRangeCreateDTO {
 export type IpRangeUpdateDTO = IpRangeCreateDTO
 
 export interface IpAllocationDTO {
-  id: string
-  ipRangeId: string
-  allocatedIp: string
+  ip_address: string
+  student_login: string | null
+  student_first_name: string | null
+  student_last_name: string | null
+  wan_ip_taken_by: string | null
+  is_taken: boolean
+  openwrt_link?: string | null
 }
 
 export interface VxlanRangeDTO {
   id: string
   name: string
-  base_network: string
-  mtu: number
   vni_min: number
   vni_max: number
-  exclusions: string[]
-  utilization_percent?: number
+  base_network: string
+  mtu: number
+  exclusions: string[] | null
+  total_vnis: number
+  used_count: number
+  free_count: number
+  utilization_percent: number
 }
 
 export interface VxlanRangeCreateDTO {
@@ -73,9 +83,12 @@ export interface VxlanRangeCreateDTO {
 export type VxlanRangeUpdateDTO = VxlanRangeCreateDTO
 
 export interface VxlanAllocationDTO {
-  id: string
-  vxlanRangeId: string
-  allocatedVni: number
+  vni: number | null
+  student_login: string | null
+  student_first_name: string | null
+  student_last_name: string | null
+  vxlan_tag_taken_by: string | null
+  is_taken: boolean
 }
 
 export interface MeDTO {
@@ -162,17 +175,17 @@ export interface StudentDetailDTO extends StudentListItem {
   left_at?: string
 }
 
-export interface LabStudentInfo {
+export interface StudentDTO {
   id: string
+  login: string
   first_name: string
   last_name: string
-  login: string
   email: string
-  cohort_name?: string
+  cohort_name: string
   created_at: string
 }
 
-export interface LabVMInfo {
+export interface LabVmDTO {
   id: string
   name: string
   cluster_name: string
@@ -180,6 +193,16 @@ export interface LabVMInfo {
   cores: number
   memory: number
   disk: number
+  created_at: string
+  notes?: string | null
+}
+
+export interface LabDataDTO {
+  student: StudentDTO | null
+  vms: LabVmDTO[]
+  wan_ip: string | null
+  vxlan_tag: number | null
+  openwrt_link: string | null
 }
 
 // UI Events and Types
@@ -206,21 +229,4 @@ export interface MenuItem {
 export interface MenuItemGroup {
   label: string
   items: MenuItem[]
-}
-
-export interface LabDataDTO {
-  id: string
-  status: string
-  created_at: string
-  cluster_name?: string
-  wan_ip?: string
-  vxlan_tag?: number | null
-  subnet?: string
-  vm_count?: number
-  openwrt_url?: string
-  student_name?: string
-  student_email?: string
-  student_cohort?: string
-  student?: LabStudentInfo
-  vms?: LabVMInfo[]
 }

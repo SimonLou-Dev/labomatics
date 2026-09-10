@@ -35,3 +35,5 @@ class EventType(StrEnum):
     ROUTER_CREATED = "router_created"
     LAB_CREATED = "lab_created"
     LAB_CREATION_FAILED = "lab_creation_failed"
+    STUDENT_DELETED = "student_deleted"
+    STUDENT_DELETION_FAILED = "student_deletion_failed"

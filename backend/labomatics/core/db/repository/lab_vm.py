@@ -75,3 +75,19 @@ class LabVmRepository(BaseRepository[LabVm]):
             stmt = select(self.model).where(self.model.state == state)
             result = await session.execute(stmt)
             return result.scalars().all()
+
+    async def delete_by_vmid(self, vmid: int) -> None:
+        """Supprime une VM par son VMID.
+
+        Parameters
+        ----------
+        vmid : int
+            VMID de la VM à supprimer.
+        """
+        async with async_session_local() as session:
+            stmt = select(self.model).where(self.model.vmid == vmid)
+            result = await session.execute(stmt)
+            vm = result.scalar_one_or_none()
+            if vm:
+                await session.delete(vm)
+                await session.flush()

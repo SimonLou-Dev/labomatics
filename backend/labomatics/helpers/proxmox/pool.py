@@ -2,7 +2,6 @@
 
 from labomatics.helpers.proxmox.api import (
     ProxmoxClientPool,
-    ProxmoxNotFoundError,
     ProxmoxServerError,
     urls,
 )
@@ -27,18 +26,28 @@ class ProxmoxPoolClient:
 
         Returns:
             True si le pool existe, False sinon.
-
-        Raises:
-            ProxmoxServerError: Problème API.
         """
         async with self._proxmox_client.get_context_manager() as client:
             try:
-                await client.get(urls.pool_path(pool_name), cache=True)
-                return True
-            except ProxmoxNotFoundError:
+                # Utiliser GET /pools?poolid=... pour éviter la 500
+                resp = await client.get(
+                    urls.POOLS, params={"poolid": pool_name}, cache=True
+                )
+                pools = resp.get("data", [])
+                return len(pools) > 0
+            except Exception:
+                # En cas d'erreur, supposer que le pool n'existe pas
                 return False
-            except ProxmoxServerError as e:
-                raise RuntimeError(f"Failed to check pool existence: {e}") from e
+
+    async def ensure_exists(self, pool_name: str, comment: str = "") -> None:
+        """Crée le pool s'il n'existe pas.
+
+        Args:
+            pool_name: Nom du pool.
+            comment: Commentaire descriptif du pool.
+        """
+        if not await self.exists(pool_name):
+            await self.create(pool_name, comment)
 
     async def create(self, pool_name: str, comment: str = "") -> None:
         """Crée un pool Proxmox.
