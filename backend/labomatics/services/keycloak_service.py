@@ -76,11 +76,11 @@ class KeycloakService:
             logger.error(f"Failed to delete Keycloak user {login}: {e}")
             raise
 
-    async def set_user_password(self, login: str, password: str) -> bool:
+    async def set_user_password(self, login: str, password: str, temporary: bool = False) -> bool:
         """Définit le mot de passe d'un user."""
         try:
             user_id = self.admin_client.get_user_id(login)
-            self.admin_client.set_user_password(user_id, password, temporary=False)
+            self.admin_client.set_user_password(user_id, password, temporary=temporary)
             logger.info(f"Set password for Keycloak user {login}")
             return True
         except KeycloakError as e:
