@@ -242,14 +242,13 @@ class ClusterService:
             # Parser l'URL pour obtenir l'hostname
             parsed = urlparse(cluster.url)
             host = parsed.hostname or parsed.netloc.split(":")[0]
-            user, token_name = cred.token_id.split("!")
 
             # Tester la connexion avec API token
             # Format: user@realm!tokenid:tokensecret
             proxmox = ProxmoxAPI(
                 host,
-                user=user,
-                token_name=token_name,
+                user=cred.user,
+                token_name=cred.token_id,
                 token_value=token_secret,
                 verify_ssl=False,
             )
