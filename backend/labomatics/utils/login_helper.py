@@ -13,9 +13,25 @@ def generate_login(first_name: str, last_name: str) -> str:
 
 
 def generate_password(length: int = 12) -> str:
-    """Génère un password aléatoire sécurisé."""
-    alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
-    return "".join(secrets.choice(alphabet) for _ in range(length))
+    """Génère un password aléatoire sécurisé avec au moins une majuscule, minuscule et chiffre."""
+    if length < 3:
+        length = 12
+
+    uppercase = string.ascii_uppercase
+    lowercase = string.ascii_lowercase
+    digits = string.digits
+    special = "!@#$%^&*"
+
+    password = [
+        secrets.choice(uppercase),
+        secrets.choice(lowercase),
+        secrets.choice(digits),
+    ]
+    alphabet = uppercase + lowercase + digits + special
+    password += [secrets.choice(alphabet) for _ in range(length - 3)]
+
+    secrets.SystemRandom().shuffle(password)
+    return "".join(password)
 
 
 def get_school_year() -> tuple[int, datetime, datetime]:
