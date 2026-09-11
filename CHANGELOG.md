@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.4.0-rc.17 (2026-09-11)
+
+### Bug Fixes
+
+- Correction bug test connexion cluster
+  ([`317db31`](https://github.com/SimonLou-Dev/labomatics/commit/317db31c1729ef485a354828e6b2e111444fa148))
+
+
 ## v0.4.0-rc.16 (2026-09-11)
 
 ### Bug Fixes
