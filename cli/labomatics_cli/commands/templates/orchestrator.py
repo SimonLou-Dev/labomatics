@@ -12,7 +12,7 @@ from .templates import images_list
 
 console = Console()
 
-_DISK_IMAGE_EXTENSIONS = {".img", ".qcow2", ".vmdk", ".raw", ".vhd", ".vhdx"}
+_DISK_IMAGE_EXTENSIONS = {".qcow2", ".vmdk", ".raw", ".vhd", ".vhdx"}
 
 
 def _iso_filename_from_url(url: str) -> str:
@@ -242,9 +242,9 @@ def _create_vm(
     )
     if tmpl.uefi:
         kwargs["bios"] = "ovmf"
-        kwargs["efidisk0"] = (
-            f"{dest_storage}:1,efitype=4m,pre-enrolled-keys=1,format=qcow2"
-        )
+        kwargs[
+            "efidisk0"
+        ] = f"{dest_storage}:1,efitype=4m,pre-enrolled-keys=1,format=qcow2"
         kwargs["boot"] = "order=virtio0;net0"
     if tmpl.cloudinit:
         kwargs["ide2"] = f"{dest_storage}:cloudinit"
