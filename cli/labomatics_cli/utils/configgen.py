@@ -72,6 +72,8 @@ class ClusterConfigGenerator:
                     "name": wan_name,
                 }
             ],
+            "token_id": token_id,
+            "token_secret": token_secret,
             "vnet_config": {
                 "vxlan_range_id": None,  # Généré par la DB
                 "name": vxlan_name,

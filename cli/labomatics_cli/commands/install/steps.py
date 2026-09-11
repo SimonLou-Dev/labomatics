@@ -149,7 +149,11 @@ def collect_step_4_proxmox_user(
     """Étape 4: Création user Proxmox et token."""
     step_data = state.get_step(4)
     if step_data:
-        return step_data["labomatics_user"], step_data["labomatics_token_secret"]
+        return (
+            step_data["labomatics_user"],
+            step_data["labomatics_token_id"],
+            step_data["labomatics_token_secret"],
+        )
 
     step(4, 9, "Création user Proxmox et token")
     user_id = "labomatics@pve"
@@ -162,17 +166,20 @@ def collect_step_4_proxmox_user(
             raise
 
     pve.set_acl("/", user_id, "PVEAdmin")
-    token_data = pve.create_token(user_id, "labomatics-token", privesep=False)
+    token_data = pve.create_token(user_id, "labomatics", privesep=False)
+
+    token_id = f"{user_id}!labomatics"
 
     state.set_step(
         4,
         {
+            "labomatics_token_id": token_id,
             "labomatics_user": user_id,
             "labomatics_token_secret": token_data["value"],  # type: ignore
         },
     )
 
-    return user_id, token_data["value"]  # type: ignore
+    return user_id, token_id, token_data["value"]  # type: ignore
 
 
 def collect_step_5_vm_config(state: InstallState) -> tuple:

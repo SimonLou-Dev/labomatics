@@ -53,9 +53,11 @@ def run_installation(state: InstallState) -> int:
     wan_config, vxlan_config, dns_servers, storage = collect_step_3_network_config(
         state
     )
-    labomatics_user, labomatics_token_secret = collect_step_4_proxmox_user(
-        state, pve, domain
-    )
+    (
+        labomatics_user,
+        labomatics_token_id,
+        labomatics_token_secret,
+    ) = collect_step_4_proxmox_user(state, pve, domain)
     (
         vm_name,
         vm_memory,
@@ -173,6 +175,7 @@ def run_installation(state: InstallState) -> int:
         ssh_privkey_path,
         vm_name,
         proxmox_url,
+        labomatics_token_id,
         labomatics_token_secret,
         storage,
         wan_config,
@@ -272,6 +275,7 @@ def _generate_and_deploy_clusterconfig(
     ssh_privkey_path,
     cluster_name,
     proxmox_url,
+    labomatics_token_id,
     token_secret,
     storage,
     wan_config,
@@ -294,7 +298,7 @@ def _generate_and_deploy_clusterconfig(
     yaml_content = ClusterConfigGenerator.generate(
         cluster_name=cluster_name,
         proxmox_url=proxmox_url,
-        token_id=f"{cluster_name}-cli",
+        token_id=labomatics_token_id,
         token_secret=token_secret,
         storage=storage,
         wan_name=wan_config.get("name", "wan"),

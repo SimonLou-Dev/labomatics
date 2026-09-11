@@ -330,7 +330,9 @@ class StudentService:
 
             # 6. Générer password et le définir
             password = generate_password()
-            await keycloak_svc.set_user_password(login=login, password=password, temporary=True)
+            await keycloak_svc.set_user_password(
+                login=login, password=password, temporary=True
+            )
             logger.info(f"Password défini pour {login}")
 
             # 7. Envoyer mail avec identifiants (templé)
