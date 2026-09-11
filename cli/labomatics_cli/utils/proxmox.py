@@ -198,10 +198,12 @@ class ProxmoxClient:
         upid = self.proxmox.nodes(node).qemu.create(**data)
         return upid
 
-    def wait_for_task(self, node: str, upid: str, timeout: int = 300) -> bool:
-        """Attendre qu'une tâche soit complète."""
+    def wait_for_task(self, node: str, upid: str, timeout: Optional[int] = 300) -> bool:
+        """Attendre qu'une tâche soit complète. timeout=None pour pas de limite."""
         start = time.time()
-        while time.time() - start < timeout:
+        while True:
+            if timeout is not None and time.time() - start >= timeout:
+                return False
             try:
                 status = self.proxmox.nodes(node).tasks(upid).status.get()
                 if status["status"] == "stopped":
@@ -209,7 +211,6 @@ class ProxmoxClient:
             except Exception:
                 pass
             time.sleep(1)
-        return False
 
     def start_vm(self, node: str, vmid: int) -> str:
         """Démarrer une VM."""

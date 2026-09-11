@@ -203,7 +203,7 @@ def _download_image(
             url=url,
         )
     )
-    client.wait_for_task(node, task, timeout=600)
+    client.wait_for_task(node, task, timeout=None)
     volid = _image_volid(storage, filename)
     console.print(f"  [green]✓ Image téléchargée : {volid}[/green]")
     return volid
