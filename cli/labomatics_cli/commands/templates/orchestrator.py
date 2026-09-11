@@ -242,9 +242,9 @@ def _create_vm(
     )
     if tmpl.uefi:
         kwargs["bios"] = "ovmf"
-        kwargs[
-            "efidisk0"
-        ] = f"{dest_storage}:1,efitype=4m,pre-enrolled-keys=1,format=qcow2"
+        kwargs["efidisk0"] = (
+            f"{dest_storage}:1,efitype=4m,pre-enrolled-keys=1,format=qcow2"
+        )
         kwargs["boot"] = "order=virtio0;net0"
     if tmpl.cloudinit:
         kwargs["ide2"] = f"{dest_storage}:cloudinit"
@@ -255,7 +255,7 @@ def _create_vm(
 
     task = client.create_vm_from_data(node, str(tmpl.vmid), kwargs)
     if task:
-        client.wait_for_task(node, task, timeout=120)
+        client.wait_for_task(node, task, timeout=300)
     console.print(f"  [green]✓ VM vmid={tmpl.vmid} créée[/green]")
 
 
@@ -270,7 +270,7 @@ def _resize_disk(client: ProxmoxClient, node: str, vmid: int, size: str) -> None
 def _start_vm(client: ProxmoxClient, node: str, vmid: int) -> None:
     task = client.proxmox.nodes(node).qemu(vmid).status.start.post()
     if task:
-        client.wait_for_task(node, task, timeout=60)
+        client.wait_for_task(node, task, timeout=300)
     console.print(f"  [green]✓ VM vmid={vmid} démarrée[/green]")
 
 
@@ -351,7 +351,7 @@ def _graceful_shutdown_vm(client: ProxmoxClient, node: str, vmid: int) -> None:
     console.print("  [cyan]Graceful shutdown...[/cyan]")
     try:
         task = client.proxmox.nodes(node).qemu(vmid).status.shutdown.post()
-        client.wait_for_task(node, task, timeout=120)
+        client.wait_for_task(node, task, timeout=300)
     except Exception as e:
         console.print(f"  [yellow]⚠  Shutdown propre : {e} — forçage...[/yellow]")
         _force_stop_vm(client, node, vmid)

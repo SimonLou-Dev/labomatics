@@ -10,7 +10,7 @@ class TempalteConfig(BaseModel):
     cores: int = 2
     disk_size: str
     cpu_type: str = "kvm64"
-    boot_timeout: int = 100
+    boot_timeout: int = 300
     cloudinit: bool = True
     ostype: str = "other"
     download_packages: bool = True
