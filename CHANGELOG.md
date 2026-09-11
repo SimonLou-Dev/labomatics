@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.4.0-rc.18 (2026-09-11)
+
+### Bug Fixes
+
+- Augmentation de la sécurité du mot de passe temporaire
+  ([`bd8d0b6`](https://github.com/SimonLou-Dev/labomatics/commit/bd8d0b64329e4e53927e67d1f6233f97d982650f))
+
+
 ## v0.4.0-rc.17 (2026-09-11)
 
 ### Bug Fixes

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "labomatics-cli"
-version = "0.4.0-rc.17"
+version = "0.4.0-rc.18"
 description = "Orchestration centrale pour labomatics"
 authors = ["SimonLou-Dev <simon.bidet@pm.me>"]
 license = "AGPL-3.0"
