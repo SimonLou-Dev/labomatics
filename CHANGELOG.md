@@ -1,6 +1,24 @@
 # CHANGELOG
 
 
+## v0.4.0-rc.16 (2026-09-11)
+
+### Bug Fixes
+
+- Front can chane cred now
+  ([`6ea9f61`](https://github.com/SimonLou-Dev/labomatics/commit/6ea9f61629ffb662ddd602ee13ff3b42440ba688))
+
+- Lors de la création d'un student, créer un mdp temporaire
+  ([`a927c2f`](https://github.com/SimonLou-Dev/labomatics/commit/a927c2f69f3aa946f92a4a0f252091ac97aead8a))
+
+close #54
+
+- **cli**: Add token_id and token_secret to clusterconfig
+  ([`923395a`](https://github.com/SimonLou-Dev/labomatics/commit/923395ac6b267a3bc32e7b640381f91278e37eb0))
+
+close #56
+
+
 ## v0.4.0-rc.15 (2026-09-11)
 
 ### Bug Fixes
