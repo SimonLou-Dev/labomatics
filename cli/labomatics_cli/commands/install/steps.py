@@ -165,7 +165,7 @@ def collect_step_4_proxmox_user(
         if "already exists" not in str(e):
             raise
 
-    pve.set_acl("/", user_id, "PVEAdmin")
+    pve.set_acl("/", user_id, "Administrator")
     token_data = pve.create_token(user_id, "labomatics", privesep=False)
 
     token_id = f"{user_id}!labomatics"
