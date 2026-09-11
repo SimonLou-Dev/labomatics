@@ -54,7 +54,7 @@ export async function setClusterCredential(
     token_id: tokenId,
     token_secret: tokenSecret,
   }
-  await http.post(`/clusters/${id}/credential`, data)
+  await http.put(`/clusters/${id}/credential`, data)
 }
 
 export async function attachIpRange(
