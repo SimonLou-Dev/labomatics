@@ -1,6 +1,37 @@
 # CHANGELOG
 
 
+## v0.4.0-rc.15 (2026-09-11)
+
+### Bug Fixes
+
+- Augmenter boot_timeout par défaut à 300s
+  ([`26fd716`](https://github.com/SimonLou-Dev/labomatics/commit/26fd71613d9e2a48fc182cd9f55416a713d85264))
+
+Augmente le timeout d'attente du guest agent lors de la création de templates de 100s à 300s pour
+  éviter les timeouts prématurés sur les systèmes plus lents.
+
+- Proxmox iso import type list
+  ([`cfe107c`](https://github.com/SimonLou-Dev/labomatics/commit/cfe107c9953435f7f525dedde79c7863887885ce))
+
+- Renommer l'image resolute en .qcow2 pour compatibilité Proxmox
+  ([`6e927ef`](https://github.com/SimonLou-Dev/labomatics/commit/6e927ef4d6f753401b21554437c952a6e4a91407))
+
+L'extension .img n'est pas acceptée par Proxmox pour les imports d'images disque. Renomme le fichier
+  en .qcow2 pour résoudre l'erreur 'invalid filename or wrong extension'.
+
+Claude-Session: https://claude.ai/code/session_01WQMB6NWnzQkwnAKzWBhDHR
+
+- Supprimer le timeout sur le téléchargement des ISO
+  ([`cd79df7`](https://github.com/SimonLou-Dev/labomatics/commit/cd79df761ac4f5ed9f1451383184d4e3690bdf67))
+
+Le téléchargement des ISO dans les templates ne doit pas avoir de limite de temps pour éviter les
+  timeouts sur les fichiers volumineux. Modifier wait_for_task pour accepter timeout=None (pas de
+  limite).
+
+Claude-Session: https://claude.ai/code/session_01WQMB6NWnzQkwnAKzWBhDHR
+
+
 ## v0.4.0-rc.14 (2026-09-10)
 
 ### Bug Fixes
