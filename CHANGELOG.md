@@ -1,6 +1,17 @@
 # CHANGELOG
 
 
+## v0.4.0-rc.19 (2026-09-11)
+
+### Bug Fixes
+
+- Grand labomatics token Administrator not PVEAdmin
+  ([`f6f2f4b`](https://github.com/SimonLou-Dev/labomatics/commit/f6f2f4b4acaecbbb1ac8b9ce6075b387a962fce4))
+
+- Openwrt screen en VGA
+  ([`71c16f2`](https://github.com/SimonLou-Dev/labomatics/commit/71c16f246efacf87a4b663e2ac7a0574dce9f695))
+
+
 ## v0.4.0-rc.18 (2026-09-11)
 
 ### Bug Fixes
