@@ -10,17 +10,7 @@ pour créer et gérer vos VMs sans toucher aux ressources des autres.
 
 ## Vos identifiants
 
-L'administrateur vous a remis un fichier (ou une ligne de `credentials.csv`) contenant :
-
-| Champ          | Exemple                          | Description                        |
-|----------------|----------------------------------|------------------------------------|
-| `userid`       | `jdupont@pve`                    | Votre compte Proxmox               |
-| `token_id`     | `jdupont@pve!labomatics`         | Identifiant complet du token API   |
-| `token_secret` | `xxxxxxxx-xxxx-xxxx-xxxx-xxxx`   | Secret du token (à ne pas partager)|
-| `wan_ip`       | `172.29.20.18`                   | Votre IP WAN sur le réseau du lab  |
-
-> Le token a **les mêmes droits que votre compte** (privsep=0) :
-> accès à votre pool, au pool template, et à votre VNet VXLAN.
+Lors de la création de votre lab votre token_id et token secret vous a été indiqué.
 
 ---
 

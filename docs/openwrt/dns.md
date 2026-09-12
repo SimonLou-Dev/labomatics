@@ -6,9 +6,10 @@ Le résolveur DNS par défaut est `dnsmasq`. Vous pouvez changer les serveurs up
 
 ```bash
 # Utiliser Cloudflare + Google
-uci set network.wan.dns='1.1.1.1 8.8.8.8'
+uci set network.wan.peerdns='0'
+uci add_list network.wan.dns='1.1.1.1'
 uci commit network
-/etc/init.d/network reload
+/etc/init.d/network restart
 ```
 
 **Ajouter un domaine local résolu par dnsmasq :**

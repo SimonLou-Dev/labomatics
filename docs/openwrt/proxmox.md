@@ -8,16 +8,9 @@ de nouvelles depuis les templates, et consulter l'état de votre réseau VXLAN.
 
 ---
 
-## Connexion
+## Connexion via SSO keycloak
 
-```
-https://<proxmox-host>:8006
-Utilisateur : jdupont@pve
-Mot de passe : <fourni par l'administrateur>
-```
-
-> Changez votre mot de passe Proxmox à la première connexion :
-> `Datacenter → My Account → Change Password`
+vous devez choisir realm labomatics et utiliser les identifiants envoyés par mail.
 
 ---
 

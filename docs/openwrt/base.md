@@ -60,13 +60,7 @@ Le certificat est auto-signé — acceptez l'exception de sécurité dans votre 
 
 ### Via l'interface Proxmox
 
-Connectez-vous sur l'interface Proxmox avec vos identifiants :
-
-```
-https://<proxmox-host>:8006
-Utilisateur : jdupont@pve
-Mot de passe : <mot de passe fourni par l'administrateur>
-```
+Connectez-vous sur l'interface Proxmox via le SSO avec les realms labomatics
 
 Voir [proxmox.md](proxmox.md) pour utiliser Proxmox et accéder aux templates.
 
@@ -76,8 +70,8 @@ Voir [proxmox.md](proxmox.md) pour utiliser Proxmox et accéder aux templates.
 
 | Service | Utilisateur | Mot de passe |
 |---------|-------------|--------------|
-| SSH     | `root`      | `openwrt`    |
-| LuCI    | `root`      | `openwrt`    |
+| SSH     | `root`      | `labomatics`    |
+| LuCI    | `root`      | `labomatics`    |
 
 > **Changez le mot de passe dès la première connexion :**
 > ```bash

@@ -18,7 +18,7 @@ clés SSH directement depuis l'interface Proxmox.
    |---|---|
    | **VM ID** | Un ID libre dans votre plage (ex. `10200`) |
    | **Name** | Nom descriptif (`web-server`, `db01`…) |
-   | **Pool** | le nomde votre pool (`jdupond`) |
+   | **Pool** | le nom de votre pool (`jdupont`) |
    | **Target Storage** | Laisser le stockage par défaut |
    | **Mode** | **Full Clone** (clone complet, indépendant) |
 5. Cliquer **Clone**
@@ -42,6 +42,9 @@ Il faut remplacer le bridge par votre VNet personnel.
 
 ## 3. Configurer cloud-init
 
+
+*Le cloud-init n'est pas disponible sur la VM Alpine*
+
 L'onglet **Cloud-Init** de la VM clonée permet de personnaliser la configuration avant le
 premier démarrage. Les valeurs par défaut sont déjà renseignées par l'administrateur.
 
@@ -60,6 +63,8 @@ VM → onglet Cloud-Init
 | **DNS domain / servers** | Résolution DNS (optionnel) |
 
 > Après chaque modification, cliquer **Regenerate Image** pour regénérer le drive cloud-init.
+
+*La connexion SSH par mot de passe est désactivée sur toutes les templates, il faut mettre votre clé publique SSH dans `SSH public key`*
 
 ### Exemple — activer DHCP sur votre VNet
 
