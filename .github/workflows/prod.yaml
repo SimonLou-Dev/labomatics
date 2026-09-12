@@ -1,7 +1,8 @@
 name: Prod CI/CD
 
 on:
-  push:
+  pull_request:
+    types: [closed]
     branches: [main]
 
 permissions:
@@ -10,27 +11,47 @@ permissions:
   packages: write
 
 jobs:
-  lint:
-    uses: ./.github/workflows/lint.yaml
+  get-token:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    outputs:
+      token: ${{ steps.app_token.outputs.token }}
+    steps:
+      - name: Get GitHub App Token
+        id: app_token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.GH_APP_ID }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
 
   release:
-    needs: lint
+    needs: get-token
     uses: ./.github/workflows/release.yaml
     with:
       github_ref: ${{ github.ref }}
+      github_token: ${{ needs.get-token.outputs.token }}
     secrets: inherit
 
   docker:
     if: needs.release.outputs.released == 'true'
-    needs: release
+    needs: [get-token, release]
     uses: ./.github/workflows/docker.yaml
+    with:
+      version: ${{ needs.release.outputs.version }}
+      github_token: ${{ needs.get-token.outputs.token }}
+    secrets: inherit
+
+  doc:
+    if: needs.release.outputs.released == 'true'
+    needs: [release]
+    uses: ./.github/workflows/doc.yaml
     with:
       version: ${{ needs.release.outputs.version }}
     secrets: inherit
 
   pypi:
     if: needs.release.outputs.released == 'true'
-    needs: release
+    needs: [get-token, release]
     uses: ./.github/workflows/pypi.yaml
     with:
       version: ${{ needs.release.outputs.version }}
