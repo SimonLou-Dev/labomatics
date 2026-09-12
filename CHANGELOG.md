@@ -1,6 +1,23 @@
 # CHANGELOG
 
 
+## v0.4.0-rc.21 (2026-09-12)
+
+### Bug Fixes
+
+- Ci auto trigger on merged main + create release bot
+  ([`54cbd28`](https://github.com/SimonLou-Dev/labomatics/commit/54cbd2851204cad03538bab709cb63447e4692ba))
+
+- Add GitHub App token generation before Semantic Release on both dev and prod - Change prod.yaml to
+  trigger on PR merged (closed) instead of push - Pass app token to release, docker, and doc
+  workflows for proper authentication - Workflows now bypass branch protection rules with GitHub App
+
+### Chores
+
+- Trigger CI workflow
+  ([`311af50`](https://github.com/SimonLou-Dev/labomatics/commit/311af506a5345f7b5faa915cd924a19bffbb359d))
+
+
 ## v0.4.0-rc.20 (2026-09-12)
 
 ### Bug Fixes
