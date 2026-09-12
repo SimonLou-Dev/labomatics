@@ -6,6 +6,9 @@ on:
       github_ref:
         required: true
         type: string
+      github_token:
+        required: false
+        type: string
     outputs:
       released:
         value: ${{ jobs.semantic-release.outputs.released }}
@@ -37,6 +40,6 @@ jobs:
         id: release
         uses: python-semantic-release/python-semantic-release@v9
         with:
-          github_token: ${{ secrets.PAT_SEMANTIC_RELEASE }}
+          github_token: ${{ inputs.github_token || secrets.PAT_SEMANTIC_RELEASE }}
           git_committer_name: "github-actions[bot]"
           git_committer_email: "github-actions[bot]@users.noreply.github.com"

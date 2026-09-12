@@ -10,6 +10,9 @@ on:
         required: false
         type: string
         default: ""
+      github_token:
+        required: false
+        type: string
 
 jobs:
   build-images:
@@ -38,7 +41,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ github.token }}
+          password: ${{ inputs.github_token || github.token }}
 
       - name: Set image repository
         run: echo "IMAGE_REPO=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV

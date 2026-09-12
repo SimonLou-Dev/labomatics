@@ -12,22 +12,36 @@ permissions:
   packages: write
 
 jobs:
+  get-token:
+    runs-on: ubuntu-latest
+    outputs:
+      token: ${{ steps.app_token.outputs.token }}
+    steps:
+      - name: Get GitHub App Token
+        id: app_token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.GH_APP_ID }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+
   lint:
     uses: ./.github/workflows/lint.yaml
 
   release:
     if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
-    needs: lint
+    needs: [get-token, lint]
     uses: ./.github/workflows/release.yaml
     with:
       github_ref: ${{ github.ref }}
+      github_token: ${{ needs.get-token.outputs.token }}
     secrets: inherit
 
   docker:
     if: github.event_name == 'push' && github.ref == 'refs/heads/dev' && needs.release.outputs.released == 'true'
-    needs: release
+    needs: [get-token, release]
     uses: ./.github/workflows/docker.yaml
     with:
       version: ${{ needs.release.outputs.version }}
       tag_suffix: "-rc"
+      github_token: ${{ needs.get-token.outputs.token }}
     secrets: inherit
