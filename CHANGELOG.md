@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.4.0-rc.20 (2026-09-12)
+
+### Bug Fixes
+
+- Radius <-> LDAP ok
+  ([`97b9f27`](https://github.com/SimonLou-Dev/labomatics/commit/97b9f27cf485e19b701048f993521b381657f970))
+
+
 ## v0.4.0-rc.19 (2026-09-11)
 
 ### Bug Fixes
