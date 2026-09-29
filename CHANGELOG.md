@@ -1,6 +1,19 @@
 # CHANGELOG
 
 
+## v0.4.0-rc.22 (2026-09-29)
+
+### Bug Fixes
+
+- Format
+  ([`fb65288`](https://github.com/SimonLou-Dev/labomatics/commit/fb65288be569747e60dc96087666cb071bb7714b))
+
+### Chores
+
+- Trigger CI workflow
+  ([`68d12d2`](https://github.com/SimonLou-Dev/labomatics/commit/68d12d2b7a1db75fc9a9f3968ac5b82b32eb37bb))
+
+
 ## v0.4.0-rc.21 (2026-09-12)
 
 ### Bug Fixes
