@@ -11,6 +11,7 @@ SPECIAL = "!@#$%^&*"
 
 REQUIRED_CLASSES = (UPPERCASE, LOWERCASE, DIGITS, SPECIAL)
 
+
 def generate_login(first_name: str, last_name: str) -> str:
     """Génère un login au format firstname.lastname."""
     first = first_name.strip().lower()
