@@ -4,6 +4,12 @@ import secrets
 import string
 from datetime import datetime
 
+UPPERCASE = string.ascii_uppercase
+LOWERCASE = string.ascii_lowercase
+DIGITS = string.digits
+SPECIAL = "!@#$%^&*"
+
+REQUIRED_CLASSES = (UPPERCASE, LOWERCASE, DIGITS, SPECIAL)
 
 def generate_login(first_name: str, last_name: str) -> str:
     """Génère un login au format firstname.lastname."""
@@ -13,23 +19,22 @@ def generate_login(first_name: str, last_name: str) -> str:
 
 
 def generate_password(length: int = 12) -> str:
-    """Génère un password aléatoire sécurisé avec au moins une majuscule, minuscule et chiffre."""
-    if length < 3:
-        length = 12
+    """Génère un mot de passe aléatoire contenant au moins un caractère
+    de chaque classe : majuscule, minuscule, chiffre et caractère spécial."""
+    if length < len(REQUIRED_CLASSES):
+        # Échouer explicitement plutôt que de changer la longueur en silence
+        raise ValueError(
+            f"length doit valoir au moins {len(REQUIRED_CLASSES)}, reçu {length}"
+        )
 
-    uppercase = string.ascii_uppercase
-    lowercase = string.ascii_lowercase
-    digits = string.digits
-    special = "!@#$%^&*"
+    # Un caractère garanti par classe exigée par la politique
+    password = [secrets.choice(charset) for charset in REQUIRED_CLASSES]
 
-    password = [
-        secrets.choice(uppercase),
-        secrets.choice(lowercase),
-        secrets.choice(digits),
-    ]
-    alphabet = uppercase + lowercase + digits + special
-    password += [secrets.choice(alphabet) for _ in range(length - 3)]
+    # Complète avec des caractères tirés de toutes les classes
+    alphabet = "".join(REQUIRED_CLASSES)
+    password += [secrets.choice(alphabet) for _ in range(length - len(password))]
 
+    # Mélange pour que les caractères garantis ne soient pas toujours en tête
     secrets.SystemRandom().shuffle(password)
     return "".join(password)
 
