@@ -28,8 +28,6 @@ class AuthMiddleware(BaseHTTPMiddleware):
             "/api/v1/auth/callback",
             "/v1/auth/login",
             "/v1/auth/callback",
-            "/api/v1/ws/",  # WebSockets gèrent leur propre auth
-            "/ws/",  # WebSockets gèrent leur propre auth
         }
     )
 

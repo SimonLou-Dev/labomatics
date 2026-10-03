@@ -42,7 +42,7 @@ if [ -n "$CIDEV" ]; then
       uci set network.$NAME.ipaddr="$ADDR"
       uci set network.$NAME.netmask="$MASK"
       uci set network.$NAME.device="$IFACE"
-      if [ -n "$GW" ] && uci set network.$NAME.dns="1.1.1.1 8.8.8.8"
+      [ -n "$GW" ] && uci set network.$NAME.dns="1.1.1.1 8.8.8.8"
       [ -n "$GW" ] && uci set network.$NAME.gateway="$GW"
     done
 

@@ -366,9 +366,29 @@ async def _create_lab(
             details={"vmid": vmid, "node": dest_node},
         )
 
-        # 11. Démarrer la VM
-        await proxmox.vm.start(dest_node, vmid)
-        await emit(job_id, "step_done", step="vm_started", task_id=task_id)
+        # 11. Démarrer la VM (avec retry)
+        import asyncio
+
+        max_retries = 3
+        retry_delays = [10, 30]  # délais entre les tentatives
+        for attempt in range(max_retries):
+            try:
+                await proxmox.vm.start(dest_node, vmid)
+                await emit(job_id, "step_done", step="vm_started", task_id=task_id)
+                break
+            except RuntimeError as e:
+                if attempt < max_retries - 1:
+                    delay = retry_delays[min(attempt, len(retry_delays) - 1)]
+                    await emit(
+                        job_id,
+                        "step_done",
+                        step="vm_start_retry",
+                        task_id=task_id,
+                        message=f"Retry {attempt + 1}/3 après {delay}s - {e!s}",
+                    )
+                    await asyncio.sleep(delay)
+                else:
+                    raise
 
         # 12. Récupérer la config finale et créer LabVm
         config = await proxmox.vm.get_config(dest_node, vmid)
