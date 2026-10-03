@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.4.0-rc.27 (2026-10-03)
+
+### Bug Fixes
+
+- Sanitize pool name
+  ([`1a65456`](https://github.com/SimonLou-Dev/labomatics/commit/1a654560c7020539012f656feefce79e86b050c1))
+
+
 ## v0.4.0-rc.26 (2026-10-03)
 
 ### Bug Fixes
