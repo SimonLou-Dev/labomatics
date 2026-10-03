@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.4.0-rc.28 (2026-10-03)
+
+### Bug Fixes
+
+- Openwrt guest agents
+  ([`c35ead6`](https://github.com/SimonLou-Dev/labomatics/commit/c35ead6a69e2f47ae040064210856dce37c9df54))
+
+
 ## v0.4.0-rc.27 (2026-10-03)
 
 ### Bug Fixes
