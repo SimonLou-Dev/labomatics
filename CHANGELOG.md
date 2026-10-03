@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.4.0-rc.25 (2026-10-03)
+
+### Bug Fixes
+
+- Table patch
+  ([`c2da6ac`](https://github.com/SimonLou-Dev/labomatics/commit/c2da6ac0ee4f3612e998d800a02300d856897c82))
+
+
 ## v0.4.0-rc.24 (2026-10-03)
 
 ### Bug Fixes
