@@ -104,6 +104,10 @@ class LabService:
         job_id = new_job_id()
         logger.info(f"Enqueueing lab creation job {job_id} for user {user.username}")
 
+        # Tracker la tâche dans Redis
+        from labomatics.services.job_service import JobService
+        JobService._start_task(job_id, user.subject, "lab_deploy", f"Création lab ({str(owner_role).lower()})")
+
         lab_tasks.create_lab.delay(
             owner_keycloak_id=user.subject,
             owner_role=str(owner_role),
@@ -113,6 +117,7 @@ class LabService:
             cluster_id=cluster_id_str,
             access_origin=access_origin,
             job_id=job_id,
+            task_id=job_id,
         )
 
         return JobDTO(jobId=job_id)

@@ -94,7 +94,7 @@ async def _delete_lab(
     await lab_prov_repo.delete(lab.id)
 
 
-async def _delete_student(student_id: str, job_id: str | None = None) -> None:
+async def _delete_student(student_id: str, job_id: str | None = None, task_id: str | None = None) -> None:
     """Supprime un étudiant et toutes ses ressources Proxmox.
 
     Orchestre : suppression des VMs, du user Proxmox, du pool,
@@ -122,7 +122,6 @@ async def _delete_student(student_id: str, job_id: str | None = None) -> None:
                 f"Student {student.login} has no lab provisioning, skipping Proxmox cleanup"
             )
             await student_repo.delete(student_uuid)
-            return
 
         labs = student.lab_provisioning
 
@@ -152,36 +151,24 @@ async def _delete_student(student_id: str, job_id: str | None = None) -> None:
                 f"Immpossible de supprimer le user {student.login} de keycloak : {e}"
             )
 
-        # Audit
-        await emit(
-            job_id=job_id,
-            event_type=EventType.STUDENT_DELETED,
-            user_id=None,
-            resource_type="student",
-            resource_id=student_id,
-            details={"login": student.login},
-            severity="info",
-        )
-
         logger.info(f"Successfully deleted student {student.login} and all resources")
+
+        # Marquer la tâche comme terminée
+        if job_id:
+            from labomatics.worker.jobs import emit
+            await emit(job_id, "done", task_id=task_id, message=f"Suppression {student.login} terminée")
 
     except Exception as e:
         logger.error(f"Student deletion failed for {student_id}: {e}")
-        await emit(
-            job_id=job_id,
-            event_type=EventType.STUDENT_DELETION_FAILED,
-            user_id=None,
-            resource_type="student",
-            resource_id=student_id,
-            details={"error": str(e)},
-            severity="error",
-        )
+        if job_id:
+            from labomatics.worker.jobs import emit
+            await emit(job_id, "error", task_id=task_id, message=str(e))
         raise
 
 
 @celery_app.task(name="labomatics.delete_student")
 def delete_student(
-    student_id: str, job_id: str | None = None, user_id: str | None = None
+    student_id: str, job_id: str | None = None, task_id: str | None = None, user_id: str | None = None
 ) -> dict:
     """Tâche Celery pour supprimer un étudiant."""
-    return run_async(_delete_student(student_id=student_id, job_id=job_id))
+    return run_async(_delete_student(student_id=student_id, job_id=job_id, task_id=task_id))

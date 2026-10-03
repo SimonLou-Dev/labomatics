@@ -43,6 +43,7 @@ async def _create_lab(
     cluster_id: str | None,
     access_origin: str,
     job_id: str | None = None,
+    task_id: str | None = None,
 ) -> None:
     """Crée un lab complet pour un utilisateur.
 
@@ -106,13 +107,13 @@ async def _create_lab(
             )
             if existing_lab:
                 if existing_lab.status == "active":
-                    await emit(job_id, "done", message="Lab already exists")
+                    await emit(job_id, "done", task_id=task_id, message="Lab already exists")
                     logger.info(
                         f"Lab already exists for student {student_id} on cluster {cluster.id}"
                     )
                     return
                 elif existing_lab.status == "provisioning":
-                    await emit(job_id, "done", message="Lab creation in progress")
+                    await emit(job_id, "done", task_id=task_id, message="Lab creation in progress")
                     logger.info(
                         f"Lab provisioning already in progress for student {student_id}"
                     )
@@ -151,7 +152,7 @@ async def _create_lab(
             access_origin=access_origin,
         )
         lab_provisioning = await lab_prov_repo.add(lab_provisioning)
-        await emit(job_id, "step_done", step="lab_provisioning_created")
+        await emit(job_id, "step_done", step="lab_provisioning_created", task_id=task_id)
 
         # 5. Allocation IP WAN
         ip_svc = IpRangeService()
@@ -202,7 +203,7 @@ async def _create_lab(
             resource_id=str(lab_provisioning.id),
             details={"ip_address": str(wan_ip)},
         )
-        await emit(job_id, "step_done", step="wan_ip_allocated", message=str(wan_ip))
+        await emit(job_id, "step_done", step="wan_ip_allocated", message=str(wan_ip), task_id=task_id)
 
         # 6. Allocation VNI + subnet
         vxlan_svc = VxlanRangeService()
@@ -250,7 +251,7 @@ async def _create_lab(
             resource_id=str(lab_provisioning.id),
             details={"vni": vni, "subnet": str(subnet)},
         )
-        await emit(job_id, "step_done", step="network_allocated", message=str(subnet))
+        await emit(job_id, "step_done", step="network_allocated", message=str(subnet), task_id=task_id)
 
         # 7. Connexion Proxmox (créé dans la boucle asyncio courante)
         try:
@@ -281,7 +282,7 @@ async def _create_lab(
         )
         # Extraire le token (tuple de (token_id, token_secret))
         token_id, token_secret = token_result.get("token", ("", ""))
-        await emit(job_id, "step_done", step="proxmox_user_created")
+        await emit(job_id, "step_done", step="proxmox_user_created", task_id=task_id)
 
         # 9. Clone la VM OpenWRT (ou récupérer si elle existe déjà)
         vm_name = f"router-{user_name}"
@@ -301,7 +302,7 @@ async def _create_lab(
                 pool=user_name,
                 full_clone=True,
             )
-        await emit(job_id, "step_done", step="vm_cloned", message=f"vmid={vmid}")
+        await emit(job_id, "step_done", step="vm_cloned", message=f"vmid={vmid}", task_id=task_id)
 
         # 10. Configurer cloud-init
         wan_ip_obj = ip_range_cluster.ip_range
@@ -327,7 +328,7 @@ async def _create_lab(
         )
 
         await proxmox.vm.config(dest_node, vmid, **cloud_init_cfg.to_proxmox_args())
-        await emit(job_id, "step_done", step="vm_configured")
+        await emit(job_id, "step_done", step="vm_configured", task_id=task_id)
 
         await audit_svc.log(
             actor_keycloak_id=owner_keycloak_id,
@@ -340,7 +341,7 @@ async def _create_lab(
 
         # 11. Démarrer la VM
         await proxmox.vm.start(dest_node, vmid)
-        await emit(job_id, "step_done", step="vm_started")
+        await emit(job_id, "step_done", step="vm_started", task_id=task_id)
 
         # 12. Récupérer la config finale et créer LabVm
         config = await proxmox.vm.get_config(dest_node, vmid)
@@ -408,7 +409,7 @@ async def _create_lab(
             except Exception as e:
                 logger.warning(f"Failed to send lab provisioned email: {e}")
 
-        await emit(job_id, "done", message="Lab created successfully")
+        await emit(job_id, "done", task_id=task_id, message="Lab created successfully")
 
         logger.info(f"Lab created for {owner_username}: vmid={vmid}, vnet={vnet_name}")
 
@@ -438,7 +439,7 @@ async def _create_lab(
         except Exception as audit_err:
             logger.warning(f"Failed to log audit failure: {audit_err}")
 
-        await emit(job_id, "error", message=str(e))
+        await emit(job_id, "error", task_id=task_id, message=str(e))
         raise
 
     finally:
@@ -456,6 +457,7 @@ def create_lab(
     cluster_id: str | None,
     access_origin: str,
     job_id: str | None = None,
+    task_id: str | None = None,
 ) -> None:
     """Tâche Celery pour créer un lab."""
     run_async(
@@ -468,5 +470,6 @@ def create_lab(
             cluster_id=cluster_id,
             access_origin=access_origin,
             job_id=job_id,
+            task_id=task_id,
         )
     )

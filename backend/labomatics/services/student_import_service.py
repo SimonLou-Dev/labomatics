@@ -151,7 +151,7 @@ class StudentImportService:
         )
 
     async def apply_import(
-        self, csv_content: bytes, column_mapping: dict[str, str], mode: str = "merge"
+        self, csv_content: bytes, column_mapping: dict[str, str], mode: str = "merge", user_id: str | None = None
     ) -> StudentImportDiffDTO:
         """Applique l'import (crée, met à jour, supprime).
 
@@ -164,6 +164,6 @@ class StudentImportService:
         # Import lazy pour éviter les boucles circulaires
         from labomatics.services.job_service import JobService
 
-        JobService.enqueue_apply_students(preview)
+        JobService.enqueue_apply_students(preview, user_id=user_id)
 
         return preview

@@ -28,6 +28,8 @@ class AuthMiddleware(BaseHTTPMiddleware):
             "/api/v1/auth/callback",
             "/v1/auth/login",
             "/v1/auth/callback",
+            "/api/v1/ws/",  # WebSockets gèrent leur propre auth
+            "/ws/",  # WebSockets gèrent leur propre auth
         }
     )
 
@@ -38,9 +40,6 @@ class AuthMiddleware(BaseHTTPMiddleware):
         # Ignorer les routes publiques
         if any(path.startswith(p) for p in self.PUBLIC_PATHS):
             return await call_next(request)
-
-        # Debug: afficher les cookies reçus
-        logger.info("Cookies reçus: %s", list(request.cookies.keys()))
 
         # Récupérer le token depuis les cookies
         access_token = request.cookies.get("access_token")

@@ -22,6 +22,7 @@ from labomatics.utils.login_helper import (
     generate_password,
     get_school_year,
 )
+from labomatics.worker.jobs import new_job_id
 
 logger = logging.getLogger(__name__)
 
@@ -398,4 +399,8 @@ class StudentService:
             logger.warning(f"Student introuvable pour suppression (id={data.id})")
             return
 
-        delete_student.delay(student_id=str(student.id))
+        # Tracker la tâche dans Redis
+        from labomatics.services.job_service import JobService
+        job_id = new_job_id()
+        JobService._start_task(job_id, None, "student_delete_bulk", f"Suppression {student.login}")
+        delete_student.delay(student_id=str(student.id), job_id=job_id, task_id=job_id)
