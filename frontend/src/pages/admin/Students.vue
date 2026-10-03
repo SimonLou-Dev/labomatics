@@ -48,147 +48,151 @@
       </IconField>
     </div>
 
-    <DataTable
-      v-model:selection="selectedStudents"
-      :value="students"
-      data-key="id"
-      :rows="pageSize"
-      :rows-per-page-options="[5, 10, 20, 50]"
-      :total-records="totalRecords"
-      :loading="loading"
-      :lazy="true"
-      paginator
-      sort-field="last_name"
-      :sort-order="1"
-      :first="currentPage"
-      @page="onPageChange"
-    >
-      <Column
-        selection-mode="multiple"
-        style="width: 3rem"
-      />
-      <template #empty>
-        Aucun étudiant trouvé
-      </template>
-
-      <Column
-        field="id"
-        header="#"
-        style="width: 8%"
+    <div class="overflow-x-auto">
+      <DataTable
+        v-model:selection="selectedStudents"
+        v-model:rows="pageSize"
+        v-model:first="currentPage"
+        :value="students"
+        data-key="id"
+        :rows-per-page-options="[5, 10, 20, 50]"
+        :total-records="totalRecords"
+        :loading="loading"
+        :lazy="true"
+        paginator
+        sort-field="last_name"
+        :sort-order="1"
+        scrollable
+        scroll-height="calc(100vh - 300px)"
+        @page="onPageChange"
       >
-        <template #body="{ data }">
-          <span class="font-semibold text-sm">{{ data.id.slice(0, 8) }}</span>
+        <Column
+          selection-mode="multiple"
+          style="width: 3rem"
+        />
+        <template #empty>
+          Aucun étudiant trouvé
         </template>
-      </Column>
 
-      <Column
-        field="login"
-        header="Login"
-        style="width: 12%"
-      >
-        <template #body="{ data }">
-          <span class="font-semibold">{{ data.login }}</span>
-        </template>
-      </Column>
+        <Column
+          field="id"
+          header="#"
+          style="width: 8%"
+        >
+          <template #body="{ data }">
+            <span class="font-semibold text-sm">{{ data.id.slice(0, 8) }}</span>
+          </template>
+        </Column>
 
-      <Column
-        field="first_name"
-        header="Nom"
-        style="width: 15%"
-      >
-        <template #body="{ data }">
-          <span class="font-semibold">{{ data.first_name }} {{ data.last_name }}</span>
-        </template>
-      </Column>
+        <Column
+          field="login"
+          header="Login"
+          style="width: 12%"
+        >
+          <template #body="{ data }">
+            <span class="font-semibold">{{ data.login }}</span>
+          </template>
+        </Column>
 
-      <Column
-        field="email"
-        header="Email"
-        style="width: 18%"
-      >
-        <template #body="{ data }">
-          <span class="font-semibold text-sm">{{ data.email }}</span>
-        </template>
-      </Column>
+        <Column
+          field="first_name"
+          header="Nom"
+          style="width: 15%"
+        >
+          <template #body="{ data }">
+            <span class="font-semibold">{{ data.first_name }} {{ data.last_name }}</span>
+          </template>
+        </Column>
 
-      <Column
-        field="cohort_name"
-        header="Promo"
-        style="width: 12%"
-      >
-        <template #body="{ data }">
-          <Badge
-            :value="data.cohort_name"
-            :severity="getCohortColor(data.cohort_name)"
-          />
-        </template>
-      </Column>
+        <Column
+          field="email"
+          header="Email"
+          style="width: 18%"
+        >
+          <template #body="{ data }">
+            <span class="font-semibold text-sm">{{ data.email }}</span>
+          </template>
+        </Column>
 
-      <Column
-        field="wan_ip"
-        header="IP WAN"
-        style="width: 12%"
-      >
-        <template #body="{ data }">
-          <span
-            v-if="data.wan_ip"
-            class="font-mono text-sm"
-          >
-            {{ data.wan_ip }}
-          </span>
-          <span
-            v-else
-            class="text-surface-400"
-          >—</span>
-        </template>
-      </Column>
-
-      <Column
-        field="vxlan_tag"
-        header="VNI"
-        style="width: 8%"
-      >
-        <template #body="{ data }">
-          <span
-            v-if="data.vxlan_tag"
-            class="font-mono font-semibold"
-          >
-            {{ data.vxlan_tag }}
-          </span>
-          <span
-            v-else
-            class="text-surface-400"
-          >—</span>
-        </template>
-      </Column>
-
-      <Column
-        field="actions"
-        header="Actions"
-        style="width: 15%"
-      >
-        <template #body="{ data }">
-          <div class="flex gap-2">
-            <Button
-              v-tooltip="data.wan_ip ? 'Recréer le lab' : 'Déployer le lab'"
-              icon="pi pi-replay"
-              severity="secondary"
-              size="small"
-              :loading="deployingStudentId === data.id"
-              @click="confirmForceCreateLab(data)"
+        <Column
+          field="cohort_name"
+          header="Promo"
+          style="width: 12%"
+        >
+          <template #body="{ data }">
+            <Badge
+              :value="data.cohort_name"
+              :severity="getCohortColor(data.cohort_name)"
             />
-            <Button
-              v-tooltip="'Supprimer'"
-              icon="pi pi-trash"
-              severity="danger"
-              size="small"
-              :loading="deletingStudentId === data.id"
-              @click="confirmDeleteStudent(data)"
-            />
-          </div>
-        </template>
-      </Column>
-    </DataTable>
+          </template>
+        </Column>
+
+        <Column
+          field="wan_ip"
+          header="IP WAN"
+          style="width: 12%"
+        >
+          <template #body="{ data }">
+            <span
+              v-if="data.wan_ip"
+              class="font-mono text-sm"
+            >
+              {{ data.wan_ip }}
+            </span>
+            <span
+              v-else
+              class="text-surface-400"
+            >—</span>
+          </template>
+        </Column>
+
+        <Column
+          field="vxlan_tag"
+          header="VNI"
+          style="width: 8%"
+        >
+          <template #body="{ data }">
+            <span
+              v-if="data.vxlan_tag"
+              class="font-mono font-semibold"
+            >
+              {{ data.vxlan_tag }}
+            </span>
+            <span
+              v-else
+              class="text-surface-400"
+            >—</span>
+          </template>
+        </Column>
+
+        <Column
+          field="actions"
+          header="Actions"
+          style="width: 15%"
+        >
+          <template #body="{ data }">
+            <div class="flex gap-2">
+              <Button
+                v-tooltip="data.wan_ip ? 'Recréer le lab' : 'Déployer le lab'"
+                icon="pi pi-replay"
+                severity="secondary"
+                size="small"
+                :loading="deployingStudentId === data.id"
+                @click="confirmForceCreateLab(data)"
+              />
+              <Button
+                v-tooltip="'Supprimer'"
+                icon="pi pi-trash"
+                severity="danger"
+                size="small"
+                :loading="deletingStudentId === data.id"
+                @click="confirmDeleteStudent(data)"
+              />
+            </div>
+          </template>
+        </Column>
+      </DataTable>
+    </div>
 
     <StudentImportDialog
       ref="importDialog"
@@ -233,20 +237,18 @@ const deletingStudentId = ref<string | null>(null)
 const deployingBulk = ref(false)
 const deletingBulk = ref(false)
 
-async function fetchStudents(page: number = 1) {
+async function fetch() {
   loading.value = true
   try {
+    const pageNumber = Math.floor(currentPage.value / pageSize.value)
     const response = await listStudents(
-      page,
+      pageNumber,
       pageSize.value,
       searchQuery.value || undefined,
       undefined
     )
     students.value = response.items
     totalRecords.value = response.total_count
-    if (page === 1) {
-      currentPage.value = 0
-    }
   } catch (error) {
     toast.add({
       severity: 'error',
@@ -262,26 +264,16 @@ async function fetchStudents(page: number = 1) {
 
 function onPageChange(event: DataTablePageChangeEvent) {
   currentPage.value = event.first
-  const pageNumber = Math.floor(event.first / event.rows) + 1
-  fetchStudents(pageNumber)
 }
 
 onMounted(() => {
-  fetchStudents()
+  fetch()
 
-  // Watch sur la recherche
+  // Un seul watch sur les dépendances
   watch(
-    () => searchQuery.value,
+    [() => currentPage.value, () => pageSize.value, () => searchQuery.value],
     () => {
-      fetchStudents(1)
-    }
-  )
-
-  // Watch sur le changement de page size
-  watch(
-    () => pageSize.value,
-    () => {
-      fetchStudents(1)
+      fetch()
     }
   )
 })
@@ -291,7 +283,8 @@ function openImportDialog() {
 }
 
 function onImportSuccess() {
-  fetchStudents(1)
+  currentPage.value = 0
+  fetch()
 }
 
 function onImportClose() {
@@ -319,7 +312,7 @@ async function forceCreateLab(student: StudentListItem) {
       detail: `Lab de ${student.first_name} ${student.last_name} en cours de création`,
       life: 3000,
     })
-    fetchStudents(currentPage.value)
+    fetch()
   } catch (error) {
     toast.add({
       severity: 'error',
@@ -370,7 +363,7 @@ async function bulkDeleteStudents() {
       life: 3000,
     })
     selectedStudents.value = []
-    await fetchStudents(currentPage.value || 1)
+    await fetch()
   } catch (error) {
     toast.add({
       severity: 'error',
@@ -401,7 +394,7 @@ async function bulkDeployLabs() {
       life: 3000,
     })
     selectedStudents.value = []
-    await fetchStudents(currentPage.value || 1)
+    await fetch()
   } catch (error) {
     toast.add({
       severity: 'error',
@@ -425,7 +418,7 @@ async function deleteStudent(student: StudentListItem) {
       detail: `${student.first_name} ${student.last_name} a été supprimé`,
       life: 3000,
     })
-    fetchStudents(currentPage.value)
+    fetch()
   } catch (error) {
     toast.add({
       severity: 'error',

@@ -11,124 +11,128 @@
       />
     </div>
 
-    <DataTable
-      paginator
-      :rows="pageSize"
-      :rows-per-page-options="[5, 10, 20, 50]"
-      :value="ipRanges"
-      data-key="id"
-      :total-records="totalRecords"
-      :loading="loading"
-      :lazy="true"
-      :first="currentPage"
-      @page="onPageChange"
-    >
-      <template #empty>
-        Aucune plage IP trouvée
-      </template>
-      <Column
-        field="name"
-        header="Nom"
-        style="width: 20%"
+    <div class="overflow-x-auto">
+      <DataTable
+        v-model:rows="pageSize"
+        v-model:first="currentPage"
+        :rows-per-page-options="[5, 10, 20, 50]"
+        :value="ipRanges"
+        data-key="id"
+        :total-records="totalRecords"
+        :loading="loading"
+        :lazy="true"
+        paginator
+        scrollable
+        scroll-height="calc(100vh - 300px)"
+        @page="onPageChange"
       >
-        <template #body="{ data }">
-          <span class="font-semibold">{{ data.name }}</span>
+        <template #empty>
+          Aucune plage IP trouvée
         </template>
-      </Column>
-      <Column
-        field="network"
-        header="Réseau"
-        style="width: 18%"
-      >
-        <template #body="{ data }">
-          <span class="font-mono">{{ data.network }}</span>
-        </template>
-      </Column>
-      <Column
-        field="utilization"
-        header="Utilisation"
-        style="width: 18%"
-      >
-        <template #body="{ data }">
-          <div class="flex items-center gap-2">
+        <Column
+          field="name"
+          header="Nom"
+          style="width: 20%"
+        >
+          <template #body="{ data }">
+            <span class="font-semibold">{{ data.name }}</span>
+          </template>
+        </Column>
+        <Column
+          field="network"
+          header="Réseau"
+          style="width: 18%"
+        >
+          <template #body="{ data }">
+            <span class="font-mono">{{ data.network }}</span>
+          </template>
+        </Column>
+        <Column
+          field="utilization"
+          header="Utilisation"
+          style="width: 18%"
+        >
+          <template #body="{ data }">
+            <div class="flex items-center gap-2">
+              <div
+                class="flex-1 h-6 border border-surface-400 bg-surface-700 rounded"
+                :style="{
+                  background: `linear-gradient(90deg, ${getProgressBarColor(data)} 0%, ${getProgressBarColor(data)} ${getUtilizationPercent(data)}%, var(--surface-700) ${getUtilizationPercent(data)}%, var(--surface-700) 100%)`
+                }"
+              />
+              <span class="text-xs font-medium w-12 text-right">
+                {{ getUtilizationPercent(data) }}%
+              </span>
+            </div>
+          </template>
+        </Column>
+        <Column
+          field="gateway"
+          header="Passerelle"
+          style="width: 13%"
+        >
+          <template #body="{ data }">
+            <span class="font-mono">{{ data.gateway }}</span>
+          </template>
+        </Column>
+        <Column
+          field="exclusions"
+          header="Exclusions"
+          style="width: 20%"
+        >
+          <template #body="{ data }">
             <div
-              class="flex-1 h-6 border border-surface-400 bg-surface-700 rounded"
-              :style="{
-                background: `linear-gradient(90deg, ${getProgressBarColor(data)} 0%, ${getProgressBarColor(data)} ${getUtilizationPercent(data)}%, var(--surface-700) ${getUtilizationPercent(data)}%, var(--surface-700) 100%)`
-              }"
-            />
-            <span class="text-xs font-medium w-12 text-right">
-              {{ getUtilizationPercent(data) }}%
-            </span>
-          </div>
-        </template>
-      </Column>
-      <Column
-        field="gateway"
-        header="Passerelle"
-        style="width: 13%"
-      >
-        <template #body="{ data }">
-          <span class="font-mono">{{ data.gateway }}</span>
-        </template>
-      </Column>
-      <Column
-        field="exclusions"
-        header="Exclusions"
-        style="width: 20%"
-      >
-        <template #body="{ data }">
-          <div
-            v-if="data.exclusions.length > 0"
-            class="flex flex-wrap gap-1"
-          >
-            <Chip
-              v-for="(excl, idx) in data.exclusions"
-              :key="idx"
-              :label="excl"
-              class="text-xs"
-            />
-          </div>
-          <span
-            v-else
-            class="text-surface-400"
-          >—</span>
-        </template>
-      </Column>
-      <Column
-        field="actions"
-        header="Actions"
-        style="width: 21%"
-        frozen
-        align-frozen="right"
-      >
-        <template #body="{ data }">
-          <div class="flex gap-2">
-            <Button
-              v-tooltip="'Consulter'"
-              icon="pi pi-arrow-right"
-              severity="info"
-              size="small"
-              @click="goToDetails(data)"
-            />
-            <Button
-              v-tooltip="'Éditer'"
-              icon="pi pi-pencil"
-              severity="secondary"
-              size="small"
-              @click="openEditDialog(data)"
-            />
-            <Button
-              v-tooltip="'Supprimer'"
-              icon="pi pi-trash"
-              severity="danger"
-              size="small"
-              @click="confirmDeleteRange(data)"
-            />
-          </div>
-        </template>
-      </Column>
-    </DataTable>
+              v-if="data.exclusions.length > 0"
+              class="flex flex-wrap gap-1"
+            >
+              <Chip
+                v-for="(excl, idx) in data.exclusions"
+                :key="idx"
+                :label="excl"
+                class="text-xs"
+              />
+            </div>
+            <span
+              v-else
+              class="text-surface-400"
+            >—</span>
+          </template>
+        </Column>
+        <Column
+          field="actions"
+          header="Actions"
+          style="width: 21%"
+          frozen
+          align-frozen="right"
+        >
+          <template #body="{ data }">
+            <div class="flex gap-2">
+              <Button
+                v-tooltip="'Consulter'"
+                icon="pi pi-arrow-right"
+                severity="info"
+                size="small"
+                @click="goToDetails(data)"
+              />
+              <Button
+                v-tooltip="'Éditer'"
+                icon="pi pi-pencil"
+                severity="secondary"
+                size="small"
+                @click="openEditDialog(data)"
+              />
+              <Button
+                v-tooltip="'Supprimer'"
+                icon="pi pi-trash"
+                severity="danger"
+                size="small"
+                @click="confirmDeleteRange(data)"
+              />
+            </div>
+          </template>
+        </Column>
+      </DataTable>
+    </div>
 
     <!-- Create/Edit Dialog -->
     <Dialog
