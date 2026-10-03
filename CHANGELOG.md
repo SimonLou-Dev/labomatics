@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.4.0-rc.30 (2026-10-03)
+
+### Bug Fixes
+
+- Sanitze user first and last name
+  ([`dfadd8a`](https://github.com/SimonLou-Dev/labomatics/commit/dfadd8a9dfdd848a891db82d87d0a9cf3b5dc05e))
+
+
 ## v0.4.0-rc.29 (2026-10-03)
 
 ### Bug Fixes
