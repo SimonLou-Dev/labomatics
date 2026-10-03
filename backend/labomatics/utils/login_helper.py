@@ -1,7 +1,9 @@
 """Utilitaires pour la génération de login, passwords et années scolaires."""
 
+import re
 import secrets
 import string
+import unicodedata
 from datetime import datetime
 
 UPPERCASE = string.ascii_uppercase
@@ -13,10 +15,18 @@ REQUIRED_CLASSES = (UPPERCASE, LOWERCASE, DIGITS, SPECIAL)
 
 
 def generate_login(first_name: str, last_name: str) -> str:
-    """Génère un login au format firstname.lastname."""
+    """Génère un login au format firstname.lastname (sanitisé sans accents)."""
     first = first_name.strip().lower()
     last = last_name.strip().lower()
-    return f"{first}.{last}"
+    login = f"{first}.{last}"
+
+    # Enlever les accents, trémas et autres caractères spéciaux
+    login = (
+        unicodedata.normalize("NFKD", login).encode("ascii", "ignore").decode("ascii")
+    )
+    # Enlever les apostrophes et autres caractères non-alphanumériques
+    login = re.sub(r"[^a-z0-9._-]", "", login)
+    return login
 
 
 def generate_password(length: int = 12) -> str:

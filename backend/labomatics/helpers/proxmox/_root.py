@@ -91,7 +91,8 @@ class LabomaticsProxmoxClient:
         Raises:
             RuntimeError: Si une étape échoue (création user, pool, VNet, ACL ou token).
         """
-        user_id = f"{user_name}@{realm}"
+        sanitized_username = sanitize_pool_name(user_name)
+        user_id = f"{sanitized_username}@{realm}"
         vnet = f"vn{tag}"
 
         # 1. Créer l'utilisateur s'il n'existe pas
@@ -120,7 +121,7 @@ class LabomaticsProxmoxClient:
                     vnet_name=vnet,
                     zone=zone,
                     tag=tag,
-                    alias=user_name,
+                    alias=sanitized_username,
                     gateway=gateway,
                     subnet=subnet,
                 )
