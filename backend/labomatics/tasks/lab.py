@@ -313,7 +313,7 @@ async def _create_lab(
         vnet_name = f"vn{vni}"
 
         cloud_init_cfg = CloudInitConfigDTO(
-            cores=2,
+            cores=1,
             memory=512,
             storage_device=cluster.default_storage,
             wan_ip=str(wan_ip),
