@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.4.0-rc.29 (2026-10-03)
+
+### Bug Fixes
+
+- Tempalte
+  ([`ffe2fec`](https://github.com/SimonLou-Dev/labomatics/commit/ffe2feccbc2b8abf16098931cf960c3bc3ee6f21))
+
+
 ## v0.4.0-rc.28 (2026-10-03)
 
 ### Bug Fixes
