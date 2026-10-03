@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Any
 from uuid import UUID
 
@@ -47,7 +47,7 @@ class TaskTrackingService:
         self.redis.hset(f"task:{task_id}", mapping=task_data)
         self.redis.rpush("tasks:current", task_id)
         if user_id:
-            self.redis.rpush(f"user_tasks:{str(user_id)}", task_id)
+            self.redis.rpush(f"user_tasks:{user_id!s}", task_id)
 
     async def add_job(self, task_id: str, job_id: str, description: str = "") -> None:
         """Ajoute un job à une tâche."""

@@ -54,7 +54,9 @@ class StudentService:
         cohort: str | None = None,
     ) -> StudentListResponseDTO:
         """Liste les étudiants actifs avec pagination et filtres."""
-        students, total = await self.repo.list_with_pagination(page, size, search=search)
+        students, total = await self.repo.list_with_pagination(
+            page, size, search=search
+        )
 
         items = []
         now = datetime.now()
@@ -401,6 +403,9 @@ class StudentService:
 
         # Tracker la tâche dans Redis
         from labomatics.services.job_service import JobService
+
         job_id = new_job_id()
-        JobService._start_task(job_id, None, "student_delete_bulk", f"Suppression {student.login}")
+        JobService._start_task(
+            job_id, None, "student_delete_bulk", f"Suppression {student.login}"
+        )
         delete_student.delay(student_id=str(student.id), job_id=job_id, task_id=job_id)

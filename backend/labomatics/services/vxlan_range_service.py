@@ -43,7 +43,9 @@ class VxlanRangeService:
         ranges = await self.repo.list()
         return [self._to_dto(r) for r in ranges]
 
-    async def list_vxlan_ranges_paginated(self, page: int, per_page: int) -> PaginatedDTO[VxlanRangeDTO]:
+    async def list_vxlan_ranges_paginated(
+        self, page: int, per_page: int
+    ) -> PaginatedDTO[VxlanRangeDTO]:
         """Liste les plages VXLAN (paginées) avec % d'utilisation."""
         result = await self.repo.paginate(filters={}, page=page, per_page=per_page)
         return PaginatedDTO(

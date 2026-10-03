@@ -38,8 +38,7 @@ class Student(Base, UUIDPkMixin, TimestampMixin):
 
     # Relationships
     enrollments: Mapped[list["Enrollment"]] = relationship(
-        back_populates="student",
-        cascade="all, delete-orphan"
+        back_populates="student", cascade="all, delete-orphan"
     )
     cluster_extras: Mapped[list["StudentClusterExtra"]] = relationship(
         back_populates="student",

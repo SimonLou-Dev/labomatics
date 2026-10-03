@@ -150,7 +150,9 @@ async def apply_import_csv(
         "email": email,
         "cohort_name": cohort_name,
     }
-    return await service.apply_import(content, column_mapping, mode=mode, user_id=_user.subject)
+    return await service.apply_import(
+        content, column_mapping, mode=mode, user_id=_user.subject
+    )
 
 
 @router.get("/me/lab")
@@ -301,8 +303,16 @@ async def delete_student(
 
     # Tracker la tâche dans Redis
     from labomatics.services.job_service import JobService
-    JobService._start_task(delete_job_id, _user.subject, "student_delete", f"Suppression étudiant {student.login}")
 
-    delete_student_task.delay(student_id=student_id, job_id=delete_job_id, task_id=delete_job_id)
+    JobService._start_task(
+        delete_job_id,
+        _user.subject,
+        "student_delete",
+        f"Suppression étudiant {student.login}",
+    )
+
+    delete_student_task.delay(
+        student_id=student_id, job_id=delete_job_id, task_id=delete_job_id
+    )
 
     return JobDTO(jobId=delete_job_id)

@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import json
+
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, status
-from labomatics.services.task_tracking_service import TaskTrackingService
+
 from labomatics.services.auth_service import AuthService
+from labomatics.services.task_tracking_service import TaskTrackingService
 
 router = APIRouter(tags=["ws"])
 task_service = TaskTrackingService()
@@ -41,12 +43,12 @@ async def ws_admin_tasks(websocket: WebSocket) -> None:
     try:
         while True:
             data = await websocket.receive_text()
-            msg = json.loads(data) if data.startswith('{') else {}
+            msg = json.loads(data) if data.startswith("{") else {}
 
-            if msg.get('type') == 'replay':
+            if msg.get("type") == "replay":
                 tasks = await task_service.get_all_tasks()
                 await websocket.send_json({"type": "tasks_replay", "data": tasks})
-            elif data == "ping" or msg.get('type') == 'ping':
+            elif data == "ping" or msg.get("type") == "ping":
                 tasks = await task_service.get_all_tasks()
                 await websocket.send_json({"type": "tasks_update", "data": tasks})
     except WebSocketDisconnect:
@@ -71,12 +73,12 @@ async def ws_user_tasks(websocket: WebSocket) -> None:
     try:
         while True:
             data = await websocket.receive_text()
-            msg = json.loads(data) if data.startswith('{') else {}
+            msg = json.loads(data) if data.startswith("{") else {}
 
-            if msg.get('type') == 'replay':
+            if msg.get("type") == "replay":
                 tasks = await task_service.get_all_tasks(user_id=user_id_filter)
                 await websocket.send_json({"type": "tasks_replay", "data": tasks})
-            elif data == "ping" or msg.get('type') == 'ping':
+            elif data == "ping" or msg.get("type") == "ping":
                 tasks = await task_service.get_all_tasks(user_id=user_id_filter)
                 await websocket.send_json({"type": "tasks_update", "data": tasks})
     except WebSocketDisconnect:

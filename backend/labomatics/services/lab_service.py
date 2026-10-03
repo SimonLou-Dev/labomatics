@@ -106,7 +106,13 @@ class LabService:
 
         # Tracker la tâche dans Redis
         from labomatics.services.job_service import JobService
-        JobService._start_task(job_id, user.subject, "lab_deploy", f"Création lab ({str(owner_role).lower()})")
+
+        JobService._start_task(
+            job_id,
+            user.subject,
+            "lab_deploy",
+            f"Création lab ({str(owner_role).lower()})",
+        )
 
         lab_tasks.create_lab.delay(
             owner_keycloak_id=user.subject,

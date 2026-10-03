@@ -151,7 +151,11 @@ class StudentImportService:
         )
 
     async def apply_import(
-        self, csv_content: bytes, column_mapping: dict[str, str], mode: str = "merge", user_id: str | None = None
+        self,
+        csv_content: bytes,
+        column_mapping: dict[str, str],
+        mode: str = "merge",
+        user_id: str | None = None,
     ) -> StudentImportDiffDTO:
         """Applique l'import (crée, met à jour, supprime).
 

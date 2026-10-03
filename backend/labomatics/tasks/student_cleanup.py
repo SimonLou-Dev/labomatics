@@ -6,7 +6,6 @@ import logging
 from datetime import datetime
 from uuid import UUID
 
-from labomatics.constants.enums import EventType
 from labomatics.core.config.settings import settings
 from labomatics.core.db.models.lab_provisioning import LabProvisioning
 from labomatics.core.db.models.student import Student
@@ -17,7 +16,7 @@ from labomatics.core.db.repository.vxlan_allocation import VxlanAllocationReposi
 from labomatics.helpers.proxmox._root import LabomaticsProxmoxClient
 from labomatics.services.keycloak_service import KeycloakService
 from labomatics.worker.broker import celery_app
-from labomatics.worker.jobs import emit, run_async
+from labomatics.worker.jobs import run_async
 
 logger = logging.getLogger(__name__)
 
@@ -94,7 +93,9 @@ async def _delete_lab(
     await lab_prov_repo.delete(lab.id)
 
 
-async def _delete_student(student_id: str, job_id: str | None = None, task_id: str | None = None) -> None:
+async def _delete_student(
+    student_id: str, job_id: str | None = None, task_id: str | None = None
+) -> None:
     """Supprime un étudiant et toutes ses ressources Proxmox.
 
     Orchestre : suppression des VMs, du user Proxmox, du pool,
@@ -156,19 +157,31 @@ async def _delete_student(student_id: str, job_id: str | None = None, task_id: s
         # Marquer la tâche comme terminée
         if job_id:
             from labomatics.worker.jobs import emit
-            await emit(job_id, "done", task_id=task_id, message=f"Suppression {student.login} terminée")
+
+            await emit(
+                job_id,
+                "done",
+                task_id=task_id,
+                message=f"Suppression {student.login} terminée",
+            )
 
     except Exception as e:
         logger.error(f"Student deletion failed for {student_id}: {e}")
         if job_id:
             from labomatics.worker.jobs import emit
+
             await emit(job_id, "error", task_id=task_id, message=str(e))
         raise
 
 
 @celery_app.task(name="labomatics.delete_student")
 def delete_student(
-    student_id: str, job_id: str | None = None, task_id: str | None = None, user_id: str | None = None
+    student_id: str,
+    job_id: str | None = None,
+    task_id: str | None = None,
+    user_id: str | None = None,
 ) -> dict:
     """Tâche Celery pour supprimer un étudiant."""
-    return run_async(_delete_student(student_id=student_id, job_id=job_id, task_id=task_id))
+    return run_async(
+        _delete_student(student_id=student_id, job_id=job_id, task_id=task_id)
+    )

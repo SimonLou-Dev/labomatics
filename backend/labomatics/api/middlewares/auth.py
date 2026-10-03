@@ -49,7 +49,9 @@ class AuthMiddleware(BaseHTTPMiddleware):
             # Si pas d'access token mais qu'on a un refresh token, essayer de refresh
             if refresh_token:
                 try:
-                    logger.info("Access token missing, attempting refresh with refresh_token")
+                    logger.info(
+                        "Access token missing, attempting refresh with refresh_token"
+                    )
                     token_data = AuthService.refresh_access_token(refresh_token)
                     new_access_token = token_data.get("access_token")
                     new_refresh_token = token_data.get("refresh_token", refresh_token)
@@ -58,17 +60,25 @@ class AuthMiddleware(BaseHTTPMiddleware):
                         request.state.user = user
                         request.state.new_access_token = new_access_token
                         request.state.new_refresh_token = new_refresh_token
-                        logger.info("Token refreshed successfully from missing access_token")
+                        logger.info(
+                            "Token refreshed successfully from missing access_token"
+                        )
                     else:
                         raise Exception("Pas d'access token dans la réponse refresh")
                 except Exception as refresh_err:
-                    logger.debug("Refresh failed when access token missing: %s", refresh_err)
+                    logger.debug(
+                        "Refresh failed when access token missing: %s", refresh_err
+                    )
                     return JSONResponse(
                         status_code=status.HTTP_401_UNAUTHORIZED,
-                        content={"detail": "Session expirée. Veuillez vous reconnecter."},
+                        content={
+                            "detail": "Session expirée. Veuillez vous reconnecter."
+                        },
                     )
             else:
-                logger.warning("Access token missing and no refresh token for path: %s", path)
+                logger.warning(
+                    "Access token missing and no refresh token for path: %s", path
+                )
                 return JSONResponse(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     content={"detail": "Token manquant"},
@@ -78,7 +88,11 @@ class AuthMiddleware(BaseHTTPMiddleware):
             user = AuthService.authenticate(access_token)
             request.state.user = user
         except HTTPException as http_exc:
-            logger.debug("Authentication failed with status %d: %s", http_exc.status_code, http_exc.detail)
+            logger.debug(
+                "Authentication failed with status %d: %s",
+                http_exc.status_code,
+                http_exc.detail,
+            )
             # Si le token est invalide et on a un refresh token, essayer le refresh
             if http_exc.status_code == 401 and refresh_token:
                 try:

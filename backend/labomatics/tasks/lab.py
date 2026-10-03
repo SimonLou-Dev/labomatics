@@ -107,13 +107,20 @@ async def _create_lab(
             )
             if existing_lab:
                 if existing_lab.status == "active":
-                    await emit(job_id, "done", task_id=task_id, message="Lab already exists")
+                    await emit(
+                        job_id, "done", task_id=task_id, message="Lab already exists"
+                    )
                     logger.info(
                         f"Lab already exists for student {student_id} on cluster {cluster.id}"
                     )
                     return
                 elif existing_lab.status == "provisioning":
-                    await emit(job_id, "done", task_id=task_id, message="Lab creation in progress")
+                    await emit(
+                        job_id,
+                        "done",
+                        task_id=task_id,
+                        message="Lab creation in progress",
+                    )
                     logger.info(
                         f"Lab provisioning already in progress for student {student_id}"
                     )
@@ -152,7 +159,9 @@ async def _create_lab(
             access_origin=access_origin,
         )
         lab_provisioning = await lab_prov_repo.add(lab_provisioning)
-        await emit(job_id, "step_done", step="lab_provisioning_created", task_id=task_id)
+        await emit(
+            job_id, "step_done", step="lab_provisioning_created", task_id=task_id
+        )
 
         # 5. Allocation IP WAN
         ip_svc = IpRangeService()
@@ -203,7 +212,13 @@ async def _create_lab(
             resource_id=str(lab_provisioning.id),
             details={"ip_address": str(wan_ip)},
         )
-        await emit(job_id, "step_done", step="wan_ip_allocated", message=str(wan_ip), task_id=task_id)
+        await emit(
+            job_id,
+            "step_done",
+            step="wan_ip_allocated",
+            message=str(wan_ip),
+            task_id=task_id,
+        )
 
         # 6. Allocation VNI + subnet
         vxlan_svc = VxlanRangeService()
@@ -251,7 +266,13 @@ async def _create_lab(
             resource_id=str(lab_provisioning.id),
             details={"vni": vni, "subnet": str(subnet)},
         )
-        await emit(job_id, "step_done", step="network_allocated", message=str(subnet), task_id=task_id)
+        await emit(
+            job_id,
+            "step_done",
+            step="network_allocated",
+            message=str(subnet),
+            task_id=task_id,
+        )
 
         # 7. Connexion Proxmox (créé dans la boucle asyncio courante)
         try:
@@ -302,7 +323,13 @@ async def _create_lab(
                 pool=user_name,
                 full_clone=True,
             )
-        await emit(job_id, "step_done", step="vm_cloned", message=f"vmid={vmid}", task_id=task_id)
+        await emit(
+            job_id,
+            "step_done",
+            step="vm_cloned",
+            message=f"vmid={vmid}",
+            task_id=task_id,
+        )
 
         # 10. Configurer cloud-init
         wan_ip_obj = ip_range_cluster.ip_range
