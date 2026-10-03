@@ -92,6 +92,17 @@ uci set firewall.@rule[-1].proto='tcp'
 uci set firewall.@rule[-1].target='ACCEPT'
 
 uci commit firewall
+
+
+if ping -c 1 8.8.8.8 > /dev/null 2>&1; then
+  apk update
+  apk add --no-cache qemu-ga
+  /etc/init.d/qemu-ga start
+  /etc/init.d/qemu-ga enable
+else
+  echo "Network not ready, qemu-guest-agent not installed"
+fi
+
 /etc/init.d/firewall reload 2>/dev/null || true
 
 # SSH : écouter sur toutes les interfaces (y compris WAN)

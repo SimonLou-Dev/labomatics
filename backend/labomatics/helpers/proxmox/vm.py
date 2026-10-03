@@ -393,6 +393,7 @@ class ProxmoxVMClient:
             "storage": vm_storage,
             "target": dest_node,
             "newid": vmid,
+            "agent": 1,
         }
 
         if pool is not None:
