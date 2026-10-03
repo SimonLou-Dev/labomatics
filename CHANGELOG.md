@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.4.0-rc.26 (2026-10-03)
+
+### Bug Fixes
+
+- Lab deploy retry + templte openwrt
+  ([`2319623`](https://github.com/SimonLou-Dev/labomatics/commit/23196237febfb7c32fd609e56128e73283dc0cf4))
+
+
 ## v0.4.0-rc.25 (2026-10-03)
 
 ### Bug Fixes
