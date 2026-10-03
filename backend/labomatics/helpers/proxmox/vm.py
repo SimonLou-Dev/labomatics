@@ -393,7 +393,6 @@ class ProxmoxVMClient:
             "storage": vm_storage,
             "target": dest_node,
             "newid": vmid,
-            "agent": 1,
         }
 
         if pool is not None:
@@ -447,7 +446,13 @@ class ProxmoxVMClient:
             resources = resp.get("data", [])
             for r in resources:
                 if r.get("node") == dest_node and r.get("name") == vm_name:
-                    return dest_node, int(r.get("vmid"))
+                    real_vmid = int(r.get("vmid"))
+                    # Configurer le guest agent après le clone
+                    try:
+                        await self.set_guest_agent(dest_node, real_vmid)
+                    except RuntimeError as e:
+                        logger.warning(f"Failed to set guest agent: {e}")
+                    return dest_node, real_vmid
 
             if attempt == max_retries - 1:
                 raise RuntimeError(
@@ -472,6 +477,21 @@ class ProxmoxVMClient:
                 raise RuntimeError(
                     f"Failed to configure VM {vmid} on {node}: {e}"
                 ) from e
+
+    async def set_guest_agent(self, node: str, vmid: int) -> None:
+        """Configure le guest agent QEMU sur la VM.
+
+        Args:
+            node: Nœud hébergeant la VM.
+            vmid: ID de la VM.
+
+        Raises:
+            RuntimeError: Si la configuration échoue.
+        """
+        from contextlib import suppress
+
+        with suppress(RuntimeError):
+            await self.config(node, vmid, agent="1")
 
     async def start(self, node: str, vmid: int) -> None:
         """Démarre une VM.

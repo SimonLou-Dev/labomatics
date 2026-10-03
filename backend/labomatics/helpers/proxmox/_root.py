@@ -130,7 +130,7 @@ class LabomaticsProxmoxClient:
         # 4. Configurer les ACLs
         try:
             await self.acl.set_student(
-                zone=zone, vnet=vnet, user_pool=user_name, user_id=user_id
+                zone=zone, vnet=vnet, user_pool=pool_name, user_id=user_id
             )
         except RuntimeError as e:
             raise RuntimeError(f"Failed to set student ACLs: {e}") from e
