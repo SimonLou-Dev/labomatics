@@ -1,6 +1,17 @@
 # CHANGELOG
 
 
+## v0.4.0-rc.24 (2026-10-03)
+
+### Bug Fixes
+
+- Favicon
+  ([`e1367b8`](https://github.com/SimonLou-Dev/labomatics/commit/e1367b8061c8de62325a7f1bb177ceaeda0dce8f))
+
+- Use redis connector
+  ([`b64be25`](https://github.com/SimonLou-Dev/labomatics/commit/b64be25e9fe262a6bb4a812ae95c08c760423a95))
+
+
 ## v0.4.0-rc.23 (2026-10-03)
 
 ### Bug Fixes
