@@ -134,8 +134,14 @@ async def apply_import_csv(
     last_name: str = Form(...),
     email: str = Form(...),
     cohort_name: str = Form(...),
+    mode: str = Form("merge"),
 ) -> StudentImportDiffDTOXML:
-    """Applique l'import CSV. L'ID est utilisé pour le matching stable."""
+    """Applique l'import CSV. L'ID est utilisé pour le matching stable.
+
+    Modes:
+    - replace: Supprime tous les étudiants existants et importe les nouveaux
+    - merge: Ajoute les nouveaux, met à jour les existants, préserve les autres
+    """
     content = await file.read()
     column_mapping = {
         "id": id,
@@ -144,7 +150,7 @@ async def apply_import_csv(
         "email": email,
         "cohort_name": cohort_name,
     }
-    return await service.apply_import(content, column_mapping)
+    return await service.apply_import(content, column_mapping, mode=mode)
 
 
 @router.get("/me/lab")
