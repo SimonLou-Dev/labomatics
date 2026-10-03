@@ -1,6 +1,41 @@
 # CHANGELOG
 
 
+## v0.4.0-rc.23 (2026-10-03)
+
+### Bug Fixes
+
+- Add bulk action student table
+  ([`8032aa8`](https://github.com/SimonLou-Dev/labomatics/commit/8032aa8e87d154517791cf2ebc0b12efab5cd815))
+
+- Ajout de la possibiliter d'ajouter plusieurs étudiant sans tout remplacer
+  ([`b2ed46e`](https://github.com/SimonLou-Dev/labomatics/commit/b2ed46e0bcb497981f200ca213ea20c0cc92d3c8))
+
+Fix #62
+
+- Auth, lab page
+  ([`127d7ae`](https://github.com/SimonLou-Dev/labomatics/commit/127d7ae2ada9ff1084b0c8e54eb4bd8b06ca1e68))
+
+Fix #57
+
+- Linting
+  ([`2b36c06`](https://github.com/SimonLou-Dev/labomatics/commit/2b36c062516744568b265bc1df4fa5bd8e4421ca))
+
+- Linting
+  ([`81f1696`](https://github.com/SimonLou-Dev/labomatics/commit/81f16962d215a5bea68bd9473bcd911e6b1ec36a))
+
+- Openwrt templte
+  ([`37e01cb`](https://github.com/SimonLou-Dev/labomatics/commit/37e01cb376eba456ef16cda17e862f7f9577b266))
+
+Fix #60
+
+- Tables search
+  ([`8cabfa3`](https://github.com/SimonLou-Dev/labomatics/commit/8cabfa3b44e0a2cf78b3f508faa2fe9c36293fa9))
+
+- Task tracking svc
+  ([`00d1c01`](https://github.com/SimonLou-Dev/labomatics/commit/00d1c015defd5daa14774a01d758f734c1f66ea7))
+
+
 ## v0.4.0-rc.22 (2026-09-29)
 
 ### Bug Fixes
