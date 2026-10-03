@@ -146,7 +146,6 @@ class TaskTrackingService:
 
         # Tâches en cours
         current_ids = self.redis.lrange("tasks:current", 0, -1)
-        logger.info(f"get_all_tasks: current_ids={current_ids}, user_id={user_id}")
         for task_id in current_ids:
             if user_id is None or self._is_user_task(task_id, user_id):
                 task = await self.get_task(task_id)
@@ -155,7 +154,6 @@ class TaskTrackingService:
 
         # Tâches récemment terminées
         recent_ids = self.redis.lrange("tasks:recent", 0, -1)
-        logger.info(f"get_all_tasks: recent_ids={recent_ids}")
         for task_id in recent_ids:
             if user_id is None or self._is_user_task(task_id, user_id):
                 task = await self.get_task(task_id)
@@ -164,7 +162,6 @@ class TaskTrackingService:
 
         # Tâches en erreur
         error_ids = self.redis.lrange("tasks:errors", 0, -1)
-        logger.info(f"get_all_tasks: error_ids={error_ids}")
         for task_id in error_ids:
             if user_id is None or self._is_user_task(task_id, user_id):
                 task = await self.get_task(task_id)
@@ -177,7 +174,4 @@ class TaskTrackingService:
         """Vérifie si une tâche appartient à l'utilisateur."""
         task_data = self.redis.hgetall(f"task:{task_id}")
         stored_user_id = task_data.get("user_id", "")
-        check_user_id = str(user_id)
-        match = stored_user_id == check_user_id
-        logger.info(f"Task {task_id}: stored_user_id='{stored_user_id}' vs check_user_id='{check_user_id}' -> {match}")
-        return match
+        return stored_user_id == str(user_id)

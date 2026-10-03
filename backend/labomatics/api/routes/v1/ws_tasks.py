@@ -64,14 +64,9 @@ async def ws_user_tasks(websocket: WebSocket) -> None:
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return
 
-    import logging
-    logger = logging.getLogger(__name__)
-
     # Vérifier si l'utilisateur est admin
     is_admin = "manage_user" in user.roles or "admin" in user.roles
     user_id_filter = None if is_admin else str(user.subject)
-
-    logger.info(f"WS user/tasks connected: user_id={user.subject}, is_admin={is_admin}")
 
     try:
         while True:
@@ -79,9 +74,7 @@ async def ws_user_tasks(websocket: WebSocket) -> None:
             msg = json.loads(data) if data.startswith('{') else {}
 
             if msg.get('type') == 'replay':
-                logger.info(f"Replay requested for user {user.subject} (admin={is_admin})")
                 tasks = await task_service.get_all_tasks(user_id=user_id_filter)
-                logger.info(f"Found {len(tasks.get('in_progress', []))} in_progress, {len(tasks.get('errors', []))} errors")
                 await websocket.send_json({"type": "tasks_replay", "data": tasks})
             elif data == "ping" or msg.get('type') == 'ping':
                 tasks = await task_service.get_all_tasks(user_id=user_id_filter)
