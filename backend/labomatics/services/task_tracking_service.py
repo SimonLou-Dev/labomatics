@@ -8,7 +8,7 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-import redis
+from labomatics.core.connectors.redis import get_redis_sync
 
 logger = logging.getLogger(__name__)
 
@@ -16,10 +16,8 @@ logger = logging.getLogger(__name__)
 class TaskTrackingService:
     """Gère le tracking des tâches en Redis."""
 
-    def __init__(self, redis_client: redis.Redis | None = None) -> None:
-        self.redis = redis_client or redis.Redis(
-            host="localhost", port=6379, db=0, decode_responses=True
-        )
+    def __init__(self) -> None:
+        self.redis = get_redis_sync().write
         self.task_ttl = 60  # Garde les tâches terminées 60 secondes
 
     async def create_task(
