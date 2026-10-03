@@ -12,7 +12,27 @@
       />
     </div>
 
-    <div class="mb-3 flex justify-end">
+    <div class="mb-4 flex justify-between items-center gap-3">
+      <div v-if="selectedStudents.length > 0" class="flex gap-2">
+        <span class="text-sm font-medium">{{ selectedStudents.length }} sélectionné(s)</span>
+        <Button
+          label="Déployer"
+          icon="pi pi-play"
+          severity="success"
+          size="small"
+          @click="bulkDeployLabs"
+          :loading="deployingBulk"
+        />
+        <Button
+          label="Supprimer"
+          icon="pi pi-trash"
+          severity="danger"
+          size="small"
+          @click="confirmBulkDelete"
+          :loading="deletingBulk"
+        />
+      </div>
+      <div class="flex-1" />
       <IconField>
         <InputIcon>
           <Search />
@@ -26,6 +46,7 @@
     </div>
 
     <DataTable
+      v-model:selection="selectedStudents"
       :value="students"
       data-key="id"
       :rows="pageSize"
@@ -39,6 +60,10 @@
       :first="currentPage"
       @page="onPageChange"
     >
+      <Column
+        selection-mode="multiple"
+        style="width: 3rem"
+      />
       <template #empty>
         Aucun étudiant trouvé
       </template>
@@ -199,9 +224,12 @@ const loading = ref(false)
 const currentPage = ref(0)
 const pageSize = ref(10)
 const searchQuery = ref<string>('')
+const selectedStudents = ref<StudentListItem[]>([])
 const importDialog = ref<InstanceType<typeof StudentImportDialog>>()
 const deployingStudentId = ref<string | null>(null)
 const deletingStudentId = ref<string | null>(null)
+const deployingBulk = ref(false)
+const deletingBulk = ref(false)
 
 async function fetchStudents(page: number = 1) {
   loading.value = true
@@ -311,6 +339,78 @@ function confirmDeleteStudent(student: StudentListItem) {
     acceptClass: 'p-button-danger',
     accept: () => deleteStudent(student),
   })
+}
+
+function confirmBulkDelete() {
+  confirm.require({
+    message: `Êtes-vous sûr de vouloir supprimer ${selectedStudents.value.length} étudiant(s) ? Cette action ne peut pas être annulée.`,
+    header: 'Confirmation de suppression',
+    icon: 'pi pi-exclamation-triangle',
+    acceptClass: 'p-button-danger',
+    accept: () => bulkDeleteStudents(),
+  })
+}
+
+async function bulkDeleteStudents() {
+  deletingBulk.value = true
+  try {
+    for (const student of selectedStudents.value) {
+      try {
+        await deleteStudentApi(student.id)
+      } catch (error) {
+        console.error(`Failed to delete student ${student.id}:`, error)
+      }
+    }
+    toast.add({
+      severity: 'success',
+      summary: 'Succès',
+      detail: `${selectedStudents.value.length} étudiant(s) supprimé(s)`,
+      life: 3000,
+    })
+    selectedStudents.value = []
+    await fetchStudents(currentPage.value || 1)
+  } catch (error) {
+    toast.add({
+      severity: 'error',
+      summary: 'Erreur',
+      detail: 'Impossible de supprimer les étudiants',
+      life: 3000,
+    })
+    console.error('Failed to bulk delete students:', error)
+  } finally {
+    deletingBulk.value = false
+  }
+}
+
+async function bulkDeployLabs() {
+  deployingBulk.value = true
+  try {
+    for (const student of selectedStudents.value) {
+      try {
+        await forceCreateStudentLab(student.id)
+      } catch (error) {
+        console.error(`Failed to deploy lab for student ${student.id}:`, error)
+      }
+    }
+    toast.add({
+      severity: 'success',
+      summary: 'Succès',
+      detail: `Déploiement lancé pour ${selectedStudents.value.length} étudiant(s)`,
+      life: 3000,
+    })
+    selectedStudents.value = []
+    await fetchStudents(currentPage.value || 1)
+  } catch (error) {
+    toast.add({
+      severity: 'error',
+      summary: 'Erreur',
+      detail: 'Impossible de lancer les déploiements',
+      life: 3000,
+    })
+    console.error('Failed to bulk deploy labs:', error)
+  } finally {
+    deployingBulk.value = false
+  }
 }
 
 async function deleteStudent(student: StudentListItem) {
