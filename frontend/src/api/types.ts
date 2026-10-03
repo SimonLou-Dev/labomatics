@@ -89,7 +89,8 @@ export interface ClusterCredentialWriteDTO {
 
 export interface PaginatedResponse<T> {
   items: T[]
-  total: number
+  total_count: number
+  total_pages: number
   page: number
   per_page: number
 }

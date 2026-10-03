@@ -92,7 +92,7 @@
                   rel="noopener noreferrer"
                   class="inline-flex items-center gap-2 px-3 py-2 text-sm rounded bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/30 hover:border-blue-500/50 transition-colors"
                 >
-                  <i class="pi pi-external-link text-sm"></i>
+                  <i class="pi pi-external-link text-sm" />
                   Accéder au routeur
                 </a>
               </div>
@@ -129,7 +129,7 @@
                   rel="noopener noreferrer"
                   class="inline-flex items-center gap-2 px-3 py-2 text-sm rounded bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 hover:border-amber-500/50 transition-colors"
                 >
-                  <i class="pi pi-external-link text-sm"></i>
+                  <i class="pi pi-external-link text-sm" />
                   Accéder à Proxmox
                 </a>
               </div>

@@ -13,23 +13,26 @@
     </div>
 
     <div class="mb-4 flex justify-between items-center gap-3">
-      <div v-if="selectedStudents.length > 0" class="flex gap-2">
+      <div
+        v-if="selectedStudents.length > 0"
+        class="flex gap-2"
+      >
         <span class="text-sm font-medium">{{ selectedStudents.length }} sélectionné(s)</span>
         <Button
           label="Déployer"
           icon="pi pi-play"
           severity="success"
           size="small"
-          @click="bulkDeployLabs"
           :loading="deployingBulk"
+          @click="bulkDeployLabs"
         />
         <Button
           label="Supprimer"
           icon="pi pi-trash"
           severity="danger"
           size="small"
-          @click="confirmBulkDelete"
           :loading="deletingBulk"
+          @click="confirmBulkDelete"
         />
       </div>
       <div class="flex-1" />
@@ -207,7 +210,6 @@ import {
   InputText,
   Badge,
   Button,
-  Select,
 } from 'primevue'
 import { Search } from '@primeicons/vue'
 import { listStudents, forceCreateStudentLab, deleteStudent as deleteStudentApi, type StudentListItem } from '@/api/students'

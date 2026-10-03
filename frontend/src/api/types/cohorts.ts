@@ -14,8 +14,8 @@ export interface CohortDTO {
 
 export interface CohortListResponseDTO {
   items: CohortDTO[]
-  total: number
+  total_count: number
   page: number
-  size: number
+  per_page: number
   total_pages: number
 }

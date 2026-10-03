@@ -535,7 +535,7 @@ async function fetchClusters(page: number = 1) {
   try {
     const response = await clusterApi.listClusters(page, pageSize.value)
     clusters.value = response.items
-    totalRecords.value = response.total
+    totalRecords.value = response.total_count
     currentPage.value = page
   } catch (error) {
     toast.add({

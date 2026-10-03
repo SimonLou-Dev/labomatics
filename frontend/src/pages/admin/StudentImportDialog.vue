@@ -16,7 +16,9 @@
       </h2>
 
       <div class="space-y-3 p-4 bg-surface-800 rounded">
-        <div class="font-medium text-sm">Mode d'importation</div>
+        <div class="font-medium text-sm">
+          Mode d'importation
+        </div>
         <div class="flex gap-4">
           <div class="flex items-center gap-2">
             <RadioButton
@@ -24,7 +26,10 @@
               value="replace"
               input-id="mode-replace"
             />
-            <label for="mode-replace" class="text-sm">
+            <label
+              for="mode-replace"
+              class="text-sm"
+            >
               <div class="font-medium">Remplacer</div>
               <div class="text-xs text-surface-400">Supprime tous les étudiants existants et importe les nouveaux</div>
             </label>
@@ -35,7 +40,10 @@
               value="merge"
               input-id="mode-merge"
             />
-            <label for="mode-merge" class="text-sm">
+            <label
+              for="mode-merge"
+              class="text-sm"
+            >
               <div class="font-medium">Fusionner (Additif)</div>
               <div class="text-xs text-surface-400">Ajoute les nouveaux, met à jour les existants, préserve les autres</div>
             </label>

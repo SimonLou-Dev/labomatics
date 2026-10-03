@@ -34,16 +34,28 @@
 
       <div class="space-y-2">
         <!-- Tâches en cours -->
-        <div v-if="tasks.in_progress.length > 0" class="space-y-2">
-          <div class="text-xs font-medium text-surface-500">EN COURS</div>
+        <div
+          v-if="tasks.in_progress.length > 0"
+          class="space-y-2"
+        >
+          <div class="text-xs font-medium text-surface-500">
+            EN COURS
+          </div>
           <div
             v-for="task in tasks.in_progress"
             :key="task.id"
             class="p-2 bg-blue-500/10 border border-blue-500/30 rounded text-xs"
           >
-            <div class="font-medium">{{ task.description }}</div>
-            <div class="text-surface-400 text-xs">{{ task.type }}</div>
-            <div v-if="task.jobs && Object.keys(task.jobs).length > 0" class="mt-1">
+            <div class="font-medium">
+              {{ task.description }}
+            </div>
+            <div class="text-surface-400 text-xs">
+              {{ task.type }}
+            </div>
+            <div
+              v-if="task.jobs && Object.keys(task.jobs).length > 0"
+              class="mt-1"
+            >
               <div
                 v-for="(job, jobId) in task.jobs"
                 :key="jobId"
@@ -56,32 +68,53 @@
         </div>
 
         <!-- Tâches récentes -->
-        <div v-if="tasks.completed_recent.length > 0" class="space-y-2">
-          <div class="text-xs font-medium text-surface-500">RÉCEMMENT COMPLÉTÉES</div>
+        <div
+          v-if="tasks.completed_recent.length > 0"
+          class="space-y-2"
+        >
+          <div class="text-xs font-medium text-surface-500">
+            RÉCEMMENT COMPLÉTÉES
+          </div>
           <div
             v-for="task in tasks.completed_recent"
             :key="task.id"
             class="p-2 bg-green-500/10 border border-green-500/30 rounded text-xs"
           >
-            <div class="font-medium">{{ task.description }}</div>
-            <div class="text-surface-400 text-xs">✓ Complétée</div>
+            <div class="font-medium">
+              {{ task.description }}
+            </div>
+            <div class="text-surface-400 text-xs">
+              ✓ Complétée
+            </div>
           </div>
         </div>
 
         <!-- Tâches en erreur -->
-        <div v-if="tasks.errors.length > 0" class="space-y-2">
-          <div class="text-xs font-medium text-surface-500">ERREURS</div>
+        <div
+          v-if="tasks.errors.length > 0"
+          class="space-y-2"
+        >
+          <div class="text-xs font-medium text-surface-500">
+            ERREURS
+          </div>
           <div
             v-for="task in tasks.errors"
             :key="task.id"
             class="p-2 bg-red-500/10 border border-red-500/30 rounded text-xs"
           >
-            <div class="font-medium">{{ task.description }}</div>
-            <div class="text-red-400 text-xs">✗ {{ task.error }}</div>
+            <div class="font-medium">
+              {{ task.description }}
+            </div>
+            <div class="text-red-400 text-xs">
+              ✗ {{ task.error }}
+            </div>
           </div>
         </div>
 
-        <div v-if="taskCount === 0" class="text-center text-surface-400 text-xs py-4">
+        <div
+          v-if="taskCount === 0"
+          class="text-center text-surface-400 text-xs py-4"
+        >
           Aucune tâche
         </div>
       </div>
