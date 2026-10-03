@@ -13,6 +13,7 @@ from labomatics.api.dto.ip_range import (
     IpRangeDTO,
     IpRangeUpdateDTO,
 )
+from labomatics.api.dto.pagination import PaginatedDTO
 from labomatics.api.dto.student import StudentSimpleDTO
 from labomatics.core.db.models.ip_allocation import IpAllocation
 from labomatics.core.db.models.ip_range import IpRange
@@ -36,11 +37,16 @@ class IpRangeService:
         ranges = await self.repo.list()
         return [self._to_dto(r) for r in ranges]
 
-    async def list_ip_ranges_paginated(self, page: int, per_page: int):
+    async def list_ip_ranges_paginated(self, page: int, per_page: int) -> PaginatedDTO[IpRangeDTO]:
         """Liste les plages d'IP (paginées) avec % d'utilisation."""
         result = await self.repo.paginate(filters={}, page=page, per_page=per_page)
-        result.items = [self._to_dto(r) for r in result.items]
-        return result
+        return PaginatedDTO(
+            items=[self._to_dto(r) for r in result.items],
+            page=result.page,
+            per_page=result.per_page,
+            total_count=result.total,
+            total_pages=result.total_pages,
+        )
 
     async def get_ip_range(self, ip_range_id: UUID) -> IpRangeDTO:
         """Récupère une plage d'IP par ID."""

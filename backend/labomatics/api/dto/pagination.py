@@ -16,5 +16,5 @@ class PaginatedDTO(BaseModel, Generic[T]):
     items: Sequence[T]
     page: int
     per_page: int
-    total: int
+    total_count: int
     total_pages: int

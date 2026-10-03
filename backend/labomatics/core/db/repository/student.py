@@ -53,10 +53,10 @@ class StudentRepository(BaseRepository[Student]):
             return result.scalars().all()
 
     async def list_with_pagination(
-        self, page: int = 1, size: int = 20
+        self, page: int = 1, size: int = 20, search: str | None = None
     ) -> tuple[list[Student], int]:
-        """Liste les étudiants avec pagination (eager load relations)."""
-        from sqlalchemy import func
+        """Liste les étudiants avec pagination et recherche textuelle."""
+        from sqlalchemy import func, or_
         from sqlalchemy.orm import selectinload
 
         from labomatics.core.db.models import (
@@ -65,10 +65,21 @@ class StudentRepository(BaseRepository[Student]):
         )
 
         async with async_session_local() as session:
+            stmt = select(self.model).where(self.model.is_active)
+
+            if search:
+                search_lower = search.lower()
+                stmt = stmt.where(
+                    or_(
+                        self.model.first_name.ilike(f"%{search_lower}%"),
+                        self.model.last_name.ilike(f"%{search_lower}%"),
+                        self.model.email.ilike(f"%{search_lower}%"),
+                        self.model.login.ilike(f"%{search_lower}%"),
+                    )
+                )
+
             stmt = (
-                select(self.model)
-                .where(self.model.is_active)
-                .options(
+                stmt.options(
                     selectinload(self.model.enrollments).selectinload(
                         Enrollment.cohort
                     ),
@@ -88,6 +99,16 @@ class StudentRepository(BaseRepository[Student]):
             students = result.scalars().unique().all()
 
             count_stmt = select(func.count(self.model.id)).where(self.model.is_active)
+            if search:
+                search_lower = search.lower()
+                count_stmt = count_stmt.where(
+                    or_(
+                        self.model.first_name.ilike(f"%{search_lower}%"),
+                        self.model.last_name.ilike(f"%{search_lower}%"),
+                        self.model.email.ilike(f"%{search_lower}%"),
+                        self.model.login.ilike(f"%{search_lower}%"),
+                    )
+                )
             count_result = await session.execute(count_stmt)
             total = count_result.scalar() or 0
 

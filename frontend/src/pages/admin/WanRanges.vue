@@ -19,6 +19,8 @@
       data-key="id"
       :total-records="totalRecords"
       :loading="loading"
+      :lazy="true"
+      :first="currentPage"
       @page="onPageChange"
     >
       <template #empty>
@@ -188,7 +190,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
@@ -211,7 +213,7 @@ const confirm = useConfirm()
 const ipRanges = ref<IpRangeDTO[]>([])
 const totalRecords = ref(0)
 const loading = ref(false)
-const currentPage = ref(1)
+const currentPage = ref(0)
 const pageSize = ref(10)
 
 const showFormDialog = ref(false)
@@ -241,8 +243,10 @@ async function fetchIpRanges(page: number = 1) {
   try {
     const response = await ipRangeApi.listIpRanges(page, pageSize.value)
     ipRanges.value = response.items
-    totalRecords.value = response.total
-    currentPage.value = page
+    totalRecords.value = response.total_count
+    if (page === 1) {
+      currentPage.value = 0
+    }
   } catch (error) {
     toast.add({
       severity: 'error',
@@ -257,8 +261,9 @@ async function fetchIpRanges(page: number = 1) {
 }
 
 function onPageChange(event: DataTablePageChangeEvent) {
-  const newPage = Math.floor(event.first / event.rows) + 1
-  fetchIpRanges(newPage)
+  currentPage.value = event.first
+  const pageNumber = Math.floor(event.first / event.rows) + 1
+  fetchIpRanges(pageNumber)
 }
 
 function goToDetails(range: IpRangeDTO) {
@@ -364,5 +369,12 @@ async function deleteRange(id: string) {
 
 onMounted(() => {
   fetchIpRanges()
+
+  watch(
+    () => pageSize.value,
+    () => {
+      fetchIpRanges(1)
+    }
+  )
 })
 </script>

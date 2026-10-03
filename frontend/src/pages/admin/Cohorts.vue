@@ -11,6 +11,7 @@
       :rows-per-page-options="[5, 10, 20, 50]"
       :total-records="totalRecords"
       :loading="loading"
+      :lazy="true"
       paginator
       @page="onPageChange"
     >
@@ -195,7 +196,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import {
   DataTable,
   Column,
@@ -287,7 +288,7 @@ async function fetchCohorts(page: number = 1) {
   try {
     const response: CohortListResponseDTO = await cohortsApi.listCohorts(page, pageSize.value)
     cohorts.value = response.items
-    totalRecords.value = response.total
+    totalRecords.value = response.total_count
     currentPage.value = page
   } catch (err) {
     console.error('Failed to fetch cohorts:', err)
@@ -303,5 +304,12 @@ function onPageChange(event: DataTableSimplePageEvent) {
 
 onMounted(() => {
   fetchCohorts()
+
+  watch(
+    () => pageSize.value,
+    () => {
+      fetchCohorts(1)
+    }
+  )
 })
 </script>

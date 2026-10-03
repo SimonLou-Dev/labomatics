@@ -56,7 +56,7 @@ async def list_cohorts(
     total_pages = (total + size - 1) // size
     return CohortListResponseDTO(
         items=result,
-        total=total,
+        total_count=total,
         page=page,
         size=size,
         total_pages=total_pages,

@@ -12,44 +12,31 @@
       />
     </div>
 
-    <div class="mb-3 flex justify-between items-center gap-3">
-      <Button
-        type="button"
-        severity="secondary"
-        text
-        size="small"
-        @click="clearFilter"
-      >
-        <template #icon>
-          <i class="pi pi-filter-slash" />
-        </template>
-        Réinitialiser filtres
-      </Button>
+    <div class="mb-3 flex justify-end">
       <IconField>
         <InputIcon>
           <Search />
         </InputIcon>
         <InputText
-          v-model="filters.global.value"
+          v-model="searchQuery"
           type="text"
-          placeholder="Nom / Prénom / Email / IP WAN"
+          placeholder="Rechercher par nom / prénom / email / IP"
         />
       </IconField>
     </div>
 
     <DataTable
-      v-model:filters="filters"
       :value="students"
       data-key="id"
       :rows="pageSize"
       :rows-per-page-options="[5, 10, 20, 50]"
       :total-records="totalRecords"
       :loading="loading"
+      :lazy="true"
       paginator
-      filter-display="menu"
-      :global-filter-fields="['first_name', 'last_name', 'email', 'wan_ip']"
       sort-field="last_name"
       :sort-order="1"
+      :first="currentPage"
       @page="onPageChange"
     >
       <template #empty>
@@ -84,13 +71,6 @@
         <template #body="{ data }">
           <span class="font-semibold">{{ data.first_name }} {{ data.last_name }}</span>
         </template>
-        <template #filter="{ filterModel }">
-          <InputText
-            v-model="filterModel.value"
-            type="text"
-            placeholder="Rechercher par nom"
-          />
-        </template>
       </Column>
 
       <Column
@@ -100,13 +80,6 @@
       >
         <template #body="{ data }">
           <span class="font-semibold text-sm">{{ data.email }}</span>
-        </template>
-        <template #filter="{ filterModel }">
-          <InputText
-            v-model="filterModel.value"
-            type="text"
-            placeholder="Rechercher par email"
-          />
         </template>
       </Column>
 
@@ -119,17 +92,6 @@
           <Badge
             :value="data.cohort_name"
             :severity="getCohortColor(data.cohort_name)"
-          />
-        </template>
-        <template #filter="{ filterModel }">
-          <Select
-            v-model="filterModel.value"
-            :options="cohortOptions"
-            option-label="label"
-            option-value="value"
-            placeholder="Filtrer par promo"
-            show-clear
-            class="w-full"
           />
         </template>
       </Column>
@@ -150,13 +112,6 @@
             v-else
             class="text-surface-400"
           >—</span>
-        </template>
-        <template #filter="{ filterModel }">
-          <InputText
-            v-model="filterModel.value"
-            type="text"
-            placeholder="Rechercher par IP"
-          />
         </template>
       </Column>
 
@@ -229,7 +184,6 @@ import {
   Button,
   Select,
 } from 'primevue'
-import { FilterMatchMode } from '@primevue/core/api'
 import { Search } from '@primeicons/vue'
 import { listStudents, forceCreateStudentLab, deleteStudent as deleteStudentApi, type StudentListItem } from '@/api/students'
 import type { DataTablePageChangeEvent } from '@/api/types'
@@ -242,21 +196,12 @@ const confirm = useConfirm()
 const students = ref<StudentListItem[]>([])
 const totalRecords = ref(0)
 const loading = ref(false)
-const currentPage = ref(1)
-const pageSize = ref(20)
-const cohortOptions = ref<{ label: string; value: string | null }[]>([])
+const currentPage = ref(0)
+const pageSize = ref(10)
+const searchQuery = ref<string>('')
 const importDialog = ref<InstanceType<typeof StudentImportDialog>>()
 const deployingStudentId = ref<string | null>(null)
 const deletingStudentId = ref<string | null>(null)
-let _debounceTimer: ReturnType<typeof setTimeout> | null = null
-
-const filters = ref({
-  global: { value: null, matchMode: FilterMatchMode.CONTAINS },
-  first_name: { value: null, matchMode: FilterMatchMode.CONTAINS },
-  email: { value: null, matchMode: FilterMatchMode.CONTAINS },
-  cohort_name: { value: null, matchMode: FilterMatchMode.EQUALS },
-  wan_ip: { value: null, matchMode: FilterMatchMode.CONTAINS },
-})
 
 async function fetchStudents(page: number = 1) {
   loading.value = true
@@ -264,23 +209,14 @@ async function fetchStudents(page: number = 1) {
     const response = await listStudents(
       page,
       pageSize.value,
-      filters.value.global?.value || undefined,
-      filters.value.cohort_name?.value || undefined
+      searchQuery.value || undefined,
+      undefined
     )
     students.value = response.items
-    totalRecords.value = response.total
-    currentPage.value = page
-
-    // Mettre à jour les options de promo
-    const promos = new Set(
-      response.items
-        .map(s => s.cohort_name)
-        .filter((p): p is string => p !== undefined && p !== '—')
-    )
-    cohortOptions.value = [
-      { label: 'Tous', value: null },
-      ...Array.from(promos).map(promo => ({ label: promo, value: promo }))
-    ]
+    totalRecords.value = response.total_count
+    if (page === 1) {
+      currentPage.value = 0
+    }
   } catch (error) {
     toast.add({
       severity: 'error',
@@ -294,35 +230,29 @@ async function fetchStudents(page: number = 1) {
   }
 }
 
-function clearFilter() {
-  filters.value = {
-    global: { value: null, matchMode: FilterMatchMode.CONTAINS },
-    first_name: { value: null, matchMode: FilterMatchMode.CONTAINS },
-    email: { value: null, matchMode: FilterMatchMode.CONTAINS },
-    cohort_name: { value: null, matchMode: FilterMatchMode.EQUALS },
-    wan_ip: { value: null, matchMode: FilterMatchMode.CONTAINS },
-  }
-  fetchStudents(1)
-}
-
 function onPageChange(event: DataTablePageChangeEvent) {
-  const newPage = Math.floor(event.first / event.rows) + 1
-  fetchStudents(newPage)
+  currentPage.value = event.first
+  const pageNumber = Math.floor(event.first / event.rows) + 1
+  fetchStudents(pageNumber)
 }
 
 onMounted(() => {
   fetchStudents()
 
-  // Watch sur les filtres
+  // Watch sur la recherche
   watch(
-    () => ({
-      search: filters.value.global?.value,
-      cohort: filters.value.cohort_name?.value,
-    }),
+    () => searchQuery.value,
     () => {
       fetchStudents(1)
-    },
-    { deep: true }
+    }
+  )
+
+  // Watch sur le changement de page size
+  watch(
+    () => pageSize.value,
+    () => {
+      fetchStudents(1)
+    }
   )
 })
 
