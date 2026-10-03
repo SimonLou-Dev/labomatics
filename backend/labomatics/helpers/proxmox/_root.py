@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import re
+import unicodedata
+
 from labomatics.core.db.models.cluster import Cluster
 from labomatics.core.security.crypto import decrypt_secret
 from labomatics.helpers.proxmox.acl import ProxmoxAclClient
@@ -16,6 +19,12 @@ from labomatics.helpers.proxmox.sdn import ProxmoxSDNClient
 from labomatics.helpers.proxmox.token import ProxmoxTokenClient
 from labomatics.helpers.proxmox.user import ProxmoxUserClient
 from labomatics.helpers.proxmox.vm import ProxmoxVMClient
+
+
+def sanitize_pool_name(name: str) -> str:
+    """Sanitize pool name for Proxmox (remove accents and special chars)."""
+    name = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode("ascii")
+    return re.sub(r"[^a-zA-Z0-9._-]", "", name)
 
 
 class LabomaticsProxmoxClient:
@@ -93,9 +102,10 @@ class LabomaticsProxmoxClient:
                 raise RuntimeError(f"Failed to create user: {e}") from e
 
         # 2. S'assurer que le pool existe (créer s'il n'existe pas)
+        pool_name = sanitize_pool_name(user_name)
         try:
             await self.pool.ensure_exists(
-                pool_name=user_name, comment=f"Lab pool for {user_name}"
+                pool_name=pool_name, comment=f"Lab pool for {user_name}"
             )
         except RuntimeError as e:
             raise RuntimeError(f"Failed to ensure pool existence: {e}") from e

@@ -37,9 +37,12 @@ async def _delete_lab(
     proxmox = LabomaticsProxmoxClient(cluster)
 
     # 3. Récupérer et supprimer les VMs du pool
-    logger.info(f"Fetching VMs from pool {student.login}")
-    qemu_vms = await proxmox.pool.get_vms(student.login)
-    lxc_vms = await proxmox.pool.get_lxcs(student.login)
+    from labomatics.helpers.proxmox._root import sanitize_pool_name
+
+    pool_name = sanitize_pool_name(student.login)
+    logger.info(f"Fetching VMs from pool {pool_name}")
+    qemu_vms = await proxmox.pool.get_vms(pool_name)
+    lxc_vms = await proxmox.pool.get_lxcs(pool_name)
 
     # Delete VMs (delete() now calls stop() first)
     for vm in qemu_vms:
