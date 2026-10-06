@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.4.1-rc.5 (2026-10-06)
+
+### Bug Fixes
+
+- Test with secret scanning push protection permission
+  ([`1955085`](https://github.com/SimonLou-Dev/labomatics/commit/1955085b1581a135abd2127d07b3c7adcd489c5d))
+
+
 ## v0.4.1-rc.4 (2026-10-06)
 
 
