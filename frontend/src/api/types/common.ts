@@ -8,7 +8,8 @@ export interface ApiError {
 
 export interface PaginatedResponse<T> {
   items: T[]
-  total: number
+  total_count: number
   page: number
-  per_page: number
+  size: number
+  total_pages: number
 }

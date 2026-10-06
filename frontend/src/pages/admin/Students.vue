@@ -12,200 +12,187 @@
       />
     </div>
 
-    <div class="mb-3 flex justify-between items-center gap-3">
-      <Button
-        type="button"
-        severity="secondary"
-        text
-        size="small"
-        @click="clearFilter"
+    <div class="mb-4 flex justify-between items-center gap-3">
+      <div
+        v-if="selectedStudents.length > 0"
+        class="flex gap-2"
       >
-        <template #icon>
-          <i class="pi pi-filter-slash" />
-        </template>
-        Réinitialiser filtres
-      </Button>
+        <span class="text-sm font-medium">{{ selectedStudents.length }} sélectionné(s)</span>
+        <Button
+          label="Déployer"
+          icon="pi pi-play"
+          severity="success"
+          size="small"
+          :loading="deployingBulk"
+          @click="bulkDeployLabs"
+        />
+        <Button
+          label="Supprimer"
+          icon="pi pi-trash"
+          severity="danger"
+          size="small"
+          :loading="deletingBulk"
+          @click="confirmBulkDelete"
+        />
+      </div>
+      <div class="flex-1" />
       <IconField>
         <InputIcon>
           <Search />
         </InputIcon>
         <InputText
-          v-model="filters.global.value"
+          v-model="searchQuery"
           type="text"
-          placeholder="Nom / Prénom / Email / IP WAN"
+          placeholder="Rechercher par nom / prénom / email / IP"
         />
       </IconField>
     </div>
 
-    <DataTable
-      v-model:filters="filters"
-      :value="students"
-      data-key="id"
-      :rows="pageSize"
-      :rows-per-page-options="[5, 10, 20, 50]"
-      :total-records="totalRecords"
-      :loading="loading"
-      paginator
-      filter-display="menu"
-      :global-filter-fields="['first_name', 'last_name', 'email', 'wan_ip']"
-      sort-field="last_name"
-      :sort-order="1"
-      @page="onPageChange"
-    >
-      <template #empty>
-        Aucun étudiant trouvé
-      </template>
-
-      <Column
-        field="id"
-        header="#"
-        style="width: 8%"
+    <div class="overflow-x-auto">
+      <DataTable
+        v-model:selection="selectedStudents"
+        v-model:rows="pageSize"
+        v-model:first="currentPage"
+        :value="students"
+        data-key="id"
+        :rows-per-page-options="[5, 10, 20, 50]"
+        :total-records="totalRecords"
+        :loading="loading"
+        :lazy="true"
+        paginator
+        sort-field="last_name"
+        :sort-order="1"
+        scrollable
+        scroll-height="calc(100vh - 300px)"
+        @page="onPageChange"
       >
-        <template #body="{ data }">
-          <span class="font-semibold text-sm">{{ data.id.slice(0, 8) }}</span>
+        <Column
+          selection-mode="multiple"
+          style="width: 3rem"
+        />
+        <template #empty>
+          Aucun étudiant trouvé
         </template>
-      </Column>
 
-      <Column
-        field="login"
-        header="Login"
-        style="width: 12%"
-      >
-        <template #body="{ data }">
-          <span class="font-semibold">{{ data.login }}</span>
-        </template>
-      </Column>
+        <Column
+          field="id"
+          header="#"
+          style="width: 8%"
+        >
+          <template #body="{ data }">
+            <span class="font-semibold text-sm">{{ data.id.slice(0, 8) }}</span>
+          </template>
+        </Column>
 
-      <Column
-        field="first_name"
-        header="Nom"
-        style="width: 15%"
-      >
-        <template #body="{ data }">
-          <span class="font-semibold">{{ data.first_name }} {{ data.last_name }}</span>
-        </template>
-        <template #filter="{ filterModel }">
-          <InputText
-            v-model="filterModel.value"
-            type="text"
-            placeholder="Rechercher par nom"
-          />
-        </template>
-      </Column>
+        <Column
+          field="login"
+          header="Login"
+          style="width: 12%"
+        >
+          <template #body="{ data }">
+            <span class="font-semibold">{{ data.login }}</span>
+          </template>
+        </Column>
 
-      <Column
-        field="email"
-        header="Email"
-        style="width: 18%"
-      >
-        <template #body="{ data }">
-          <span class="font-semibold text-sm">{{ data.email }}</span>
-        </template>
-        <template #filter="{ filterModel }">
-          <InputText
-            v-model="filterModel.value"
-            type="text"
-            placeholder="Rechercher par email"
-          />
-        </template>
-      </Column>
+        <Column
+          field="first_name"
+          header="Nom"
+          style="width: 15%"
+        >
+          <template #body="{ data }">
+            <span class="font-semibold">{{ data.first_name }} {{ data.last_name }}</span>
+          </template>
+        </Column>
 
-      <Column
-        field="cohort_name"
-        header="Promo"
-        style="width: 12%"
-      >
-        <template #body="{ data }">
-          <Badge
-            :value="data.cohort_name"
-            :severity="getCohortColor(data.cohort_name)"
-          />
-        </template>
-        <template #filter="{ filterModel }">
-          <Select
-            v-model="filterModel.value"
-            :options="cohortOptions"
-            option-label="label"
-            option-value="value"
-            placeholder="Filtrer par promo"
-            show-clear
-            class="w-full"
-          />
-        </template>
-      </Column>
+        <Column
+          field="email"
+          header="Email"
+          style="width: 18%"
+        >
+          <template #body="{ data }">
+            <span class="font-semibold text-sm">{{ data.email }}</span>
+          </template>
+        </Column>
 
-      <Column
-        field="wan_ip"
-        header="IP WAN"
-        style="width: 12%"
-      >
-        <template #body="{ data }">
-          <span
-            v-if="data.wan_ip"
-            class="font-mono text-sm"
-          >
-            {{ data.wan_ip }}
-          </span>
-          <span
-            v-else
-            class="text-surface-400"
-          >—</span>
-        </template>
-        <template #filter="{ filterModel }">
-          <InputText
-            v-model="filterModel.value"
-            type="text"
-            placeholder="Rechercher par IP"
-          />
-        </template>
-      </Column>
-
-      <Column
-        field="vxlan_tag"
-        header="VNI"
-        style="width: 8%"
-      >
-        <template #body="{ data }">
-          <span
-            v-if="data.vxlan_tag"
-            class="font-mono font-semibold"
-          >
-            {{ data.vxlan_tag }}
-          </span>
-          <span
-            v-else
-            class="text-surface-400"
-          >—</span>
-        </template>
-      </Column>
-
-      <Column
-        field="actions"
-        header="Actions"
-        style="width: 15%"
-      >
-        <template #body="{ data }">
-          <div class="flex gap-2">
-            <Button
-              v-tooltip="data.wan_ip ? 'Recréer le lab' : 'Déployer le lab'"
-              icon="pi pi-replay"
-              severity="secondary"
-              size="small"
-              :loading="deployingStudentId === data.id"
-              @click="confirmForceCreateLab(data)"
+        <Column
+          field="cohort_name"
+          header="Promo"
+          style="width: 12%"
+        >
+          <template #body="{ data }">
+            <Badge
+              :value="data.cohort_name"
+              :severity="getCohortColor(data.cohort_name)"
             />
-            <Button
-              v-tooltip="'Supprimer'"
-              icon="pi pi-trash"
-              severity="danger"
-              size="small"
-              :loading="deletingStudentId === data.id"
-              @click="confirmDeleteStudent(data)"
-            />
-          </div>
-        </template>
-      </Column>
-    </DataTable>
+          </template>
+        </Column>
+
+        <Column
+          field="wan_ip"
+          header="IP WAN"
+          style="width: 12%"
+        >
+          <template #body="{ data }">
+            <span
+              v-if="data.wan_ip"
+              class="font-mono text-sm"
+            >
+              {{ data.wan_ip }}
+            </span>
+            <span
+              v-else
+              class="text-surface-400"
+            >—</span>
+          </template>
+        </Column>
+
+        <Column
+          field="vxlan_tag"
+          header="VNI"
+          style="width: 8%"
+        >
+          <template #body="{ data }">
+            <span
+              v-if="data.vxlan_tag"
+              class="font-mono font-semibold"
+            >
+              {{ data.vxlan_tag }}
+            </span>
+            <span
+              v-else
+              class="text-surface-400"
+            >—</span>
+          </template>
+        </Column>
+
+        <Column
+          field="actions"
+          header="Actions"
+          style="width: 15%"
+        >
+          <template #body="{ data }">
+            <div class="flex gap-2">
+              <Button
+                v-tooltip="data.wan_ip ? 'Recréer le lab' : 'Déployer le lab'"
+                icon="pi pi-replay"
+                severity="secondary"
+                size="small"
+                :loading="deployingStudentId === data.id"
+                @click="confirmForceCreateLab(data)"
+              />
+              <Button
+                v-tooltip="'Supprimer'"
+                icon="pi pi-trash"
+                severity="danger"
+                size="small"
+                :loading="deletingStudentId === data.id"
+                @click="confirmDeleteStudent(data)"
+              />
+            </div>
+          </template>
+        </Column>
+      </DataTable>
+    </div>
 
     <StudentImportDialog
       ref="importDialog"
@@ -227,9 +214,7 @@ import {
   InputText,
   Badge,
   Button,
-  Select,
 } from 'primevue'
-import { FilterMatchMode } from '@primevue/core/api'
 import { Search } from '@primeicons/vue'
 import { listStudents, forceCreateStudentLab, deleteStudent as deleteStudentApi, type StudentListItem } from '@/api/students'
 import type { DataTablePageChangeEvent } from '@/api/types'
@@ -242,45 +227,28 @@ const confirm = useConfirm()
 const students = ref<StudentListItem[]>([])
 const totalRecords = ref(0)
 const loading = ref(false)
-const currentPage = ref(1)
-const pageSize = ref(20)
-const cohortOptions = ref<{ label: string; value: string | null }[]>([])
+const currentPage = ref(0)
+const pageSize = ref(10)
+const searchQuery = ref<string>('')
+const selectedStudents = ref<StudentListItem[]>([])
 const importDialog = ref<InstanceType<typeof StudentImportDialog>>()
 const deployingStudentId = ref<string | null>(null)
 const deletingStudentId = ref<string | null>(null)
-let _debounceTimer: ReturnType<typeof setTimeout> | null = null
+const deployingBulk = ref(false)
+const deletingBulk = ref(false)
 
-const filters = ref({
-  global: { value: null, matchMode: FilterMatchMode.CONTAINS },
-  first_name: { value: null, matchMode: FilterMatchMode.CONTAINS },
-  email: { value: null, matchMode: FilterMatchMode.CONTAINS },
-  cohort_name: { value: null, matchMode: FilterMatchMode.EQUALS },
-  wan_ip: { value: null, matchMode: FilterMatchMode.CONTAINS },
-})
-
-async function fetchStudents(page: number = 1) {
+async function fetch() {
   loading.value = true
   try {
+    const pageNumber = Math.floor(currentPage.value / pageSize.value)
     const response = await listStudents(
-      page,
+      pageNumber,
       pageSize.value,
-      filters.value.global?.value || undefined,
-      filters.value.cohort_name?.value || undefined
+      searchQuery.value || undefined,
+      undefined
     )
     students.value = response.items
-    totalRecords.value = response.total
-    currentPage.value = page
-
-    // Mettre à jour les options de promo
-    const promos = new Set(
-      response.items
-        .map(s => s.cohort_name)
-        .filter((p): p is string => p !== undefined && p !== '—')
-    )
-    cohortOptions.value = [
-      { label: 'Tous', value: null },
-      ...Array.from(promos).map(promo => ({ label: promo, value: promo }))
-    ]
+    totalRecords.value = response.total_count
   } catch (error) {
     toast.add({
       severity: 'error',
@@ -294,35 +262,19 @@ async function fetchStudents(page: number = 1) {
   }
 }
 
-function clearFilter() {
-  filters.value = {
-    global: { value: null, matchMode: FilterMatchMode.CONTAINS },
-    first_name: { value: null, matchMode: FilterMatchMode.CONTAINS },
-    email: { value: null, matchMode: FilterMatchMode.CONTAINS },
-    cohort_name: { value: null, matchMode: FilterMatchMode.EQUALS },
-    wan_ip: { value: null, matchMode: FilterMatchMode.CONTAINS },
-  }
-  fetchStudents(1)
-}
-
 function onPageChange(event: DataTablePageChangeEvent) {
-  const newPage = Math.floor(event.first / event.rows) + 1
-  fetchStudents(newPage)
+  currentPage.value = event.first
 }
 
 onMounted(() => {
-  fetchStudents()
+  fetch()
 
-  // Watch sur les filtres
+  // Un seul watch sur les dépendances
   watch(
-    () => ({
-      search: filters.value.global?.value,
-      cohort: filters.value.cohort_name?.value,
-    }),
+    [() => currentPage.value, () => pageSize.value, () => searchQuery.value],
     () => {
-      fetchStudents(1)
-    },
-    { deep: true }
+      fetch()
+    }
   )
 })
 
@@ -331,7 +283,8 @@ function openImportDialog() {
 }
 
 function onImportSuccess() {
-  fetchStudents(1)
+  currentPage.value = 0
+  fetch()
 }
 
 function onImportClose() {
@@ -359,7 +312,7 @@ async function forceCreateLab(student: StudentListItem) {
       detail: `Lab de ${student.first_name} ${student.last_name} en cours de création`,
       life: 3000,
     })
-    fetchStudents(currentPage.value)
+    fetch()
   } catch (error) {
     toast.add({
       severity: 'error',
@@ -383,6 +336,78 @@ function confirmDeleteStudent(student: StudentListItem) {
   })
 }
 
+function confirmBulkDelete() {
+  confirm.require({
+    message: `Êtes-vous sûr de vouloir supprimer ${selectedStudents.value.length} étudiant(s) ? Cette action ne peut pas être annulée.`,
+    header: 'Confirmation de suppression',
+    icon: 'pi pi-exclamation-triangle',
+    acceptClass: 'p-button-danger',
+    accept: () => bulkDeleteStudents(),
+  })
+}
+
+async function bulkDeleteStudents() {
+  deletingBulk.value = true
+  try {
+    for (const student of selectedStudents.value) {
+      try {
+        await deleteStudentApi(student.id)
+      } catch (error) {
+        console.error(`Failed to delete student ${student.id}:`, error)
+      }
+    }
+    toast.add({
+      severity: 'success',
+      summary: 'Succès',
+      detail: `${selectedStudents.value.length} étudiant(s) supprimé(s)`,
+      life: 3000,
+    })
+    selectedStudents.value = []
+    await fetch()
+  } catch (error) {
+    toast.add({
+      severity: 'error',
+      summary: 'Erreur',
+      detail: 'Impossible de supprimer les étudiants',
+      life: 3000,
+    })
+    console.error('Failed to bulk delete students:', error)
+  } finally {
+    deletingBulk.value = false
+  }
+}
+
+async function bulkDeployLabs() {
+  deployingBulk.value = true
+  try {
+    for (const student of selectedStudents.value) {
+      try {
+        await forceCreateStudentLab(student.id)
+      } catch (error) {
+        console.error(`Failed to deploy lab for student ${student.id}:`, error)
+      }
+    }
+    toast.add({
+      severity: 'success',
+      summary: 'Succès',
+      detail: `Déploiement lancé pour ${selectedStudents.value.length} étudiant(s)`,
+      life: 3000,
+    })
+    selectedStudents.value = []
+    await fetch()
+  } catch (error) {
+    toast.add({
+      severity: 'error',
+      summary: 'Erreur',
+      detail: 'Impossible de lancer les déploiements',
+      life: 3000,
+    })
+    console.error('Failed to bulk deploy labs:', error)
+  } finally {
+    deployingBulk.value = false
+  }
+}
+
 async function deleteStudent(student: StudentListItem) {
   deletingStudentId.value = student.id
   try {
@@ -393,7 +418,7 @@ async function deleteStudent(student: StudentListItem) {
       detail: `${student.first_name} ${student.last_name} a été supprimé`,
       life: 3000,
     })
-    fetchStudents(currentPage.value)
+    fetch()
   } catch (error) {
     toast.add({
       severity: 'error',

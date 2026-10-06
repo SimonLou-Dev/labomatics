@@ -48,9 +48,13 @@ async def emit(
     *,
     step: str | None = None,
     message: str | None = None,
+    task_id: str | None = None,
     **extra: Any,
 ) -> None:
-    """Publie un evenement de progression (no-op sans job_id, best-effort)."""
+    """Publie un evenement de progression (no-op sans job_id, best-effort).
+
+    Enregistre aussi les updates dans Redis pour le tracking des tâches.
+    """
     if not job_id:
         return
     event: dict[str, Any] = {"type": event_type}
@@ -60,3 +64,25 @@ async def emit(
         event["message"] = message
     event.update(extra)
     await notification_service.publish_job_event(job_id, event)
+
+    # Enregistrer aussi dans Redis pour le tracking (best-effort)
+    if task_id and isinstance(task_id, str) and task_id.strip():
+        try:
+            from labomatics.services.task_tracking_service import TaskTrackingService
+
+            task_service = TaskTrackingService()
+
+            if event_type == "step_start":
+                await task_service.update_step(task_id, job_id, step or "", "running")
+            elif event_type == "step_done":
+                await task_service.update_step(task_id, job_id, step or "", "done")
+            elif event_type == "step_error":
+                await task_service.update_step(
+                    task_id, job_id, step or "", "error", message
+                )
+            elif event_type == "done":
+                await task_service.complete_task(task_id, "completed")
+            elif event_type == "error":
+                await task_service.complete_task(task_id, "error", message)
+        except Exception as e:
+            logger.warning(f"Failed to track task in Redis: {e}")

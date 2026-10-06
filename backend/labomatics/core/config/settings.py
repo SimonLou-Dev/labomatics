@@ -78,6 +78,7 @@ class Settings(BaseSettings):
         default="noreply@labomatics.local", alias="BREVO_FROM_EMAIL"
     )
     brevo_from_name: str = Field(default="Labomatics", alias="BREVO_FROM_NAME")
+    send_mails: bool = Field(default=True, alias="SEND_MAILS")
 
     # --- Misc ---
     environment: str = Field(default="development", alias="ENVIRONMENT")

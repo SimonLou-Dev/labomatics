@@ -22,6 +22,7 @@ from labomatics.utils.login_helper import (
     generate_password,
     get_school_year,
 )
+from labomatics.worker.jobs import new_job_id
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +54,9 @@ class StudentService:
         cohort: str | None = None,
     ) -> StudentListResponseDTO:
         """Liste les étudiants actifs avec pagination et filtres."""
-        students, total = await self.repo.list_with_pagination(page, size)
+        students, total = await self.repo.list_with_pagination(
+            page, size, search=search
+        )
 
         items = []
         now = datetime.now()
@@ -65,26 +68,9 @@ class StudentService:
             )
             cohort_name = active_enrollment.cohort.name if active_enrollment else "—"
 
-            # Appliquer les filtres
+            # Appliquer le filtre cohort
             if cohort and cohort_name != cohort:
                 continue
-
-            if search:
-                search_lower = search.lower()
-                if not (
-                    student.first_name.lower().find(search_lower) >= 0
-                    or student.last_name.lower().find(search_lower) >= 0
-                    or student.email.lower().find(search_lower) >= 0
-                    or (
-                        student.lab_provisioning
-                        and any(
-                            p.ip_allocation
-                            and search_lower in str(p.ip_allocation.ip_address)
-                            for p in student.lab_provisioning
-                        )
-                    )
-                ):
-                    continue
 
             active_provisioning = next(
                 (p for p in student.lab_provisioning if p.status != "deleting"), None
@@ -415,4 +401,11 @@ class StudentService:
             logger.warning(f"Student introuvable pour suppression (id={data.id})")
             return
 
-        delete_student.delay(student_id=str(student.id))
+        # Tracker la tâche dans Redis
+        from labomatics.services.job_service import JobService
+
+        job_id = new_job_id()
+        JobService._start_task(
+            job_id, None, "student_delete_bulk", f"Suppression {student.login}"
+        )
+        delete_student.delay(student_id=str(student.id), job_id=job_id, task_id=job_id)

@@ -4,98 +4,104 @@
       Gestion des Promotions
     </h1>
 
-    <DataTable
-      :value="cohorts"
-      data-key="id"
-      :rows="pageSize"
-      :rows-per-page-options="[5, 10, 20, 50]"
-      :total-records="totalRecords"
-      :loading="loading"
-      paginator
-      @page="onPageChange"
-    >
-      <template #empty>
-        Aucune promotion trouvée
-      </template>
-
-      <Column
-        field="name"
-        header="Nom"
-        style="width: 25%"
+    <div class="overflow-x-auto">
+      <DataTable
+        v-model:rows="pageSize"
+        v-model:first="currentPage"
+        :value="cohorts"
+        data-key="id"
+        :rows-per-page-options="[5, 10, 20, 50]"
+        :total-records="totalRecords"
+        :loading="loading"
+        :lazy="true"
+        paginator
+        scrollable
+        scroll-height="calc(100vh - 300px)"
+        @page="onPageChange"
       >
-        <template #body="{ data }">
-          <span class="font-semibold">{{ data.name }}</span>
+        <template #empty>
+          Aucune promotion trouvée
         </template>
-      </Column>
 
-      <Column
-        field="year"
-        header="Année"
-        style="width: 10%"
-      >
-        <template #body="{ data }">
-          <span class="font-mono">{{ data.year }}</span>
-        </template>
-      </Column>
+        <Column
+          field="name"
+          header="Nom"
+          style="width: 25%"
+        >
+          <template #body="{ data }">
+            <span class="font-semibold">{{ data.name }}</span>
+          </template>
+        </Column>
 
-      <Column
-        field="is_active"
-        header="Statut"
-        style="width: 10%"
-      >
-        <template #body="{ data }">
-          <Badge
-            :value="data.is_active ? 'Actif' : 'Inactif'"
-            :severity="data.is_active ? 'success' : 'secondary'"
-          />
-        </template>
-      </Column>
+        <Column
+          field="year"
+          header="Année"
+          style="width: 10%"
+        >
+          <template #body="{ data }">
+            <span class="font-mono">{{ data.year }}</span>
+          </template>
+        </Column>
 
-      <Column
-        field="default_cluster"
-        header="Cluster par défaut"
-        style="width: 20%"
-      >
-        <template #body="{ data }">
-          <Badge
-            v-if="getDefaultCluster(data)"
-            :value="getDefaultCluster(data)?.name || '—'"
-            severity="success"
-          />
-          <span
-            v-else
-            class="text-surface-400"
-          >Aucun</span>
-        </template>
-      </Column>
-
-      <Column
-        field="cluster_count"
-        header="Nb clusters"
-        style="width: 10%"
-      >
-        <template #body="{ data }">
-          <span class="font-mono">{{ data.clusters?.length || 0 }}</span>
-        </template>
-      </Column>
-
-      <Column
-        field="actions"
-        header="Actions"
-        style="width: 15%"
-      >
-        <template #body="{ data }">
-          <div class="flex gap-2">
-            <Button
-              icon="pi pi-cog"
-              severity="secondary"
-              size="small"
-              @click="openManageDialog(data)"
+        <Column
+          field="is_active"
+          header="Statut"
+          style="width: 10%"
+        >
+          <template #body="{ data }">
+            <Badge
+              :value="data.is_active ? 'Actif' : 'Inactif'"
+              :severity="data.is_active ? 'success' : 'secondary'"
             />
-          </div>
-        </template>
-      </Column>
-    </DataTable>
+          </template>
+        </Column>
+
+        <Column
+          field="default_cluster"
+          header="Cluster par défaut"
+          style="width: 20%"
+        >
+          <template #body="{ data }">
+            <Badge
+              v-if="getDefaultCluster(data)"
+              :value="getDefaultCluster(data)?.name || '—'"
+              severity="success"
+            />
+            <span
+              v-else
+              class="text-surface-400"
+            >Aucun</span>
+          </template>
+        </Column>
+
+        <Column
+          field="cluster_count"
+          header="Nb clusters"
+          style="width: 10%"
+        >
+          <template #body="{ data }">
+            <span class="font-mono">{{ data.clusters?.length || 0 }}</span>
+          </template>
+        </Column>
+
+        <Column
+          field="actions"
+          header="Actions"
+          style="width: 15%"
+        >
+          <template #body="{ data }">
+            <div class="flex gap-2">
+              <Button
+                icon="pi pi-cog"
+                severity="secondary"
+                size="small"
+                @click="openManageDialog(data)"
+              />
+            </div>
+          </template>
+        </Column>
+      </DataTable>
+    </div>
 
     <!-- Manage Clusters Modal -->
     <Dialog
@@ -195,7 +201,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import {
   DataTable,
   Column,
@@ -287,7 +293,7 @@ async function fetchCohorts(page: number = 1) {
   try {
     const response: CohortListResponseDTO = await cohortsApi.listCohorts(page, pageSize.value)
     cohorts.value = response.items
-    totalRecords.value = response.total
+    totalRecords.value = response.total_count
     currentPage.value = page
   } catch (err) {
     console.error('Failed to fetch cohorts:', err)
@@ -303,5 +309,12 @@ function onPageChange(event: DataTableSimplePageEvent) {
 
 onMounted(() => {
   fetchCohorts()
+
+  watch(
+    () => pageSize.value,
+    () => {
+      fetchCohorts(1)
+    }
+  )
 })
 </script>

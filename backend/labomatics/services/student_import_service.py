@@ -59,9 +59,14 @@ class StudentImportService:
             raise HTTPException(400, f"Erreur lors du parsing CSV: {e!s}") from e
 
     async def preview_import(
-        self, csv_content: bytes, column_mapping: dict[str, str]
+        self, csv_content: bytes, column_mapping: dict[str, str], mode: str = "merge"
     ) -> StudentImportDiffDTO:
-        """Fait un preview de l'import (diff) sans modifier la DB. Matching par external_id."""
+        """Fait un preview de l'import (diff) sans modifier la DB. Matching par external_id.
+
+        Modes:
+        - replace: Affiche les suppressions (comportement actuel)
+        - merge: Cache les suppressions (préserve les étudiants non dans le CSV)
+        """
         data, parse_errors = self.parse_csv(csv_content, column_mapping)
 
         # Récupérer les étudiants existants et indexer par external_id (ID numérique)
@@ -116,26 +121,27 @@ class StudentImportService:
                     )
                 )
 
-        # Trouver les supprimés (dans DB mais pas dans CSV)
-        csv_ids = {
-            int(item.get("id"))
-            for item in data
-            if item.get("id") and str(item.get("id")).isdigit()
-        }
-        for student_id, student in existing_by_id.items():
-            if student_id not in csv_ids:
-                deleted.append(
-                    StudentImportItemDTO(
-                        id=str(student.external_id),
-                        first_name=student.first_name,
-                        last_name=student.last_name,
-                        email=student.email,
-                        cohort_name=student.enrollments[0].cohort.name
-                        if student.enrollments
-                        else "",
-                        notes="À supprimer",
+        # Trouver les supprimés (dans DB mais pas dans CSV) - seulement en mode "replace"
+        if mode == "replace":
+            csv_ids = {
+                int(item.get("id"))
+                for item in data
+                if item.get("id") and str(item.get("id")).isdigit()
+            }
+            for student_id, student in existing_by_id.items():
+                if student_id not in csv_ids:
+                    deleted.append(
+                        StudentImportItemDTO(
+                            id=str(student.external_id),
+                            first_name=student.first_name,
+                            last_name=student.last_name,
+                            email=student.email,
+                            cohort_name=student.enrollments[0].cohort.name
+                            if student.enrollments
+                            else "",
+                            notes="À supprimer",
+                        )
                     )
-                )
 
         return StudentImportDiffDTO(
             added=added,
@@ -145,14 +151,23 @@ class StudentImportService:
         )
 
     async def apply_import(
-        self, csv_content: bytes, column_mapping: dict[str, str]
+        self,
+        csv_content: bytes,
+        column_mapping: dict[str, str],
+        mode: str = "merge",
+        user_id: str | None = None,
     ) -> StudentImportDiffDTO:
-        """Applique l'import (crée, met à jour, supprime)."""
-        preview = await self.preview_import(csv_content, column_mapping)
+        """Applique l'import (crée, met à jour, supprime).
+
+        Modes:
+        - replace: Supprime tous les étudiants existants et importe les nouveaux
+        - merge: Ajoute les nouveaux, met à jour les existants, préserve les autres
+        """
+        preview = await self.preview_import(csv_content, column_mapping, mode=mode)
 
         # Import lazy pour éviter les boucles circulaires
         from labomatics.services.job_service import JobService
 
-        JobService.enqueue_apply_students(preview)
+        JobService.enqueue_apply_students(preview, user_id=user_id)
 
         return preview

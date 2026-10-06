@@ -1,6 +1,146 @@
 # CHANGELOG
 
 
+## v0.4.0-rc.31 (2026-10-06)
+
+### Bug Fixes
+
+- Ci auto trigger on merged main + create release bot
+  ([`07df927`](https://github.com/SimonLou-Dev/labomatics/commit/07df927964d27f170e0ba6fc79a99d7bfd63f928))
+
+- Add GitHub App token generation before Semantic Release on both dev and prod - Change prod.yaml to
+  trigger on PR merged (closed) instead of push - Pass app token to release, docker, and doc
+  workflows for proper authentication - Workflows now bypass branch protection rules with GitHub App
+
+### Chores
+
+- Trigger CI workflow
+  ([`08332d3`](https://github.com/SimonLou-Dev/labomatics/commit/08332d3b9d1602d9ff7d9d02b12259e95a1b3f58))
+
+### Continuous Integration
+
+- Change main CI
+  ([`4cca295`](https://github.com/SimonLou-Dev/labomatics/commit/4cca2959cd4d15fa728a8e33ebe4b29c3f0d9c58))
+
+### Features
+
+- Release v1.0.0 - stabilize API
+  ([`95abf78`](https://github.com/SimonLou-Dev/labomatics/commit/95abf78305f7d53d47b18b4bb8a88dca1d4507cd))
+
+BREAKING CHANGE: this release stabilizes the public API for production use
+
+### Breaking Changes
+
+- This release stabilizes the public API for production use
+
+
+## v0.4.0-rc.30 (2026-10-03)
+
+### Bug Fixes
+
+- Sanitze user first and last name
+  ([`dfadd8a`](https://github.com/SimonLou-Dev/labomatics/commit/dfadd8a9dfdd848a891db82d87d0a9cf3b5dc05e))
+
+
+## v0.4.0-rc.29 (2026-10-03)
+
+### Bug Fixes
+
+- Tempalte
+  ([`ffe2fec`](https://github.com/SimonLou-Dev/labomatics/commit/ffe2feccbc2b8abf16098931cf960c3bc3ee6f21))
+
+
+## v0.4.0-rc.28 (2026-10-03)
+
+### Bug Fixes
+
+- Openwrt guest agents
+  ([`c35ead6`](https://github.com/SimonLou-Dev/labomatics/commit/c35ead6a69e2f47ae040064210856dce37c9df54))
+
+
+## v0.4.0-rc.27 (2026-10-03)
+
+### Bug Fixes
+
+- Sanitize pool name
+  ([`1a65456`](https://github.com/SimonLou-Dev/labomatics/commit/1a654560c7020539012f656feefce79e86b050c1))
+
+
+## v0.4.0-rc.26 (2026-10-03)
+
+### Bug Fixes
+
+- Lab deploy retry + templte openwrt
+  ([`2319623`](https://github.com/SimonLou-Dev/labomatics/commit/23196237febfb7c32fd609e56128e73283dc0cf4))
+
+
+## v0.4.0-rc.25 (2026-10-03)
+
+### Bug Fixes
+
+- Table patch
+  ([`c2da6ac`](https://github.com/SimonLou-Dev/labomatics/commit/c2da6ac0ee4f3612e998d800a02300d856897c82))
+
+
+## v0.4.0-rc.24 (2026-10-03)
+
+### Bug Fixes
+
+- Favicon
+  ([`e1367b8`](https://github.com/SimonLou-Dev/labomatics/commit/e1367b8061c8de62325a7f1bb177ceaeda0dce8f))
+
+- Use redis connector
+  ([`b64be25`](https://github.com/SimonLou-Dev/labomatics/commit/b64be25e9fe262a6bb4a812ae95c08c760423a95))
+
+
+## v0.4.0-rc.23 (2026-10-03)
+
+### Bug Fixes
+
+- Add bulk action student table
+  ([`8032aa8`](https://github.com/SimonLou-Dev/labomatics/commit/8032aa8e87d154517791cf2ebc0b12efab5cd815))
+
+- Ajout de la possibiliter d'ajouter plusieurs étudiant sans tout remplacer
+  ([`b2ed46e`](https://github.com/SimonLou-Dev/labomatics/commit/b2ed46e0bcb497981f200ca213ea20c0cc92d3c8))
+
+Fix #62
+
+- Auth, lab page
+  ([`127d7ae`](https://github.com/SimonLou-Dev/labomatics/commit/127d7ae2ada9ff1084b0c8e54eb4bd8b06ca1e68))
+
+Fix #57
+
+- Linting
+  ([`2b36c06`](https://github.com/SimonLou-Dev/labomatics/commit/2b36c062516744568b265bc1df4fa5bd8e4421ca))
+
+- Linting
+  ([`81f1696`](https://github.com/SimonLou-Dev/labomatics/commit/81f16962d215a5bea68bd9473bcd911e6b1ec36a))
+
+- Openwrt templte
+  ([`37e01cb`](https://github.com/SimonLou-Dev/labomatics/commit/37e01cb376eba456ef16cda17e862f7f9577b266))
+
+Fix #60
+
+- Tables search
+  ([`8cabfa3`](https://github.com/SimonLou-Dev/labomatics/commit/8cabfa3b44e0a2cf78b3f508faa2fe9c36293fa9))
+
+- Task tracking svc
+  ([`00d1c01`](https://github.com/SimonLou-Dev/labomatics/commit/00d1c015defd5daa14774a01d758f734c1f66ea7))
+
+
+## v0.4.0-rc.22 (2026-09-29)
+
+### Bug Fixes
+
+- Format
+  ([`fb65288`](https://github.com/SimonLou-Dev/labomatics/commit/fb65288be569747e60dc96087666cb071bb7714b))
+
+### Chores
+
+- Trigger CI workflow
+  ([`68d12d2`](https://github.com/SimonLou-Dev/labomatics/commit/68d12d2b7a1db75fc9a9f3968ac5b82b32eb37bb))
+
+
 ## v0.4.0-rc.21 (2026-09-12)
 
 ### Bug Fixes

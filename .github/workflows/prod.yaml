@@ -12,7 +12,6 @@ permissions:
 
 jobs:
   get-token:
-    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     outputs:
       token: ${{ steps.app_token.outputs.token }}

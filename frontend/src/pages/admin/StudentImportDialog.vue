@@ -14,6 +14,43 @@
       <h2 class="text-lg font-semibold">
         Étape 1: Importer le fichier CSV
       </h2>
+
+      <div class="space-y-3 p-4 bg-surface-800 rounded">
+        <div class="font-medium text-sm">
+          Mode d'importation
+        </div>
+        <div class="flex gap-4">
+          <div class="flex items-center gap-2">
+            <RadioButton
+              v-model="importMode"
+              value="replace"
+              input-id="mode-replace"
+            />
+            <label
+              for="mode-replace"
+              class="text-sm"
+            >
+              <div class="font-medium">Remplacer</div>
+              <div class="text-xs text-surface-400">Supprime tous les étudiants existants et importe les nouveaux</div>
+            </label>
+          </div>
+          <div class="flex items-center gap-2">
+            <RadioButton
+              v-model="importMode"
+              value="merge"
+              input-id="mode-merge"
+            />
+            <label
+              for="mode-merge"
+              class="text-sm"
+            >
+              <div class="font-medium">Fusionner (Additif)</div>
+              <div class="text-xs text-surface-400">Ajoute les nouveaux, met à jour les existants, préserve les autres</div>
+            </label>
+          </div>
+        </div>
+      </div>
+
       <p class="text-sm text-surface-500">
         Le fichier doit contenir tous les étudiants de toutes les promos.
       </p>
@@ -365,6 +402,8 @@ import {
   Badge,
   Panel,
   Checkbox,
+  RadioButton,
+  Label,
 } from 'primevue'
 import * as studentsApi from '@/api/students'
 import type { ImportStudentRow, StudentImportChange, FileSelectEvent } from '@/api/types'
@@ -386,6 +425,7 @@ const step = ref(1)
 // Étape 1
 const uploadedFile = ref<File | null>(null)
 const parseError = ref('')
+const importMode = ref<'replace' | 'merge'>('merge')
 
 // Étape 2
 const requiredFields = ['id', 'first_name', 'last_name', 'email', 'cohort_name']
@@ -522,6 +562,7 @@ async function performImport() {
   try {
     const formData = new FormData()
     formData.append('file', uploadedFile.value)
+    formData.append('mode', importMode.value)
     for (const [field, col] of Object.entries(columnMapping.value)) {
       if (col) {
         formData.append(field, col)
@@ -532,7 +573,7 @@ async function performImport() {
     toast.add({
       severity: 'success',
       summary: 'Succès',
-      detail: 'Étudiants importés avec succès',
+      detail: `Étudiants importés avec succès (mode: ${importMode.value === 'replace' ? 'Remplacer' : 'Fusionner'})`,
       life: 3000,
     })
     emit('imported')

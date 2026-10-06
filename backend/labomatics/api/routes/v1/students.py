@@ -36,13 +36,13 @@ router = APIRouter(prefix="/students", tags=["students"])
 async def list_students(
     _user: CurrentUser,
     service: StudentServiceDep,
-    page: int = Query(1, ge=1),
+    page: int = Query(0, ge=0),
     size: int = Query(20, ge=1, le=100),
     search: str | None = Query(None),
     cohort: str | None = Query(None),
 ) -> StudentListResponseDTO:
     """Liste les étudiants actifs avec pagination et filtres."""
-    return await service.list_students(page, size, search=search, cohort=cohort)
+    return await service.list_students(page + 1, size, search=search, cohort=cohort)
 
 
 @router.post("/import/preview")
@@ -134,8 +134,14 @@ async def apply_import_csv(
     last_name: str = Form(...),
     email: str = Form(...),
     cohort_name: str = Form(...),
+    mode: str = Form("merge"),
 ) -> StudentImportDiffDTOXML:
-    """Applique l'import CSV. L'ID est utilisé pour le matching stable."""
+    """Applique l'import CSV. L'ID est utilisé pour le matching stable.
+
+    Modes:
+    - replace: Supprime tous les étudiants existants et importe les nouveaux
+    - merge: Ajoute les nouveaux, met à jour les existants, préserve les autres
+    """
     content = await file.read()
     column_mapping = {
         "id": id,
@@ -144,7 +150,9 @@ async def apply_import_csv(
         "email": email,
         "cohort_name": cohort_name,
     }
-    return await service.apply_import(content, column_mapping)
+    return await service.apply_import(
+        content, column_mapping, mode=mode, user_id=_user.subject
+    )
 
 
 @router.get("/me/lab")
@@ -292,6 +300,19 @@ async def delete_student(
 
     # Enqueue la tâche de suppression
     delete_job_id = new_job_id()
-    delete_student_task.delay(student_id=student_id, job_id=delete_job_id)
+
+    # Tracker la tâche dans Redis
+    from labomatics.services.job_service import JobService
+
+    JobService._start_task(
+        delete_job_id,
+        _user.subject,
+        "student_delete",
+        f"Suppression étudiant {student.login}",
+    )
+
+    delete_student_task.delay(
+        student_id=student_id, job_id=delete_job_id, task_id=delete_job_id
+    )
 
     return JobDTO(jobId=delete_job_id)

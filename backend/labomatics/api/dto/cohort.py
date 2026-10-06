@@ -27,7 +27,7 @@ class CohortListResponseDTO(BaseModel):
     """Réponse paginée de la liste des cohorts."""
 
     items: list[CohortDTO] = Field(default_factory=list)
-    total: int
+    total_count: int
     page: int
     size: int
     total_pages: int

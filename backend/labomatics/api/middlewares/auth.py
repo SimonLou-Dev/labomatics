@@ -39,42 +39,70 @@ class AuthMiddleware(BaseHTTPMiddleware):
         if any(path.startswith(p) for p in self.PUBLIC_PATHS):
             return await call_next(request)
 
-        # Debug: afficher les cookies reçus
-        logger.info("Cookies reçus: %s", list(request.cookies.keys()))
-
         # Récupérer le token depuis les cookies
         access_token = request.cookies.get("access_token")
         refresh_token = request.cookies.get("refresh_token")
 
         if not access_token:
-            logger.warning("Access token missing for path: %s", path)
-            return JSONResponse(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                content={"detail": "Token manquant"},
-            )
-
-        try:
-            logger.info(
-                "Authenticating with access_token, first 20 chars: %s",
-                access_token[:20],
-            )
-            user = AuthService.authenticate(access_token)
-            request.state.user = user
-            logger.info("Authentication successful for user: %s", user.username)
-        except HTTPException as http_exc:
-            logger.debug("Authentication failed with 401: %s", http_exc.detail)
-            # Si le token est invalide et on a un refresh token, essayer le refresh
-            if http_exc.status_code == 401 and refresh_token:
+            # Si pas d'access token mais qu'on a un refresh token, essayer de refresh
+            if refresh_token:
                 try:
-                    logger.info("Attempting token refresh...")
+                    logger.info(
+                        "Access token missing, attempting refresh with refresh_token"
+                    )
                     token_data = AuthService.refresh_access_token(refresh_token)
                     new_access_token = token_data.get("access_token")
+                    new_refresh_token = token_data.get("refresh_token", refresh_token)
                     if new_access_token:
                         user = AuthService.authenticate(new_access_token)
                         request.state.user = user
-                        # Le nouveau token sera défini dans la réponse
                         request.state.new_access_token = new_access_token
-                        logger.info("Token refreshed successfully")
+                        request.state.new_refresh_token = new_refresh_token
+                        logger.info(
+                            "Token refreshed successfully from missing access_token"
+                        )
+                    else:
+                        raise Exception("Pas d'access token dans la réponse refresh")
+                except Exception as refresh_err:
+                    logger.debug(
+                        "Refresh failed when access token missing: %s", refresh_err
+                    )
+                    return JSONResponse(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        content={
+                            "detail": "Session expirée. Veuillez vous reconnecter."
+                        },
+                    )
+            else:
+                logger.warning(
+                    "Access token missing and no refresh token for path: %s", path
+                )
+                return JSONResponse(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    content={"detail": "Token manquant"},
+                )
+
+        try:
+            user = AuthService.authenticate(access_token)
+            request.state.user = user
+        except HTTPException as http_exc:
+            logger.debug(
+                "Authentication failed with status %d: %s",
+                http_exc.status_code,
+                http_exc.detail,
+            )
+            # Si le token est invalide et on a un refresh token, essayer le refresh
+            if http_exc.status_code == 401 and refresh_token:
+                try:
+                    token_data = AuthService.refresh_access_token(refresh_token)
+                    new_access_token = token_data.get("access_token")
+                    new_refresh_token = token_data.get("refresh_token", refresh_token)
+                    if new_access_token:
+                        user = AuthService.authenticate(new_access_token)
+                        request.state.user = user
+                        # Les nouveaux tokens seront définis dans la réponse
+                        request.state.new_access_token = new_access_token
+                        request.state.new_refresh_token = new_refresh_token
                     else:
                         raise Exception("Pas d'access token dans la réponse refresh")
                 except Exception as refresh_err:
@@ -99,7 +127,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
         response = await call_next(request)
 
-        # Si on a généré un nouveau access token, le mettre dans un cookie
+        # Si on a généré de nouveaux tokens, les mettre dans des cookies
         if hasattr(request.state, "new_access_token"):
             is_secure = settings.environment != "development"
             response.set_cookie(
@@ -111,5 +139,15 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 samesite="lax",
                 path="/",
             )
+            if hasattr(request.state, "new_refresh_token"):
+                response.set_cookie(
+                    "refresh_token",
+                    request.state.new_refresh_token,
+                    max_age=30 * 24 * 3600,  # 30 jours
+                    httponly=True,
+                    secure=is_secure,
+                    samesite="lax",
+                    path="/",
+                )
 
         return response

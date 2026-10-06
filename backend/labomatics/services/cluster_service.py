@@ -56,6 +56,8 @@ class ClusterService:
 
     async def list_clusters_paginated(self, page: int, per_page: int):
         """Liste les clusters (paginés)."""
+        from labomatics.api.dto.pagination import PaginatedDTO
+
         result = await self.repo.paginate(
             filters={},
             page=page,
@@ -65,8 +67,15 @@ class ClusterService:
                 "vxlan_range_clusters.vxlan_range",
             ],
         )
-        result.items = [await self._to_dto(c) for c in result.items]
-        return result
+        items = [await self._to_dto(c) for c in result.items]
+        total_pages = (result.total + result.per_page - 1) // result.per_page
+        return PaginatedDTO(
+            items=items,
+            page=result.page,
+            per_page=result.per_page,
+            total_count=result.total,
+            total_pages=total_pages,
+        )
 
     async def get_cluster(self, cluster_id: UUID) -> ClusterDTO:
         """Récupère un cluster par ID."""

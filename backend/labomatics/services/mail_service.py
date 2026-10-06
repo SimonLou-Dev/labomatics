@@ -53,6 +53,10 @@ class MailService:
             )
             return
 
+        if not settings.send_mails:
+            logger.warning("MAIL SEND DISABLED SKIPPING")
+            return
+
         try:
             return await self._client.transactional_emails.send_transac_email(
                 subject=subject,

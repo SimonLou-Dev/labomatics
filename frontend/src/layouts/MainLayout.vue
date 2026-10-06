@@ -132,10 +132,13 @@
           </template>
 
           <template #end>
-            <Avatar
-              image="https://primefaces.org/cdn/primevue/images/avatar/amyelsner.png"
-              shape="circle"
-            />
+            <div class="flex items-center gap-2">
+              <TaskBell />
+              <Avatar
+                image="https://primefaces.org/cdn/primevue/images/avatar/amyelsner.png"
+                shape="circle"
+              />
+            </div>
           </template>
         </Menubar>
 
@@ -176,6 +179,7 @@ import SidebarTrigger from 'primevue/sidebartrigger';
 import Breadcrumb from 'primevue/breadcrumb';
 
 import {Home, User, Users, Book, Pencil, Cog, Server, Sun, Moon, Palette, SignOut, Globe, Wrench, SlidersH}  from '@primeicons/vue'
+import TaskBell from '@/components/TaskBell.vue'
 import type { MenuItemGroup } from '@/api/types'
 
 

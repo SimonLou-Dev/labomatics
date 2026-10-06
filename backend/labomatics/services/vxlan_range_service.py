@@ -7,6 +7,7 @@ from uuid import UUID
 
 from fastapi import HTTPException
 
+from labomatics.api.dto.pagination import PaginatedDTO
 from labomatics.api.dto.student import StudentSimpleDTO
 from labomatics.api.dto.vxlan_range import (
     VxlanAllocationDTO,
@@ -42,11 +43,18 @@ class VxlanRangeService:
         ranges = await self.repo.list()
         return [self._to_dto(r) for r in ranges]
 
-    async def list_vxlan_ranges_paginated(self, page: int, per_page: int):
+    async def list_vxlan_ranges_paginated(
+        self, page: int, per_page: int
+    ) -> PaginatedDTO[VxlanRangeDTO]:
         """Liste les plages VXLAN (paginées) avec % d'utilisation."""
         result = await self.repo.paginate(filters={}, page=page, per_page=per_page)
-        result.items = [self._to_dto(r) for r in result.items]
-        return result
+        return PaginatedDTO(
+            items=[self._to_dto(r) for r in result.items],
+            page=result.page,
+            per_page=result.per_page,
+            total_count=result.total,
+            total_pages=result.total_pages,
+        )
 
     async def get_vxlan_range(self, vxlan_range_id: UUID) -> VxlanRangeDTO:
         """Récupère une plage VXLAN par ID."""

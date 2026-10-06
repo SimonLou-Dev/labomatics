@@ -11,122 +11,128 @@
       />
     </div>
 
-    <DataTable
-      paginator
-      :rows="pageSize"
-      :rows-per-page-options="[5, 10, 20, 50]"
-      :value="ipRanges"
-      data-key="id"
-      :total-records="totalRecords"
-      :loading="loading"
-      @page="onPageChange"
-    >
-      <template #empty>
-        Aucune plage IP trouvée
-      </template>
-      <Column
-        field="name"
-        header="Nom"
-        style="width: 20%"
+    <div class="overflow-x-auto">
+      <DataTable
+        v-model:rows="pageSize"
+        v-model:first="currentPage"
+        :rows-per-page-options="[5, 10, 20, 50]"
+        :value="ipRanges"
+        data-key="id"
+        :total-records="totalRecords"
+        :loading="loading"
+        :lazy="true"
+        paginator
+        scrollable
+        scroll-height="calc(100vh - 300px)"
+        @page="onPageChange"
       >
-        <template #body="{ data }">
-          <span class="font-semibold">{{ data.name }}</span>
+        <template #empty>
+          Aucune plage IP trouvée
         </template>
-      </Column>
-      <Column
-        field="network"
-        header="Réseau"
-        style="width: 18%"
-      >
-        <template #body="{ data }">
-          <span class="font-mono">{{ data.network }}</span>
-        </template>
-      </Column>
-      <Column
-        field="utilization"
-        header="Utilisation"
-        style="width: 18%"
-      >
-        <template #body="{ data }">
-          <div class="flex items-center gap-2">
+        <Column
+          field="name"
+          header="Nom"
+          style="width: 20%"
+        >
+          <template #body="{ data }">
+            <span class="font-semibold">{{ data.name }}</span>
+          </template>
+        </Column>
+        <Column
+          field="network"
+          header="Réseau"
+          style="width: 18%"
+        >
+          <template #body="{ data }">
+            <span class="font-mono">{{ data.network }}</span>
+          </template>
+        </Column>
+        <Column
+          field="utilization"
+          header="Utilisation"
+          style="width: 18%"
+        >
+          <template #body="{ data }">
+            <div class="flex items-center gap-2">
+              <div
+                class="flex-1 h-6 border border-surface-400 bg-surface-700 rounded"
+                :style="{
+                  background: `linear-gradient(90deg, ${getProgressBarColor(data)} 0%, ${getProgressBarColor(data)} ${getUtilizationPercent(data)}%, var(--surface-700) ${getUtilizationPercent(data)}%, var(--surface-700) 100%)`
+                }"
+              />
+              <span class="text-xs font-medium w-12 text-right">
+                {{ getUtilizationPercent(data) }}%
+              </span>
+            </div>
+          </template>
+        </Column>
+        <Column
+          field="gateway"
+          header="Passerelle"
+          style="width: 13%"
+        >
+          <template #body="{ data }">
+            <span class="font-mono">{{ data.gateway }}</span>
+          </template>
+        </Column>
+        <Column
+          field="exclusions"
+          header="Exclusions"
+          style="width: 20%"
+        >
+          <template #body="{ data }">
             <div
-              class="flex-1 h-6 border border-surface-400 bg-surface-700 rounded"
-              :style="{
-                background: `linear-gradient(90deg, ${getProgressBarColor(data)} 0%, ${getProgressBarColor(data)} ${getUtilizationPercent(data)}%, var(--surface-700) ${getUtilizationPercent(data)}%, var(--surface-700) 100%)`
-              }"
-            />
-            <span class="text-xs font-medium w-12 text-right">
-              {{ getUtilizationPercent(data) }}%
-            </span>
-          </div>
-        </template>
-      </Column>
-      <Column
-        field="gateway"
-        header="Passerelle"
-        style="width: 13%"
-      >
-        <template #body="{ data }">
-          <span class="font-mono">{{ data.gateway }}</span>
-        </template>
-      </Column>
-      <Column
-        field="exclusions"
-        header="Exclusions"
-        style="width: 20%"
-      >
-        <template #body="{ data }">
-          <div
-            v-if="data.exclusions.length > 0"
-            class="flex flex-wrap gap-1"
-          >
-            <Chip
-              v-for="(excl, idx) in data.exclusions"
-              :key="idx"
-              :label="excl"
-              class="text-xs"
-            />
-          </div>
-          <span
-            v-else
-            class="text-surface-400"
-          >—</span>
-        </template>
-      </Column>
-      <Column
-        field="actions"
-        header="Actions"
-        style="width: 21%"
-        frozen
-        align-frozen="right"
-      >
-        <template #body="{ data }">
-          <div class="flex gap-2">
-            <Button
-              v-tooltip="'Consulter'"
-              icon="pi pi-arrow-right"
-              severity="info"
-              size="small"
-              @click="goToDetails(data)"
-            />
-            <Button
-              v-tooltip="'Éditer'"
-              icon="pi pi-pencil"
-              severity="secondary"
-              size="small"
-              @click="openEditDialog(data)"
-            />
-            <Button
-              v-tooltip="'Supprimer'"
-              icon="pi pi-trash"
-              severity="danger"
-              size="small"
-              @click="confirmDeleteRange(data)"
-            />
-          </div>
-        </template>
-      </Column>
-    </DataTable>
+              v-if="data.exclusions.length > 0"
+              class="flex flex-wrap gap-1"
+            >
+              <Chip
+                v-for="(excl, idx) in data.exclusions"
+                :key="idx"
+                :label="excl"
+                class="text-xs"
+              />
+            </div>
+            <span
+              v-else
+              class="text-surface-400"
+            >—</span>
+          </template>
+        </Column>
+        <Column
+          field="actions"
+          header="Actions"
+          style="width: 21%"
+          frozen
+          align-frozen="right"
+        >
+          <template #body="{ data }">
+            <div class="flex gap-2">
+              <Button
+                v-tooltip="'Consulter'"
+                icon="pi pi-arrow-right"
+                severity="info"
+                size="small"
+                @click="goToDetails(data)"
+              />
+              <Button
+                v-tooltip="'Éditer'"
+                icon="pi pi-pencil"
+                severity="secondary"
+                size="small"
+                @click="openEditDialog(data)"
+              />
+              <Button
+                v-tooltip="'Supprimer'"
+                icon="pi pi-trash"
+                severity="danger"
+                size="small"
+                @click="confirmDeleteRange(data)"
+              />
+            </div>
+          </template>
+        </Column>
+      </DataTable>
+    </div>
 
     <!-- Create/Edit Dialog -->
     <Dialog
@@ -188,7 +194,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
@@ -211,7 +217,7 @@ const confirm = useConfirm()
 const ipRanges = ref<IpRangeDTO[]>([])
 const totalRecords = ref(0)
 const loading = ref(false)
-const currentPage = ref(1)
+const currentPage = ref(0)
 const pageSize = ref(10)
 
 const showFormDialog = ref(false)
@@ -241,8 +247,10 @@ async function fetchIpRanges(page: number = 1) {
   try {
     const response = await ipRangeApi.listIpRanges(page, pageSize.value)
     ipRanges.value = response.items
-    totalRecords.value = response.total
-    currentPage.value = page
+    totalRecords.value = response.total_count
+    if (page === 1) {
+      currentPage.value = 0
+    }
   } catch (error) {
     toast.add({
       severity: 'error',
@@ -257,8 +265,9 @@ async function fetchIpRanges(page: number = 1) {
 }
 
 function onPageChange(event: DataTablePageChangeEvent) {
-  const newPage = Math.floor(event.first / event.rows) + 1
-  fetchIpRanges(newPage)
+  currentPage.value = event.first
+  const pageNumber = Math.floor(event.first / event.rows) + 1
+  fetchIpRanges(pageNumber)
 }
 
 function goToDetails(range: IpRangeDTO) {
@@ -364,5 +373,12 @@ async function deleteRange(id: string) {
 
 onMounted(() => {
   fetchIpRanges()
+
+  watch(
+    () => pageSize.value,
+    () => {
+      fetchIpRanges(1)
+    }
+  )
 })
 </script>
