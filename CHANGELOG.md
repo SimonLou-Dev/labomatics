@@ -1,12 +1,23 @@
 # CHANGELOG
 
 
+## v0.4.1-rc.3 (2026-10-06)
+
+### Bug Fixes
+
+- Test semantic release with commit statuses permission
+  ([`13049cd`](https://github.com/SimonLou-Dev/labomatics/commit/13049cdb1f19d4b47e2eafd80688eae913b30cfa))
+
+
 ## v0.4.1-rc.2 (2026-10-06)
 
 ### Bug Fixes
 
 - Configure autorebase-dev with proper token and persist-credentials
   ([`acaeae3`](https://github.com/SimonLou-Dev/labomatics/commit/acaeae3934edb23bd9c3f1d9a846c833f67cdd5f))
+
+- Configure git to rebase on pull to resolve non-fast-forward issues
+  ([`119dbdf`](https://github.com/SimonLou-Dev/labomatics/commit/119dbdf2df0202f9a5f3dec0471900c26ef7a41b))
 
 - Integrate pypi publish directly in prod workflow to support trusted publishing
   ([`9e1a010`](https://github.com/SimonLou-Dev/labomatics/commit/9e1a010a6cb964a264eafe314ea39356ba048df1))
