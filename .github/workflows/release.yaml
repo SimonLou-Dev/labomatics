@@ -37,21 +37,39 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Configure Git
+      - name: Configure Git & Debug
         run: |
+          echo "=== Git Configuration ==="
           git config --global url."https://x-access-token:${{ env.GITHUB_TOKEN }}@github.com/".insteadOf "https://github.com/"
           git config --global user.name "labomatics-release[bot]"
           git config --global user.email "labomatics-release[bot]@users.noreply.github.com"
           git config --global pull.rebase true
+          echo "User: $(git config --global user.name)"
+          echo "Email: $(git config --global user.email)"
+          echo "Token length: ${#GITHUB_TOKEN}"
+          echo "Token type: $(echo $GITHUB_TOKEN | head -c 20)..."
+          git config --global --list | grep url
         env:
           GITHUB_TOKEN: ${{ inputs.github_token || secrets.GITHUB_TOKEN }}
 
-      - name: Python Semantic Release
+      - name: Python Semantic Release (Verbose)
         id: release
         uses: python-semantic-release/python-semantic-release@v9
         with:
           github_token: ${{ inputs.github_token || secrets.GITHUB_TOKEN }}
           git_committer_name: "labomatics-release[bot]"
           git_committer_email: "labomatics-release[bot]@users.noreply.github.com"
+        env:
+          GITHUB_TOKEN: ${{ inputs.github_token || secrets.GITHUB_TOKEN }}
+          PSR_LOGGING_LEVEL: DEBUG
+
+      - name: Show Commit Info
+        if: always()
+        run: |
+          echo "=== Last Commit Info ==="
+          git log -1 --format="Author: %an <%ae>"
+          git log -1 --format="Committer: %cn <%ce>"
+          git log -1 --format="Subject: %s"
+          git log -1 --oneline
         env:
           GITHUB_TOKEN: ${{ inputs.github_token || secrets.GITHUB_TOKEN }}
