@@ -1,9 +1,15 @@
 # CHANGELOG
 
 
+## v0.4.1-rc.4 (2026-10-06)
+
+
 ## v0.4.1-rc.3 (2026-10-06)
 
 ### Bug Fixes
+
+- Add verbose logging to debug semantic release token and commit author
+  ([`2609c6e`](https://github.com/SimonLou-Dev/labomatics/commit/2609c6e1a91b1fc496d3e397b8baae135379800e))
 
 - Test semantic release with commit statuses permission
   ([`13049cd`](https://github.com/SimonLou-Dev/labomatics/commit/13049cdb1f19d4b47e2eafd80688eae913b30cfa))
