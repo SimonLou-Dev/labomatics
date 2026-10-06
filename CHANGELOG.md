@@ -1,6 +1,40 @@
 # CHANGELOG
 
 
+## v0.4.0-rc.32 (2026-10-06)
+
+### Bug Fixes
+
+- Update main CI push trigger on dev
+  ([`54399d5`](https://github.com/SimonLou-Dev/labomatics/commit/54399d5c2d9de4be4a4923b717b36d1022b55e78))
+
+### Chores
+
+- Trigger CI workflow
+  ([`5ee8f63`](https://github.com/SimonLou-Dev/labomatics/commit/5ee8f634f8cba8c7b44e35735c6150fd83625a0b))
+
+- Trigger CI workflow
+  ([`faadf23`](https://github.com/SimonLou-Dev/labomatics/commit/faadf23e61fc97e8ac3d6453e8b84d0839445d95))
+
+### Continuous Integration
+
+- Add push trigger to prod workflow for direct commits
+  ([`0b8bb28`](https://github.com/SimonLou-Dev/labomatics/commit/0b8bb288652009892e457060d8fac0cec5bf6b8a))
+
+Prod.yaml now triggers on both push and PR merge to main for reliability
+
+### Features
+
+- Release v1.0.0 - stabilize API
+  ([`aec5c44`](https://github.com/SimonLou-Dev/labomatics/commit/aec5c4440350330eeb74a5ada08e8065c287d249))
+
+BREAKING CHANGE: this release stabilizes the public API for production use
+
+### Breaking Changes
+
+- This release stabilizes the public API for production use
+
+
 ## v0.4.0-rc.31 (2026-10-06)
 
 ### Bug Fixes
