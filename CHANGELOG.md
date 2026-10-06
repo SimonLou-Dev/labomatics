@@ -1,6 +1,26 @@
 # CHANGELOG
 
 
+## v0.4.0 (2026-10-06)
+
+### Continuous Integration
+
+- Auto-rebase dev on main after successful release
+  ([`0b9b9db`](https://github.com/SimonLou-Dev/labomatics/commit/0b9b9db61073f58dd48f2c3e1a3663c8a8de755b))
+
+- Pass github token as env var for semantic-release git operations
+  ([`d45c8af`](https://github.com/SimonLou-Dev/labomatics/commit/d45c8af2b9715f47f3c85169af51b20edf2a4167))
+
+- Remove duplicate pull_request trigger from prod workflow
+  ([`261fdca`](https://github.com/SimonLou-Dev/labomatics/commit/261fdca3c47d1c91897ab89046d821c7241d9b7e))
+
+- Use github-actions[bot] token as fallback instead of PAT
+  ([`11c8034`](https://github.com/SimonLou-Dev/labomatics/commit/11c8034d1cb92011cdf9756025d4ddea2f0ba474))
+
+- Use labomatics-release bot as git committer
+  ([`9f986f5`](https://github.com/SimonLou-Dev/labomatics/commit/9f986f58719ff0e3c4982668ecc60cbeeb86c16f))
+
+
 ## v0.4.0-rc.32 (2026-10-06)
 
 ### Bug Fixes
@@ -17,6 +37,9 @@
   ([`faadf23`](https://github.com/SimonLou-Dev/labomatics/commit/faadf23e61fc97e8ac3d6453e8b84d0839445d95))
 
 ### Continuous Integration
+
+- Add pull_request trigger to prod workflow for consistency with dev
+  ([`ddc51b8`](https://github.com/SimonLou-Dev/labomatics/commit/ddc51b860345286a7dcd74a397cdab62655f0537))
 
 - Add push trigger to prod workflow for direct commits
   ([`0b8bb28`](https://github.com/SimonLou-Dev/labomatics/commit/0b8bb288652009892e457060d8fac0cec5bf6b8a))
