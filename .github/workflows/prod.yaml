@@ -39,11 +39,16 @@ jobs:
         with:
           token: ${{ needs.get-token.outputs.token }}
           fetch-depth: 0
+          persist-credentials: false
+
+      - name: Configure Git
+        run: |
+          git config --global url."https://x-access-token:${{ needs.get-token.outputs.token }}@github.com/".insteadOf "https://github.com/"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Rebase dev on main
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
           git fetch origin main dev
           git checkout dev
           git rebase origin/main
@@ -66,10 +71,29 @@ jobs:
       version: ${{ needs.release.outputs.version }}
     secrets: inherit
 
-  pypi:
+  publish-pypi:
     if: needs.release.outputs.released == 'true'
-    needs: [get-token, release]
-    uses: ./.github/workflows/pypi.yaml
-    with:
-      version: ${{ needs.release.outputs.version }}
-    secrets: inherit
+    needs: [release]
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: v${{ needs.release.outputs.version }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install poetry
+        run: pip install poetry
+
+      - name: Build package
+        working-directory: cli
+        run: poetry build
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: cli/dist

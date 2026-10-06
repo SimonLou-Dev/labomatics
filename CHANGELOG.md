@@ -1,12 +1,62 @@
 # CHANGELOG
 
 
+## v0.4.1-rc.5 (2026-10-06)
+
+### Bug Fixes
+
+- Test with secret scanning push protection permission
+  ([`1955085`](https://github.com/SimonLou-Dev/labomatics/commit/1955085b1581a135abd2127d07b3c7adcd489c5d))
+
+
+## v0.4.1-rc.4 (2026-10-06)
+
+
+## v0.4.1-rc.3 (2026-10-06)
+
+### Bug Fixes
+
+- Add verbose logging to debug semantic release token and commit author
+  ([`2609c6e`](https://github.com/SimonLou-Dev/labomatics/commit/2609c6e1a91b1fc496d3e397b8baae135379800e))
+
+- Test semantic release with commit statuses permission
+  ([`13049cd`](https://github.com/SimonLou-Dev/labomatics/commit/13049cdb1f19d4b47e2eafd80688eae913b30cfa))
+
+
+## v0.4.1-rc.2 (2026-10-06)
+
+### Bug Fixes
+
+- Configure autorebase-dev with proper token and persist-credentials
+  ([`acaeae3`](https://github.com/SimonLou-Dev/labomatics/commit/acaeae3934edb23bd9c3f1d9a846c833f67cdd5f))
+
+- Configure git to rebase on pull to resolve non-fast-forward issues
+  ([`119dbdf`](https://github.com/SimonLou-Dev/labomatics/commit/119dbdf2df0202f9a5f3dec0471900c26ef7a41b))
+
+- Integrate pypi publish directly in prod workflow to support trusted publishing
+  ([`9e1a010`](https://github.com/SimonLou-Dev/labomatics/commit/9e1a010a6cb964a264eafe314ea39356ba048df1))
+
+
+## v0.4.1-rc.1 (2026-10-06)
+
+### Bug Fixes
+
+- Disable persist-credentials to allow github app token auth
+  ([`4113b80`](https://github.com/SimonLou-Dev/labomatics/commit/4113b804bead62ecb5bc7fbfdb5785f4f528ecd1))
+
+- Test git token auth for semantic-release
+  ([`49f259d`](https://github.com/SimonLou-Dev/labomatics/commit/49f259d78809bb9791850fc2ce3824aa06ff0ec2))
+
+
 ## v0.4.0 (2026-10-06)
 
 ### Continuous Integration
 
 - Auto-rebase dev on main after successful release
   ([`0b9b9db`](https://github.com/SimonLou-Dev/labomatics/commit/0b9b9db61073f58dd48f2c3e1a3663c8a8de755b))
+
+- Configure git to use github token for authentication
+  ([`0f121bd`](https://github.com/SimonLou-Dev/labomatics/commit/0f121bd689f8cb514b32996232bf99307d59d715))
 
 - Pass github token as env var for semantic-release git operations
   ([`d45c8af`](https://github.com/SimonLou-Dev/labomatics/commit/d45c8af2b9715f47f3c85169af51b20edf2a4167))
