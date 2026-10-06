@@ -1,12 +1,23 @@
 # CHANGELOG
 
 
+## v0.4.1-rc.1 (2026-10-06)
+
+### Bug Fixes
+
+- Test git token auth for semantic-release
+  ([`49f259d`](https://github.com/SimonLou-Dev/labomatics/commit/49f259d78809bb9791850fc2ce3824aa06ff0ec2))
+
+
 ## v0.4.0 (2026-10-06)
 
 ### Continuous Integration
 
 - Auto-rebase dev on main after successful release
   ([`0b9b9db`](https://github.com/SimonLou-Dev/labomatics/commit/0b9b9db61073f58dd48f2c3e1a3663c8a8de755b))
+
+- Configure git to use github token for authentication
+  ([`0f121bd`](https://github.com/SimonLou-Dev/labomatics/commit/0f121bd689f8cb514b32996232bf99307d59d715))
 
 - Pass github token as env var for semantic-release git operations
   ([`d45c8af`](https://github.com/SimonLou-Dev/labomatics/commit/d45c8af2b9715f47f3c85169af51b20edf2a4167))
