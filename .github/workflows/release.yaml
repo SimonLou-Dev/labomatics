@@ -43,3 +43,5 @@ jobs:
           github_token: ${{ inputs.github_token || secrets.PAT_SEMANTIC_RELEASE }}
           git_committer_name: "github-actions[bot]"
           git_committer_email: "github-actions[bot]@users.noreply.github.com"
+        env:
+          GITHUB_TOKEN: ${{ inputs.github_token || secrets.PAT_SEMANTIC_RELEASE }}
