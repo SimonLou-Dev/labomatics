@@ -1,9 +1,23 @@
 # CHANGELOG
 
 
+## v0.4.1-rc.2 (2026-10-06)
+
+### Bug Fixes
+
+- Configure autorebase-dev with proper token and persist-credentials
+  ([`acaeae3`](https://github.com/SimonLou-Dev/labomatics/commit/acaeae3934edb23bd9c3f1d9a846c833f67cdd5f))
+
+- Integrate pypi publish directly in prod workflow to support trusted publishing
+  ([`9e1a010`](https://github.com/SimonLou-Dev/labomatics/commit/9e1a010a6cb964a264eafe314ea39356ba048df1))
+
+
 ## v0.4.1-rc.1 (2026-10-06)
 
 ### Bug Fixes
+
+- Disable persist-credentials to allow github app token auth
+  ([`4113b80`](https://github.com/SimonLou-Dev/labomatics/commit/4113b804bead62ecb5bc7fbfdb5785f4f528ecd1))
 
 - Test git token auth for semantic-release
   ([`49f259d`](https://github.com/SimonLou-Dev/labomatics/commit/49f259d78809bb9791850fc2ce3824aa06ff0ec2))
