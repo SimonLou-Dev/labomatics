@@ -36,6 +36,14 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Configure Git
+        run: |
+          git config --global url."https://x-access-token:${{ env.GITHUB_TOKEN }}@github.com/".insteadOf "https://github.com/"
+          git config --global user.name "labomatics-release[bot]"
+          git config --global user.email "labomatics-release[bot]@users.noreply.github.com"
+        env:
+          GITHUB_TOKEN: ${{ inputs.github_token || secrets.GITHUB_TOKEN }}
+
       - name: Python Semantic Release
         id: release
         uses: python-semantic-release/python-semantic-release@v9
