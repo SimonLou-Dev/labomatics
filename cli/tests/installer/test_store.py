@@ -84,7 +84,8 @@ def test_mode_resume_when_pages_saved_before_install(tmp_path):
     store = InstallStore.open("pve", tmp_path)
     store.save_page({"admin.email": "a@b.fr", "admin.first_name": "A"}, "admin")
     assert store.mode == InstallMode.new
-    store.save_page({"admin.last_name": "B"}, "admin")
+    page = {"admin.email": "a@b.fr", "admin.first_name": "A", "admin.last_name": "B"}
+    store.save_page(page, "admin")
     assert store.mode == InstallMode.resume
 
 
