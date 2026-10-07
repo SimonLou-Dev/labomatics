@@ -1,6 +1,19 @@
 # CHANGELOG
 
 
+## v0.4.1-rc.6 (2026-10-07)
+
+### Bug Fixes
+
+- Added bom utf8 support when importing csv
+  ([`abe60a9`](https://github.com/SimonLou-Dev/labomatics/commit/abe60a95b55df047fea78958c6e5b440c622b79a))
+
+### Continuous Integration
+
+- Removed temporarly commiter infos in release ci
+  ([`35d91b6`](https://github.com/SimonLou-Dev/labomatics/commit/35d91b6aebaeaf4604a6248e0a6577f9e0b8a534))
+
+
 ## v0.4.1-rc.5 (2026-10-06)
 
 ### Bug Fixes
