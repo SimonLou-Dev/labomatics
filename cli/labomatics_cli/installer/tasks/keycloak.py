@@ -35,6 +35,7 @@ REALM_ROLES = (
 LEGACY_SERVICE_USER = "labomatics-admin"
 SERVICE_ROLES = ["manage-users", "view-users", "manage-clients", "view-clients"]
 CLIENT_ID = "labomatics"
+CLIENT_ROLES = ("manage_user", "manage_cluster")
 
 
 class KeycloakTask(InstallTask):
@@ -176,12 +177,9 @@ class KeycloakTask(InstallTask):
         )
         service_id = api.service_account_user(REALM, client_uuid)
         api.assign_client_roles(REALM, service_id, "realm-management", SERVICE_ROLES)
-        api.ensure_client_role(
-            REALM,
-            client_uuid,
-            "manage-user",
-            "Gestion des utilisateurs (CRUD compte, changement de groupe)",
-        )
+        descriptions = {name: text for name, text, _ in REALM_ROLES}
+        for role in CLIENT_ROLES:
+            api.ensure_client_role(REALM, client_uuid, role, descriptions[role])
         ctx.store.save_secret(
             "keycloak_client_secret", api.client_secret(REALM, client_uuid)
         )
