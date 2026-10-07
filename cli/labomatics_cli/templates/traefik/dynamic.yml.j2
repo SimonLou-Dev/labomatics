@@ -5,12 +5,12 @@ tls:
         certFile: /etc/traefik/certs/default.crt
         keyFile: /etc/traefik/certs/default.key
   certificates:
-    - certFile: /etc/traefik/certs/{{ DOMAIN }}.crt
-      keyFile: /etc/traefik/certs/{{ DOMAIN }}.key
-    - certFile: /etc/traefik/certs/keycloak.{{ DOMAIN }}.crt
-      keyFile: /etc/traefik/certs/keycloak.{{ DOMAIN }}.key
-    - certFile: /etc/traefik/certs/api.{{ DOMAIN }}.crt
-      keyFile: /etc/traefik/certs/api.{{ DOMAIN }}.key
+    - certFile: /etc/traefik/certs/{{ domain }}.crt
+      keyFile: /etc/traefik/certs/{{ domain }}.key
+    - certFile: /etc/traefik/certs/keycloak.{{ domain }}.crt
+      keyFile: /etc/traefik/certs/keycloak.{{ domain }}.key
+    - certFile: /etc/traefik/certs/api.{{ domain }}.crt
+      keyFile: /etc/traefik/certs/api.{{ domain }}.key
 
 http:
   middlewares:

@@ -13,13 +13,13 @@ echo "Creating labomatics database and user..."
 psql -U postgres <<EOF
 -- labomatics database
 CREATE DATABASE labomatics;
-CREATE USER labomatics WITH PASSWORD '{{ LABOMATICS_DB_PASSWORD }}';
+CREATE USER labomatics WITH PASSWORD '{{ secrets.labomatics_db_password }}';
 GRANT ALL PRIVILEGES ON DATABASE labomatics TO labomatics;
 ALTER USER labomatics CREATEDB;
 
 -- keycloak database
 CREATE DATABASE keycloak;
-CREATE USER keycloak WITH PASSWORD '{{ KEYCLOAK_DB_PASSWORD }}';
+CREATE USER keycloak WITH PASSWORD '{{ secrets.keycloak_db_password }}';
 GRANT ALL PRIVILEGES ON DATABASE keycloak TO keycloak;
 ALTER USER keycloak CREATEDB;
 EOF

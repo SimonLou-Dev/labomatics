@@ -32,6 +32,13 @@ entryPoints:
 
   websecure:
     address: ":443"
+{% if trusted_hosts %}
+    forwardedHeaders:
+      trustedIPs:
+{% for host in trusted_hosts %}
+        - "{{ host }}"
+{% endfor %}
+{% endif %}
 
 # experimental:
 #   plugins:

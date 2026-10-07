@@ -1,0 +1,40 @@
+#!/bin/bash
+# Génère la CA (conservée si présente) et les certificats serveur du domaine.
+set -e
+mkdir -p /etc/labomatics/certs
+cd /etc/labomatics/certs
+
+if [ -f ca.crt ] && [ -f ca.key ]; then
+  echo "CA existante conservée"
+else
+  openssl genrsa -out ca.key 2048 2>/dev/null
+  openssl req -new -x509 -days 3650 -key ca.key -out ca.crt -subj '/CN=labomatics-ca' 2>/dev/null
+  echo "CA générée"
+fi
+
+STALE=0
+[ "$(cat domain 2>/dev/null)" = "{{ domain }}" ] || STALE=1
+
+cat > san.conf << 'SANEOF'
+[req]
+distinguished_name = req_distinguished_name
+req_extensions = v3_req
+prompt = no
+[req_distinguished_name]
+CN = *.{{ domain }}
+[v3_req]
+subjectAltName = DNS:{{ domain }},DNS:*.{{ domain }},DNS:keycloak.{{ domain }},DNS:labomatics.{{ domain }},DNS:api.labomatics.{{ domain }},DNS:api.{{ domain }},DNS:traefik.{{ domain }},DNS:ldap.{{ domain }},DNS:ldap
+SANEOF
+
+for NAME in default {{ domain }} keycloak.{{ domain }} api.{{ domain }} ldap.{{ domain }}; do
+  if [ "$STALE" = 0 ] && [ -f "$NAME.crt" ] && [ -f "$NAME.key" ]; then
+    continue
+  fi
+  openssl req -new -newkey rsa:2048 -nodes -config san.conf -keyout "$NAME.key" -out "$NAME.csr" 2>/dev/null
+  openssl x509 -req -days 365 -extensions v3_req -extfile san.conf -in "$NAME.csr" -CA ca.crt -CAkey ca.key -CAcreateserial -out "$NAME.crt" 2>/dev/null
+  echo "Certificat $NAME généré"
+done
+
+echo "{{ domain }}" > domain
+chmod 600 *.key
+rm -f *.csr *.srl san.conf

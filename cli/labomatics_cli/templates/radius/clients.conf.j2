@@ -1,6 +1,6 @@
 client docker-network {
     ipaddr = 0.0.0.0/0
-    secret = {{ RADIUS_SHARED_SECRET }}
+    secret = {{ secrets.radius_shared_secret }}
     require_message_authenticator = no
     nas_type = other
 }
