@@ -23,7 +23,7 @@ class StudentImportService:
     ) -> tuple[list[dict[str, Any]], list[str]]:
         """Parse le CSV et retourne les données avec les erreurs."""
         try:
-            text = csv_content.decode("utf-8")
+            text = csv_content.decode("utf-8-sig")
         except UnicodeDecodeError as e:
             raise HTTPException(400, f"Erreur d'encodage: {e!s}") from e
 
