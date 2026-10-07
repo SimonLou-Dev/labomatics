@@ -242,9 +242,9 @@ def _create_vm(
     )
     if tmpl.uefi:
         kwargs["bios"] = "ovmf"
-        kwargs["efidisk0"] = (
-            f"{dest_storage}:1,efitype=4m,pre-enrolled-keys=1,format=qcow2"
-        )
+        kwargs[
+            "efidisk0"
+        ] = f"{dest_storage}:1,efitype=4m,pre-enrolled-keys=1,format=qcow2"
         kwargs["boot"] = "order=virtio0;net0"
     if tmpl.cloudinit:
         kwargs["ide2"] = f"{dest_storage}:cloudinit"
@@ -253,7 +253,7 @@ def _create_vm(
         kwargs["cipassword"] = eff_pass
         kwargs["ipconfig0"] = "ip=dhcp"
 
-    task = client.create_vm_from_data(node, str(tmpl.vmid), kwargs)
+    task = client.create_vm_from_data(node, tmpl.vmid, kwargs)
     if task:
         client.wait_for_task(node, task, timeout=300)
     console.print(f"  [green]✓ VM vmid={tmpl.vmid} créée[/green]")
@@ -412,8 +412,8 @@ def run_installation(state: InstallState) -> int:
 
     templates_pool = "templates"
     default_packages = ["qemu-guest-agent"]
-    shared_pool = state.get_step(3).get("storage")
-    bridge = state.get_step(1).get("network_iface")
+    shared_pool = (state.get_step(3) or {}).get("storage", "")
+    bridge = (state.get_step(1) or {}).get("network_iface", "")
 
     if step_data:
         ciuser = "labomatics"
@@ -433,13 +433,13 @@ def run_installation(state: InstallState) -> int:
             },
         )
 
-    state_2 = state.get_step(2)
+    state_2 = state.get_step(2) or {}
 
     pve = ProxmoxClient(
-        state_2.get("proxmox_url"),
-        state_2.get("proxmox_user"),
-        state_2.get("proxmox_token_id"),
-        state_2.get("proxmox_token_secret"),
+        state_2.get("proxmox_url", ""),
+        state_2.get("proxmox_user", ""),
+        state_2.get("proxmox_token_id", ""),
+        state_2.get("proxmox_token_secret", ""),
     )
 
     templates = images_list
@@ -602,3 +602,5 @@ def run_installation(state: InstallState) -> int:
         console.print(
             f"\n[bold green]✓ Template '{tmpl.name}' construite avec succès (vmid={tmpl.vmid})[/bold green]"
         )
+
+    return 0
