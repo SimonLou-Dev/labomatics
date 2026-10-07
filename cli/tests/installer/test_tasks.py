@@ -55,31 +55,45 @@ def test_sdn_refuses_other_zone_type(tmp_path):
 
 
 def test_vm_creation_path(tmp_path):
-    """Création : image téléchargée, VM configurée cloud-init, démarrée, SSH attendu."""
+    """Image absente : téléchargée sur le nœud, disque importé, attaché, cloud-init, SSH."""
     api, sessions = FakeProxmox(), []
-    ctx = make_ctx(tmp_path, api, sessions)
+    ctx = make_ctx(
+        tmp_path, api, sessions, failing={"test -f": 1}, outputs={"lsblk": "sda\n"}
+    )
     VmTask().run(ctx)
     assert api.names() == [
-        "download_image",
-        "wait_task",
         "create_vm",
         "wait_task",
+        "attach_unused_disk",
         "resize_disk",
+        "set_vm_config",
         "start_vm",
         "wait_task",
     ]
-    opts = api.vm_options
-    assert opts["net0"] == "virtio,bridge=vmbr0"
+    node_ssh = sessions[0]
+    assert node_ssh.args == ("pve1", "root")
+    assert any("wget -q -O" in c and ".part" in c for c in node_ssh.commands)
+    assert any(
+        "qm importdisk 105" in c and "ceph --format qcow2" in c
+        for c in node_ssh.commands
+    )
+    hardware = api.vm_options
+    assert (
+        hardware["net0"] == "virtio,bridge=vmbr0" and hardware["agent"] == "enabled=1"
+    )
+    assert "scsi0" not in hardware and "import-from" not in str(hardware)
+    opts = api.cloud_options
     assert opts["ipconfig0"] == "ip=192.168.50.10/24,gw=192.168.50.254"
-    assert opts["nameserver"] == "1.1.1.1 9.9.9.9" and opts["agent"] == "enabled=1"
-    assert opts["scsi0"].startswith("ceph:0,import-from=ceph:import/")
+    assert opts["nameserver"] == "1.1.1.1 9.9.9.9"
     assert (
         "ssh-ed25519%20AAAAuser" in opts["sshkeys"]
         and "labomatics-cli" in opts["sshkeys"]
     )
-    assert opts["cipassword"] == ctx.store.get_data("vm_password")
+    assert opts["cipassword"] == ctx.store.secrets.vm_password
     assert ctx.store.get_data("vmid") == 105 and ctx.store.get_data("vm_node") == "pve1"
-    assert sessions[0].args == ("192.168.50.10", "labomatics") and sessions[0].connected
+    assert sessions[1].args == ("192.168.50.10", "labomatics") and sessions[1].connected
+    assert "sudo growpart /dev/sda 3" in sessions[1].commands
+    assert sessions[1].commands[-1] == "sudo btrfs filesystem resize max /"
 
 
 def test_vm_existing_is_reused(tmp_path):
@@ -95,12 +109,12 @@ def test_vm_existing_is_reused(tmp_path):
     assert api.names() == ["start_vm", "wait_task"]
 
 
-def test_vm_image_already_on_storage_is_not_downloaded(tmp_path):
-    """Image déjà présente : pas de téléchargement."""
-    api = FakeProxmox()
-    api.image = True
-    VmTask().run(make_ctx(tmp_path, api))
-    assert "download_image" not in api.names()
+def test_vm_image_already_on_node_is_not_downloaded(tmp_path):
+    """Image déjà dans le cache du nœud : pas de téléchargement."""
+    sessions = []
+    VmTask().run(make_ctx(tmp_path, FakeProxmox(), sessions))
+    assert not any("wget" in c for c in sessions[0].commands)
+    assert any("qm importdisk" in c for c in sessions[0].commands)
 
 
 def test_docker_installs_only_when_absent(tmp_path):
@@ -132,7 +146,17 @@ def test_dns_writes_config_and_restarts(tmp_path):
         ssh.files["/tmp/labomatics-resolv.conf"]
         == "nameserver 127.0.0.1\nsearch lab.fr\n"
     )
-    assert "dnsmasq" in ssh.commands[-1]
+    assert ssh.files["/tmp/labomatics-nm-no-dns.conf"] == "[main]\ndns=none\n"
+    script = ssh.commands[-1]
+    assert "no-dns-update.conf" in script and "reload NetworkManager" in script
+    order = [
+        "dnf install -y dnsmasq",
+        "disable --now systemd-resolved",
+        "/etc/resolv.conf",
+        "enable dnsmasq",
+    ]
+    positions = [script.index(item) for item in order]
+    assert positions == sorted(positions)
 
 
 def test_node_dns_sets_then_is_idempotent(tmp_path):
@@ -145,3 +169,16 @@ def test_node_dns_sets_then_is_idempotent(tmp_path):
     api.calls.clear()
     NodeDnsTask().run(ctx)
     assert api.calls == []
+
+
+def test_vm_growpart_nochange_is_tolerated_other_errors_are_not(tmp_path):
+    """NOCHANGE de growpart est toléré ; une autre erreur fait échouer."""
+    sessions = []
+    ctx = make_ctx(tmp_path, FakeProxmox(), sessions, outputs={"lsblk": "sda\n"})
+    ctx.vm_ssh.failing["growpart"] = 1
+    ctx.vm_ssh.outputs["growpart"] = "NOCHANGE: partition 3 is size 1"
+    VmTask()._grow_filesystem(ctx)
+    assert ctx.vm_ssh.commands[-1].startswith("sudo btrfs")
+    ctx.vm_ssh.outputs["growpart"] = "boum"
+    with pytest.raises(Exception, match="growpart"):
+        VmTask()._grow_filesystem(ctx)

@@ -1,3 +1,5 @@
+"""Génération et conservation des secrets d'installation."""
+
 import secrets as _secrets
 from typing import ClassVar, Optional
 
@@ -13,12 +15,25 @@ class PasswordGenerator:
     DIGITS = "23456789"
 
     def __init__(self, length: int = 24) -> None:
+        """Initialise le générateur.
+
+        Args:
+            length: Longueur des mots de passe (16 minimum).
+
+        Raises:
+            ValueError: Si la longueur est inférieure à 16.
+        """
         if length < 16:
             raise ValueError("length must be >= 16")
         self.length = length
         self._rng = _secrets.SystemRandom()
 
     def generate(self) -> str:
+        """Génère un mot de passe conforme à la politique du realm.
+
+        Returns:
+            Un mot de passe mêlant majuscules, minuscules, chiffres et spéciaux.
+        """
         pools = [(self.SPECIALS, 3), (self.UPPER, 3), (self.DIGITS, 3), (self.LOWER, 4)]
         chars = [_secrets.choice(pool) for pool, count in pools for _ in range(count)]
         everything = self.SPECIALS + self.UPPER + self.LOWER + self.DIGITS
@@ -30,10 +45,18 @@ class PasswordGenerator:
         return "".join(chars)
 
     def token(self) -> str:
+        """Génère un jeton aléatoire.
+
+        Returns:
+            Un jeton URL-safe de 32 octets.
+        """
         return _secrets.token_urlsafe(32)
 
 
 class InstallSecrets(BaseModel):
+    """Secrets générés ou obtenus pendant l'installation."""
+
+    vm_password: Optional[str] = None
     pg_root_password: Optional[str] = None
     labomatics_db_password: Optional[str] = None
     keycloak_db_password: Optional[str] = None
@@ -50,6 +73,7 @@ class InstallSecrets(BaseModel):
     keycloak_client_secret: Optional[str] = None
 
     PASSWORDS: ClassVar[tuple[str, ...]] = (
+        "vm_password",
         "pg_root_password",
         "labomatics_db_password",
         "keycloak_db_password",
@@ -63,6 +87,14 @@ class InstallSecrets(BaseModel):
     )
 
     def ensure(self, generator: PasswordGenerator) -> "InstallSecrets":
+        """Complète les secrets manquants sans toucher à ceux qui existent.
+
+        Args:
+            generator: Générateur de mots de passe et de jetons.
+
+        Returns:
+            Une copie avec tous les mots de passe et la clé de chiffrement renseignés.
+        """
         updates: dict[str, str] = {}
         for name in self.PASSWORDS:
             if not getattr(self, name):

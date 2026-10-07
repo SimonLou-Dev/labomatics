@@ -228,9 +228,6 @@ def test_vm_and_image_calls():
                 {"vmid": 100, "node": "pve2", "name": "labomatics", "status": "running"}
             ],
             ("get", "cluster/nextid"): "101",
-            ("get", "nodes/pve1/storage/ceph/content"): [
-                {"volid": "ceph:import/img.qcow2"}
-            ],
             ("get", "nodes/pve1/config"): {
                 "acmedomain0": "domain=a.lab.fr,plugin=x",
                 "acmedomain1": "b.lab.fr",
@@ -242,8 +239,6 @@ def test_vm_and_image_calls():
     assert (vm.vmid, vm.node, vm.status) == (100, "pve2", "running")
     assert api.find_vm("absente") is None
     assert api.next_vmid() == 101
-    assert api.has_import_image("pve1", "ceph", "img.qcow2")
-    assert not api.has_import_image("pve1", "ceph", "autre.qcow2")
     assert api.node_fqdns("pve1") == ["a.lab.fr", "b.lab.fr"]
     assert api.create_vm("pve1", 101, name="x") == "UPID:pve1:c"
     assert calls[-1] == ("post", "nodes/pve1/qemu", {"vmid": 101, "name": "x"})

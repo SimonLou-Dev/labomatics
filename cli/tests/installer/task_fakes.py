@@ -30,6 +30,23 @@ CONFIG = {
         "ssh_keys": ["ssh-ed25519 AAAAuser user@pc"],
     },
     "vxlan": {"storage": "ceph", "zone": "labo", "mtu": 1350},
+    "wan": {
+        "iface": "vmbr1",
+        "network": "10.210.0.0/24",
+        "gateway": "10.210.0.254",
+        "exclusions": ["10.210.0.1-10.210.0.5"],
+    },
+    "admin": {"email": "jean@lab.fr", "first_name": "Jean", "last_name": "Dupont"},
+    "auth": {"directory": "local", "radius": True},
+    "proxy": {"trusted_hosts": ["10.0.0.0/8"]},
+    "mail": {
+        "enabled": True,
+        "brevo_api_key": "brevo-key",
+        "from_email": "noreply@lab.fr",
+        "smtp_host": "smtp.lab.fr",
+        "smtp_user": "smtpuser",
+        "smtp_password": "smtppw",
+    },
     "nodes": {
         "pve1": {"password": "pw1"},
         "pve2": {"password": "pw2", "host": "10.0.0.12"},
@@ -47,7 +64,8 @@ class FakeProxmox:
         self.tokens: set[tuple[str, str]] = set()
         self.zones: dict[str, str] = {}
         self.vm: Optional[VmInfo] = None
-        self.image = False
+        self.realms: dict[str, str] = {}
+        self.cloud_options: dict[str, Any] = {}
         self.dns: dict[str, dict] = {}
         self.fqdns: dict[str, list[str]] = {"pve1": ["pve1.lab.fr"]}
         self.vm_options: dict[str, Any] = {}
@@ -90,15 +108,48 @@ class FakeProxmox:
         """
         return userid in self.users
 
-    def create_user(self, userid: str, comment: str = "") -> None:
+    def create_user(
+        self, userid: str, comment: str = "", email: Optional[str] = None
+    ) -> None:
         """Crée un utilisateur.
 
         Args:
             userid: Identifiant.
             comment: Commentaire.
+            email: Adresse e-mail.
         """
         self._rec("create_user", userid)
         self.users.add(userid)
+
+    def realm_exists(self, realm: str) -> bool:
+        """Realm d'authentification présent ?
+
+        Args:
+            realm: Nom du realm.
+
+        Returns:
+            True s'il a été configuré.
+        """
+        return realm in self.realms
+
+    def configure_oidc_realm(
+        self, realm: str, issuer_url: str, client_id: str, client_key: str
+    ) -> bool:
+        """Configure le realm OIDC.
+
+        Args:
+            realm: Nom du realm.
+            issuer_url: Émetteur.
+            client_id: Client.
+            client_key: Secret du client.
+
+        Returns:
+            True si le realm vient d'être créé.
+        """
+        created = realm not in self.realms
+        self._rec("configure_oidc_realm", realm, issuer_url, client_id, client_key)
+        self.realms[realm] = issuer_url
+        return created
 
     def grant(self, path: str, userid: str, role: str) -> None:
         """Enregistre une ACL.
@@ -205,35 +256,6 @@ class FakeProxmox:
         """
         return 105
 
-    def has_import_image(self, node: str, storage: str, filename: str) -> bool:
-        """Image présente ?
-
-        Args:
-            node: Nœud.
-            storage: Stockage.
-            filename: Fichier.
-
-        Returns:
-            True si elle a été téléchargée.
-        """
-        return self.image
-
-    def download_image(self, node: str, storage: str, url: str, filename: str) -> str:
-        """Télécharge l'image.
-
-        Args:
-            node: Nœud.
-            storage: Stockage.
-            url: URL.
-            filename: Fichier.
-
-        Returns:
-            Un UPID factice.
-        """
-        self._rec("download_image", node, storage, filename)
-        self.image = True
-        return "UPID:pve1:dl"
-
     def create_vm(self, node: str, vmid: int, **options: Any) -> str:
         """Crée la VM.
 
@@ -249,6 +271,27 @@ class FakeProxmox:
         self.vm_options = options
         self.vm = VmInfo(vmid, node, options["name"], "stopped")
         return "UPID:pve1:create"
+
+    def attach_unused_disk(self, node: str, vmid: int, disk: str) -> None:
+        """Enregistre l'attachement du disque importé.
+
+        Args:
+            node: Nœud.
+            vmid: VMID.
+            disk: Emplacement cible.
+        """
+        self._rec("attach_unused_disk", disk)
+
+    def set_vm_config(self, node: str, vmid: int, **options: Any) -> None:
+        """Enregistre la configuration cloud-init.
+
+        Args:
+            node: Nœud.
+            vmid: VMID.
+            **options: Options Proxmox.
+        """
+        self._rec("set_vm_config", vmid)
+        self.cloud_options = options
 
     def resize_disk(self, node: str, vmid: int, disk: str, size: str) -> None:
         """Agrandit le disque.
@@ -322,6 +365,7 @@ class FakeSsh:
         self.commands: list[str] = []
         self.files: dict[str, str] = {}
         self.failing: dict[str, int] = {}
+        self.outputs: dict[str, str] = {}
         self.connected = False
         self.closed = False
 
@@ -351,7 +395,11 @@ class FakeSsh:
         """
         self.commands.append(command)
         code = next((c for p, c in self.failing.items() if p in command), 0)
-        result = CommandResult("Docker version 27\n" if code == 0 else "", "", code)
+        out = next((o for p, o in self.outputs.items() if p in command), None)
+        explicit = out is not None
+        if out is None:
+            out = "Docker version 27\n"
+        result = CommandResult(out if code == 0 or explicit else "", "", code)
         if check and not result.ok:
             raise SshError("échec")
         return result
@@ -371,6 +419,10 @@ def make_ctx(
     tmp_path: Path,
     api: Optional[FakeProxmox] = None,
     sessions: Optional[list[FakeSsh]] = None,
+    failing: Optional[dict[str, int]] = None,
+    outputs: Optional[dict[str, str]] = None,
+    config: Optional[dict] = None,
+    keycloak: Optional[Any] = None,
 ) -> InstallContext:
     """Construit un contexte d'installation entièrement factice.
 
@@ -378,12 +430,16 @@ def make_ctx(
         tmp_path: Dossier temporaire (store et clé SSH).
         api: Faux Proxmox à utiliser.
         sessions: Liste qui reçoit les fausses sessions SSH créées.
+        failing: Motifs de commande SSH qui échouent (motif -> code), pour chaque session.
+        outputs: Sorties SSH par motif de commande, pour chaque session.
+        config: Configuration complète à utiliser à la place de `CONFIG`.
+        keycloak: Faux client Keycloak.
 
     Returns:
         Le contexte.
     """
     store = InstallStore.open("lab1", tmp_path / "clusters")
-    store.save_config(InstallConfig.model_validate(CONFIG))
+    store.save_config(InstallConfig.model_validate(config or CONFIG))
     fake = api or FakeProxmox()
     created = sessions if sessions is not None else []
 
@@ -398,6 +454,8 @@ def make_ctx(
             La session.
         """
         session = FakeSsh(*args, **kwargs)
+        session.failing.update(failing or {})
+        session.outputs.update(outputs or {})
         created.append(session)
         return session
 
@@ -407,6 +465,7 @@ def make_ctx(
         InstallReporter(["étape"]),
         api_factory=lambda *a: fake,
         ssh_factory=ssh_factory,
+        keycloak_factory=lambda *a, **k: keycloak,
         key=CliKey(tmp_path / "ssh" / "labomatics-cli"),
     )
     return ctx

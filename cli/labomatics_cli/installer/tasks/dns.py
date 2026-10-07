@@ -8,14 +8,19 @@ from labomatics_cli.installer.tasks.base import InstallTask
 
 CONF_TMP = "/tmp/labomatics-dnsmasq.conf"
 RESOLV_TMP = "/tmp/labomatics-resolv.conf"
+NM_TMP = "/tmp/labomatics-nm-no-dns.conf"
+NM_CONF = "[main]\ndns=none\n"
 APPLY_SCRIPT = f"""set -e
+sudo mkdir -p /etc/NetworkManager/conf.d
+sudo install -m 644 {NM_TMP} /etc/NetworkManager/conf.d/no-dns-update.conf
+sudo systemctl reload NetworkManager || true
 sudo dnf install -y dnsmasq
 sudo install -m 644 {CONF_TMP} /etc/dnsmasq.conf
 sudo systemctl disable --now systemd-resolved || true
-sudo systemctl enable dnsmasq
-sudo systemctl restart dnsmasq
 sudo rm -f /etc/resolv.conf
 sudo install -m 644 {RESOLV_TMP} /etc/resolv.conf
+sudo systemctl enable dnsmasq
+sudo systemctl restart dnsmasq
 """
 
 
@@ -63,6 +68,7 @@ class DnsTask(InstallTask):
         )
         ssh = ctx.vm_ssh
         ssh.put_text(CONF_TMP, conf)
+        ssh.put_text(NM_TMP, NM_CONF)
         ssh.put_text(RESOLV_TMP, f"nameserver 127.0.0.1\nsearch {vm.domain}\n")
         ssh.run(APPLY_SCRIPT)
         ctx.log("dnsmasq configuré", "ok")

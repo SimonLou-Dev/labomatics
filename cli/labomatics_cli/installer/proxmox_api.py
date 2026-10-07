@@ -341,14 +341,19 @@ class ProxmoxApi:
         """
         return any(u.get("userid") == userid for u in self._get("access/users"))
 
-    def create_user(self, userid: str, comment: str = "") -> None:
+    def create_user(
+        self, userid: str, comment: str = "", email: Optional[str] = None
+    ) -> None:
         """Crée un utilisateur sans mot de passe.
 
         Args:
             userid: Identifiant « utilisateur@realm ».
             comment: Commentaire facultatif.
+            email: Adresse e-mail facultative.
         """
-        params = {"comment": comment} if comment else {}
+        params: dict[str, str] = {"comment": comment} if comment else {}
+        if email:
+            params["email"] = email
         self._request("post", "access/users", userid=userid, **params)
 
     def token_exists(self, userid: str, token: str) -> bool:
@@ -476,47 +481,6 @@ class ProxmoxApi:
         """
         return int(self._get("cluster/nextid"))
 
-    def has_import_image(self, node: str, storage: str, filename: str) -> bool:
-        """Indique si une image est déjà présente dans le contenu « import » d'un stockage.
-
-        Args:
-            node: Nœud interrogé.
-            storage: Nom du stockage.
-            filename: Nom du fichier image.
-
-        Returns:
-            True si l'image est présente ; False aussi si le stockage ne gère pas « import ».
-        """
-        try:
-            items = self._get(
-                f"nodes/{node}/storage/{storage}/content", content="import"
-            )
-        except ProxmoxError:
-            return False
-        return any(str(i.get("volid", "")).endswith(f"/{filename}") for i in items)
-
-    def download_image(self, node: str, storage: str, url: str, filename: str) -> str:
-        """Fait télécharger une image par Proxmox dans le contenu « import » d'un stockage.
-
-        Args:
-            node: Nœud qui télécharge.
-            storage: Nom du stockage.
-            url: URL de l'image.
-            filename: Nom du fichier enregistré.
-
-        Returns:
-            L'identifiant (UPID) de la tâche.
-        """
-        return str(
-            self._request(
-                "post",
-                f"nodes/{node}/storage/{storage}/download-url",
-                content="import",
-                filename=filename,
-                url=url,
-            )
-        )
-
     def create_vm(self, node: str, vmid: int, **options: Any) -> str:
         """Crée une VM.
 
@@ -529,6 +493,47 @@ class ProxmoxApi:
             L'identifiant (UPID) de la tâche.
         """
         return str(self._request("post", f"nodes/{node}/qemu", vmid=vmid, **options))
+
+    def vm_config(self, node: str, vmid: int) -> dict[str, Any]:
+        """Configuration d'une VM.
+
+        Args:
+            node: Nœud hôte.
+            vmid: Identifiant de la VM.
+
+        Returns:
+            Les options de la VM.
+        """
+        return dict(self._get(f"nodes/{node}/qemu/{vmid}/config"))
+
+    def set_vm_config(self, node: str, vmid: int, **options: Any) -> None:
+        """Modifie la configuration d'une VM.
+
+        Args:
+            node: Nœud hôte.
+            vmid: Identifiant de la VM.
+            **options: Options à appliquer.
+        """
+        self._request("put", f"nodes/{node}/qemu/{vmid}/config", **options)
+
+    def attach_unused_disk(self, node: str, vmid: int, disk: str) -> None:
+        """Attache le premier disque `unusedN` (issu d'un `qm importdisk`) et le rend amorçable.
+
+        Args:
+            node: Nœud hôte.
+            vmid: Identifiant de la VM.
+            disk: Emplacement cible (ex. « scsi0 »).
+
+        Raises:
+            ProxmoxError: Si la VM n'a aucun disque non utilisé.
+        """
+        config = self.vm_config(node, vmid)
+        unused = sorted(k for k in config if k.startswith("unused"))
+        if not unused:
+            raise ProxmoxError(f"Aucun disque importé trouvé sur la VM {vmid}")
+        self.set_vm_config(
+            node, vmid, **{disk: config[unused[0]], "boot": f"order={disk}"}
+        )
 
     def resize_disk(self, node: str, vmid: int, disk: str, size: str) -> None:
         """Redimensionne un disque de VM.
@@ -604,3 +609,49 @@ class ProxmoxApi:
                 if value and "=" not in value and value not in found:
                     found.append(value)
         return found
+
+    def realm_exists(self, realm: str) -> bool:
+        """Indique si un realm d'authentification existe.
+
+        Args:
+            realm: Nom du realm (ex. « labomatics »).
+
+        Returns:
+            True si le realm est déclaré dans `/access/domains`.
+        """
+        return any(d.get("realm") == realm for d in self._get("access/domains"))
+
+    def configure_oidc_realm(
+        self, realm: str, issuer_url: str, client_id: str, client_key: str
+    ) -> bool:
+        """Crée ou met à jour un realm OpenID Connect, défini comme realm par défaut.
+
+        Args:
+            realm: Nom du realm.
+            issuer_url: URL de l'émetteur (realm Keycloak).
+            client_id: Identifiant du client OIDC.
+            client_key: Secret du client OIDC.
+
+        Returns:
+            True si le realm a été créé, False s'il existait et a été mis à jour.
+        """
+        params = {
+            "issuer-url": issuer_url,
+            "client-id": client_id,
+            "client-key": client_key,
+            "scopes": "email profile",
+            "autocreate": 1,
+            "default": 1,
+        }
+        if self.realm_exists(realm):
+            self._request("put", f"access/domains/{realm}", **params)
+            return False
+        self._request(
+            "post",
+            "access/domains",
+            realm=realm,
+            type="openid",
+            **{"username-claim": "preferred_username"},
+            **params,
+        )
+        return True
