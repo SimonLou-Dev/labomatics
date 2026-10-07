@@ -13,29 +13,42 @@ pip install -e .
 
 ### `labomatics install`
 
-Initialiser le cluster central (VM Alpine + Docker stack).
-
-**À exécuter sur un nœud du cluster Proxmox.**
+Installe la stack Labomatics (VM, Docker, Keycloak, backend, agent) sur un cluster Proxmox.
+Le CLI s'exécute en local et pilote Proxmox par API et SSH.
 
 ```bash
-labomatics install [--dry-run]
+labomatics install [--cluster NOM]
 ```
 
-### Flow interactif
+#### Wizard
 
-1. **Configuration**: domaine root, interface réseau
-2. **VM**: user, password, IP, gateway
-3. **Passwords**: générés automatiquement
-4. **Compte admin**: email, nom, prénom
-5. **Installation**: VM → Docker → Services → Keycloak setup
-6. **Output**: credentials + OIDC setup pour Proxmox
+Un assistant interactif pose les questions en 10 pages : Proxmox, VM Labomatics,
+Labs WAN, Labs VXLAN, compte d'administration, authentification, fédération LDAP externe,
+reverse proxy, e-mail, accès SSH aux nœuds (un mot de passe par nœud). Un récapitulatif
+précède l'installation, qui enchaîne 13 tâches (token, zone VXLAN, VM, Docker, DNS,
+stack, Keycloak, client OIDC Proxmox, backend, agent, contrôle de santé).
+Chaque page et chaque tâche est sauvegardée à la volée. À la fin, l'écran affiche
+les URLs, l'identifiant administrateur et son mot de passe temporaire.
+
+#### Reprise et mode édition
+
+Tout est stocké dans `~/.labomatics/clusters/<cluster>/` (`install.yaml` et `state.json`,
+droits 600). Sans `--cluster`, le wizard propose les clusters existants ou un nouveau.
+
+- **Reprise** : installation interrompue, le wizard reprend à la première page non
+  sauvegardée et les tâches déjà terminées sont ignorées.
+- **Édition** : installation terminée, les valeurs déjà enregistrées sont verrouillées
+  (on peut ajouter des éléments aux listes) et seules les tâches concernées par les
+  changements sont rejouées.
 
 ### Services déployés
 
-- **PostgreSQL**: 3 DBs (labomatics, keycloak, powerdns)
-- **Keycloak**: SSO (realms: master + labomatics)
-- **PowerDNS**: DNS server (API REST)
-- **Traefik**: Reverse proxy
+- **PostgreSQL** : bases labomatics et keycloak
+- **Keycloak** : SSO (realms master et labomatics)
+- **OpenLDAP / FreeRADIUS** : annuaire et authentification réseau
+- **dnsmasq** : DNS de la VM
+- **Traefik** : reverse proxy
+- **Backend FastAPI et frontend**
 
 ## Architecture
 
@@ -43,24 +56,13 @@ labomatics install [--dry-run]
 cli/
 ├── labomatics_cli/
 │   ├── __main__.py
-│   ├── commands/
-│   │   └── install.py         # Commande install complète
-│   └── utils/
-│       ├── ssh.py             # Client SSH
-│       ├── keycloak.py        # API Keycloak
-│       ├── powerdns.py        # API PowerDNS
-│       └── proxmox.py         # API Proxmox (stub)
+│   ├── installer/        # App, pages du wizard, tâches, store, clients Proxmox/Keycloak/SSH
+│   ├── tui/              # Kit prompt_toolkit (wizard, champs, validateurs)
+│   ├── models/           # InstallConfig (config d'installation)
+│   ├── templates/        # Templates Jinja2 de la VM (dns, ldap, radius, stack, traefik)
+│   ├── commands/         # `labomatics template`
+│   └── utils/            # Utilitaires de `labomatics template`
 └── pyproject.toml
-
-provisioning/labomatics/
-├── templates/
-│   ├── cloud-init.sh          # Cloud-init minimal
-│   ├── docker-compose.yml     # Stack Docker
-│   ├── traefik.yaml           # Config Traefik
-│   └── powerdns.conf          # Config PowerDNS
-└── scripts/
-    ├── init-databases.sh      # Init PostgreSQL DBs
-    └── setup-docker.sh        # Setup Docker (SSH)
 ```
 
 ## Security Notes
@@ -73,12 +75,9 @@ provisioning/labomatics/
 ## Status
 
 - [x] Structure et scaffolding
-- [x] Cloud-init Proxmox-compatible
-- [x] Docker Compose (PostgreSQL, Keycloak, PowerDNS, Traefik)
-- [x] Commande install (flow complet)
+- [x] Docker Compose (PostgreSQL, Keycloak, LDAP, Traefik)
+- [x] Commande install (wizard, reprise, mode édition)
 - [x] Setup Keycloak realms + user admin
 - [x] OIDC client pour Proxmox
-- [ ] Proxmox API client (VM creation)
-- [ ] SSH file upload/exec (Paramiko)
-- [ ] Tests
-- [ ] Idempotence
+- [x] Client Proxmox, SSH (Paramiko), tests
+- [x] Idempotence (reprise par tâche)
