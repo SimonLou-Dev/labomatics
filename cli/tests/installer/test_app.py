@@ -5,7 +5,8 @@ from labomatics_cli.installer.app import InstallerApp
 from labomatics_cli.installer.pages import NEW_CLUSTER, ClusterChoice
 from labomatics_cli.installer.proxmox_api import ProxmoxConnectionError
 from labomatics_cli.installer.store import InstallMode, InstallStore
-from labomatics_cli.installer.tasks import INSTALL_TASKS, PlaceholderRunner
+from labomatics_cli.installer.runner import InstallRunner
+from labomatics_cli.installer.tasks import build_tasks
 from labomatics_cli.models.install_config import InstallConfig
 from labomatics_cli.tui import InstallReporter
 from tui_harness import CTRL_C, DOWN, ENTER, TAB, WaitUntil, check, run
@@ -45,13 +46,47 @@ def seed(tmp_path, **sections):
     return store
 
 
-def test_placeholder_runner_skips_the_13_tasks(tmp_path):
-    """Le runner provisoire ignore les 13 tâches."""
-    assert len(INSTALL_TASKS) == 13 and INSTALL_TASKS[7] == "Propagation des CA"
-    reporter = InstallReporter(list(INSTALL_TASKS))
-    store = InstallStore.open("x", tmp_path)
-    asyncio.run(PlaceholderRunner().run(store, {}, reporter))
-    assert set(reporter.status) == {"skipped"}
+def test_default_runner_labels_feed_the_install_screen(tmp_path):
+    """Les 13 libellés du runner par défaut alimentent l'écran d'installation."""
+    app = make_app(tmp_path)
+    labels = InstallRunner(build_tasks()).labels
+    assert len(labels) == 13 and labels[7] == "Propagation des CA"
+    assert app.build_wizard().reporter.steps == labels
+
+
+def test_vm_exists_tests_the_vm_task_by_name(tmp_path):
+    """La page VM se verrouille quand la tâche `vm` est terminée."""
+    store = seed(tmp_path, proxmox=PROXMOX)
+    app = make_app(tmp_path, "lab1")
+    app._select_cluster()
+    assert not app._vm_exists()
+    store.mark_task_done("vm")
+    app.store = InstallStore.open("lab1", tmp_path)
+    assert app._vm_exists()
+
+
+def test_install_runs_the_runner_with_a_context(tmp_path):
+    """`_install` construit le contexte et lance le runner sur le store."""
+    seen = []
+
+    class Spy(InstallRunner):
+        """Runner espion qui mémorise le contexte reçu."""
+
+        async def run(self, ctx):
+            """Mémorise le contexte.
+
+            Args:
+                ctx: Contexte d'installation.
+            """
+            seen.append(ctx)
+
+    seed(tmp_path, proxmox=PROXMOX)
+    app = make_app(tmp_path, "lab1", runner=Spy([]))
+    app._select_cluster()
+    reporter = InstallReporter(["x"])
+    asyncio.run(app._install({}, reporter))
+    assert seen[0].store is app.store and seen[0].ui is reporter
+    assert seen[0].config.proxmox.cluster_name == "lab1"
 
 
 def test_new_mode_prefills_name_and_refuses_existing(tmp_path):

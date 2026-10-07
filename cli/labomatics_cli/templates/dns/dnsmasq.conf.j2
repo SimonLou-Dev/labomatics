@@ -1,25 +1,25 @@
-# dnsmasq configuration
+# dnsmasq configuration (généré par labomatics install)
 listen-address=0.0.0.0
 port=53
 bind-interfaces
 
-# Local zones
-address=/keycloak.{{ DOMAIN }}/{{ VM_WAN_IP }}
-address=/ns.{{ DOMAIN }}/{{ VM_WAN_IP }}
-address=/labomatics.{{ DOMAIN }}/{{ VM_WAN_IP }}
-address=/api.labomatics.{{ DOMAIN }}/{{ VM_WAN_IP }}
-
-# Proxmox nodes FQDNs
-{{ NODE_DNS_ENTRIES }}
-local=/{{ DOMAIN }}/
+# Zone locale
+address=/keycloak.{{ domain }}/{{ vm_ip }}
+address=/labomatics.{{ domain }}/{{ vm_ip }}
+address=/api.labomatics.{{ domain }}/{{ vm_ip }}
+address=/traefik.{{ domain }}/{{ vm_ip }}
+{% for fqdn, ip in node_entries.items() %}
+address=/{{ fqdn }}/{{ ip }}
+{% endfor %}
+local=/{{ domain }}/
 no-resolv
 domain-needed
-# Upstream DNS for external queries
-{{ DNS_SERVERS }}
 
-# Cache
+# DNS amont
+{% for server in upstream %}
+server={{ server }}
+{% endfor %}
+
 cache-size=1000
-
-# Log
 log-queries
 log-facility=-

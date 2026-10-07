@@ -8,6 +8,7 @@ from typing import Callable, Optional
 from rich.console import Console
 
 from labomatics_cli.installer.checks import Checks
+from labomatics_cli.installer.context import InstallContext
 from labomatics_cli.installer.pages import (
     NEW_CLUSTER,
     PAGE_SECTIONS,
@@ -26,12 +27,8 @@ from labomatics_cli.installer.pages import (
 )
 from labomatics_cli.installer.proxmox_api import ProxmoxApi, ProxmoxError
 from labomatics_cli.installer.store import InstallMode, InstallStore
-from labomatics_cli.installer.tasks import (
-    INSTALL_TASKS,
-    VM_TASK,
-    InstallRunner,
-    PlaceholderRunner,
-)
+from labomatics_cli.installer.runner import InstallRunner
+from labomatics_cli.installer.tasks import build_tasks
 from labomatics_cli.tui import InstallReporter, Step, Wizard, WizardContext
 
 CLUSTER_NAME_KEY = "proxmox.cluster_name"
@@ -54,13 +51,13 @@ class InstallerApp:
         Args:
             cluster: Nom du cluster demandé avec `--cluster`.
             base_dir: Dossier racine des clusters (`~/.labomatics/clusters` par défaut).
-            runner: Exécuteur d'installation ; provisoire par défaut.
+            runner: Exécuteur d'installation ; les 13 tâches par défaut.
             api_factory: Construit le client Proxmox, remplaçable en test.
             checks: Contrôles réseau, remplaçables en test.
         """
         self.cluster = cluster
         self.base_dir = base_dir
-        self.runner = runner or PlaceholderRunner()
+        self.runner = runner or InstallRunner(build_tasks())
         self.api_factory = api_factory
         self.checks = checks or Checks()
         self.store: Optional[InstallStore] = None
@@ -131,9 +128,9 @@ class InstallerApp:
         """Indique si la VM a déjà été créée par une installation précédente.
 
         Returns:
-            True si la tâche « VM Labomatics » est terminée.
+            True si la tâche `vm` est terminée.
         """
-        return self.store is not None and self.store.is_task_done(VM_TASK)
+        return self.store is not None and self.store.is_task_done("vm")
 
     def build_wizard(self) -> Wizard:
         """Assemble le wizard selon le mode (préremplissage, verrouillage, étape de départ).
@@ -165,7 +162,7 @@ class InstallerApp:
             locked_keys=locked,
             start_step=start,
             on_step_saved=self._save,
-            install_steps=INSTALL_TASKS,
+            install_steps=self.runner.labels,
             on_install=self._install,
             context=ctx,
         )
@@ -220,11 +217,14 @@ class InstallerApp:
         self.store.save_page(ctx.values, PAGE_SECTIONS[step.title])
 
     async def _install(self, values: dict, ui: InstallReporter) -> None:
-        """Délègue l'installation à l'exécuteur.
+        """Construit le contexte d'installation et lance l'exécuteur.
 
         Args:
             values: Valeurs finales du wizard.
             ui: Rapporteur de l'écran d'installation.
         """
         assert self.store is not None
-        await self.runner.run(self.store, values, ui)
+        ctx = InstallContext(
+            self.store.config, self.store, ui, api_factory=self.api_factory
+        )
+        await self.runner.run(ctx)
