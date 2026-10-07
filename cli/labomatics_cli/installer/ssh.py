@@ -227,7 +227,8 @@ class SshSession:
         err = stderr.read().decode(errors="replace")
         result = CommandResult(out, err, stdout.channel.recv_exit_status())
         if check and not result.ok:
-            detail = (result.stderr or result.stdout).strip()
+            lines = (result.stderr or result.stdout).strip().splitlines()
+            detail = " | ".join(lines[-3:]) or "aucune sortie"
             raise SshError(
                 f"Commande en échec sur {self.host} ({result.code}) : {detail}"
             )

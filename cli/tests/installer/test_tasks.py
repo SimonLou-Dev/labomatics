@@ -72,7 +72,7 @@ def test_vm_creation_path(tmp_path):
     ]
     node_ssh = sessions[0]
     assert node_ssh.args == ("pve1", "root")
-    assert any("wget -q -O" in c and ".part" in c for c in node_ssh.commands)
+    assert any("wget -nv" in c and ".part" in c for c in node_ssh.commands)
     assert any(
         "qm importdisk 105" in c and "ceph --format qcow2" in c
         for c in node_ssh.commands

@@ -109,8 +109,9 @@ class VmTask(InstallTask):
             return path
         ctx.log("Téléchargement de l'image Fedora Cloud sur le nœud")
         ssh.run(
-            f"mkdir -p {IMAGE_CACHE} && wget -q -O {path}.part {IMAGE_URL} "
-            f"&& mv {path}.part {path}",
+            f"mkdir -p {IMAGE_CACHE} && "
+            f"wget -nv --tries=3 --timeout=60 -O {path}.part {IMAGE_URL} "
+            f"&& mv {path}.part {path} || {{ rm -f {path}.part; exit 1; }}",
             timeout=DOWNLOAD_TIMEOUT,
         )
         ctx.log("Image téléchargée", "ok")
