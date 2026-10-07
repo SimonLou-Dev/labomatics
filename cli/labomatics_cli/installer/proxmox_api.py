@@ -1,7 +1,8 @@
-"""Client Proxmox minimal pour le wizard d'installation (lecture seule)."""
+"""Client Proxmox pour le wizard et les tâches d'installation."""
 
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass
 from typing import Any, Callable, Optional
 from urllib.parse import urlsplit
@@ -88,8 +89,18 @@ class Storage:
         return f"{self.name} ({self.type})"
 
 
+@dataclass(frozen=True)
+class VmInfo:
+    """VM du cluster."""
+
+    vmid: int
+    node: str
+    name: str
+    status: str
+
+
 class ProxmoxApi:
-    """Lecture de l'API Proxmox par jeton, avec erreurs traduites en français."""
+    """Accès à l'API Proxmox par jeton, avec erreurs traduites en français."""
 
     def __init__(
         self,
@@ -99,6 +110,7 @@ class ProxmoxApi:
         token_secret: str,
         *,
         timeout: int = 10,
+        poll_interval: float = 1.0,
         client_factory: Callable[..., Any] = ProxmoxAPI,
     ) -> None:
         """Prépare le client (aucune requête n'est envoyée).
@@ -109,11 +121,13 @@ class ProxmoxApi:
             token_id: Nom du jeton (partie après le « ! »).
             token_secret: Secret du jeton.
             timeout: Délai maximal par requête en secondes.
+            poll_interval: Pause entre deux lectures de l'état d'une tâche (secondes).
             client_factory: Constructeur du client proxmoxer (remplaçable en test).
         """
         parts = urlsplit(url if "//" in url else f"https://{url}")
         self.host = parts.hostname or ""
         self.port = parts.port or DEFAULT_PORT
+        self.poll_interval = poll_interval
         self._client = client_factory(
             self.host,
             port=self.port,
@@ -124,12 +138,13 @@ class ProxmoxApi:
             timeout=timeout,
         )
 
-    def _get(self, path: str, **params: Any) -> Any:
-        """Envoie un GET et traduit les erreurs.
+    def _request(self, verb: str, path: str, /, **params: Any) -> Any:
+        """Envoie une requête et traduit les erreurs.
 
         Args:
+            verb: Méthode proxmoxer (« get », « post », « put » ou « delete »).
             path: Chemin de l'API sans « / » initial (ex. « nodes/pve1/network »).
-            **params: Paramètres de requête.
+            **params: Paramètres de requête ou de corps.
 
         Returns:
             La réponse décodée.
@@ -144,7 +159,7 @@ class ProxmoxApi:
         for part in path.split("/"):
             resource = getattr(resource, part)
         try:
-            return resource.get(**params)
+            return getattr(resource, verb)(**params)
         except ResourceException as exc:
             raise self._translate(exc) from exc
         except requests.exceptions.SSLError as exc:
@@ -159,6 +174,21 @@ class ProxmoxApi:
             raise ProxmoxConnectionError(
                 f"Impossible de joindre {self.host}:{self.port} : {exc}"
             ) from exc
+
+    def _get(self, path: str, /, **params: Any) -> Any:
+        """Envoie un GET et traduit les erreurs.
+
+        Args:
+            path: Chemin de l'API sans « / » initial.
+            **params: Paramètres de requête.
+
+        Returns:
+            La réponse décodée.
+
+        Raises:
+            ProxmoxError: Voir `_request`.
+        """
+        return self._request("get", path, **params)
 
     @staticmethod
     def _translate(exc: ResourceException) -> ProxmoxError:
@@ -299,3 +329,278 @@ class ProxmoxApi:
             if item.get("zone") == zone:
                 return item.get("type")
         return None
+
+    def user_exists(self, userid: str) -> bool:
+        """Indique si un utilisateur existe.
+
+        Args:
+            userid: Identifiant « utilisateur@realm ».
+
+        Returns:
+            True si l'utilisateur existe.
+        """
+        return any(u.get("userid") == userid for u in self._get("access/users"))
+
+    def create_user(self, userid: str, comment: str = "") -> None:
+        """Crée un utilisateur sans mot de passe.
+
+        Args:
+            userid: Identifiant « utilisateur@realm ».
+            comment: Commentaire facultatif.
+        """
+        params = {"comment": comment} if comment else {}
+        self._request("post", "access/users", userid=userid, **params)
+
+    def token_exists(self, userid: str, token: str) -> bool:
+        """Indique si un jeton d'API existe.
+
+        Args:
+            userid: Utilisateur propriétaire.
+            token: Nom du jeton.
+
+        Returns:
+            True si le jeton existe.
+        """
+        tokens = self._get(f"access/users/{userid}/token")
+        return any(t.get("tokenid") == token for t in tokens)
+
+    def delete_token(self, userid: str, token: str) -> None:
+        """Supprime un jeton d'API.
+
+        Args:
+            userid: Utilisateur propriétaire.
+            token: Nom du jeton.
+        """
+        self._request("delete", f"access/users/{userid}/token/{token}")
+
+    def create_token(self, userid: str, token: str) -> str:
+        """Crée un jeton sans séparation de privilèges.
+
+        Args:
+            userid: Utilisateur propriétaire.
+            token: Nom du jeton.
+
+        Returns:
+            Le secret du jeton (visible une seule fois).
+        """
+        result = self._request(
+            "post", f"access/users/{userid}/token/{token}", privsep=0
+        )
+        return str(result["value"])
+
+    def grant(self, path: str, userid: str, role: str) -> None:
+        """Attribue un rôle sur un chemin, avec propagation.
+
+        Args:
+            path: Chemin de l'ACL (ex. « / »).
+            userid: Utilisateur ou « utilisateur@realm!jeton ».
+            role: Nom du rôle.
+        """
+        self._request(
+            "put", "access/acl", path=path, users=userid, roles=role, propagate=1
+        )
+
+    def create_sdn_zone(self, zone: str, peers: list[str], mtu: int) -> None:
+        """Crée une zone SDN VXLAN.
+
+        Args:
+            zone: Nom de la zone.
+            peers: Adresses IP des nœuds.
+            mtu: MTU de la zone.
+        """
+        self._request(
+            "post",
+            "cluster/sdn/zones",
+            zone=zone,
+            type="vxlan",
+            peers=",".join(peers),
+            mtu=mtu,
+        )
+
+    def apply_sdn(self) -> str:
+        """Applique la configuration SDN.
+
+        Returns:
+            L'identifiant (UPID) de la tâche lancée.
+        """
+        return str(self._request("put", "cluster/sdn"))
+
+    def wait_task(self, upid: str, timeout: float = 300) -> None:
+        """Attend la fin d'une tâche Proxmox.
+
+        Args:
+            upid: Identifiant de la tâche (le nœud en est extrait).
+            timeout: Durée maximale d'attente en secondes.
+
+        Raises:
+            ProxmoxError: Si la tâche échoue ou dépasse le délai.
+        """
+        node = upid.split(":")[1]
+        deadline = time.monotonic() + timeout
+        while True:
+            status = self._get(f"nodes/{node}/tasks/{upid}/status")
+            if status.get("status") == "stopped":
+                if status.get("exitstatus") != "OK":
+                    raise ProxmoxError(
+                        f"Tâche Proxmox en échec : {status.get('exitstatus')}"
+                    )
+                return
+            if time.monotonic() >= deadline:
+                raise ProxmoxError("Délai dépassé pour une tâche Proxmox")
+            time.sleep(self.poll_interval)
+
+    def find_vm(self, name: str) -> Optional[VmInfo]:
+        """Cherche une VM par son nom.
+
+        Args:
+            name: Nom de la VM.
+
+        Returns:
+            La VM, ou None si elle n'existe pas.
+        """
+        for item in self._get("cluster/resources", type="vm"):
+            if item.get("name") == name:
+                return VmInfo(
+                    int(item["vmid"]),
+                    item.get("node", ""),
+                    name,
+                    item.get("status", "unknown"),
+                )
+        return None
+
+    def next_vmid(self) -> int:
+        """Premier VMID libre du cluster.
+
+        Returns:
+            Le VMID.
+        """
+        return int(self._get("cluster/nextid"))
+
+    def has_import_image(self, node: str, storage: str, filename: str) -> bool:
+        """Indique si une image est déjà présente dans le contenu « import » d'un stockage.
+
+        Args:
+            node: Nœud interrogé.
+            storage: Nom du stockage.
+            filename: Nom du fichier image.
+
+        Returns:
+            True si l'image est présente ; False aussi si le stockage ne gère pas « import ».
+        """
+        try:
+            items = self._get(
+                f"nodes/{node}/storage/{storage}/content", content="import"
+            )
+        except ProxmoxError:
+            return False
+        return any(str(i.get("volid", "")).endswith(f"/{filename}") for i in items)
+
+    def download_image(self, node: str, storage: str, url: str, filename: str) -> str:
+        """Fait télécharger une image par Proxmox dans le contenu « import » d'un stockage.
+
+        Args:
+            node: Nœud qui télécharge.
+            storage: Nom du stockage.
+            url: URL de l'image.
+            filename: Nom du fichier enregistré.
+
+        Returns:
+            L'identifiant (UPID) de la tâche.
+        """
+        return str(
+            self._request(
+                "post",
+                f"nodes/{node}/storage/{storage}/download-url",
+                content="import",
+                filename=filename,
+                url=url,
+            )
+        )
+
+    def create_vm(self, node: str, vmid: int, **options: Any) -> str:
+        """Crée une VM.
+
+        Args:
+            node: Nœud hôte.
+            vmid: Identifiant de la VM.
+            **options: Options de configuration Proxmox.
+
+        Returns:
+            L'identifiant (UPID) de la tâche.
+        """
+        return str(self._request("post", f"nodes/{node}/qemu", vmid=vmid, **options))
+
+    def resize_disk(self, node: str, vmid: int, disk: str, size: str) -> None:
+        """Redimensionne un disque de VM.
+
+        Args:
+            node: Nœud hôte.
+            vmid: Identifiant de la VM.
+            disk: Disque (ex. « scsi0 »).
+            size: Taille cible (ex. « 50G »).
+        """
+        self._request("put", f"nodes/{node}/qemu/{vmid}/resize", disk=disk, size=size)
+
+    def vm_status(self, node: str, vmid: int) -> str:
+        """État courant d'une VM.
+
+        Args:
+            node: Nœud hôte.
+            vmid: Identifiant de la VM.
+
+        Returns:
+            Par exemple « running » ou « stopped ».
+        """
+        return str(self._get(f"nodes/{node}/qemu/{vmid}/status/current")["status"])
+
+    def start_vm(self, node: str, vmid: int) -> str:
+        """Démarre une VM.
+
+        Args:
+            node: Nœud hôte.
+            vmid: Identifiant de la VM.
+
+        Returns:
+            L'identifiant (UPID) de la tâche.
+        """
+        return str(self._request("post", f"nodes/{node}/qemu/{vmid}/status/start"))
+
+    def node_dns(self, node: str) -> dict[str, str]:
+        """Configuration DNS d'un nœud.
+
+        Args:
+            node: Nom du nœud.
+
+        Returns:
+            Les clés `dns1`, `search`… présentes.
+        """
+        return dict(self._get(f"nodes/{node}/dns"))
+
+    def set_node_dns(self, node: str, dns1: str, search: str) -> None:
+        """Configure le DNS d'un nœud.
+
+        Args:
+            node: Nom du nœud.
+            dns1: Serveur DNS principal.
+            search: Domaine de recherche.
+        """
+        self._request("put", f"nodes/{node}/dns", dns1=dns1, search=search)
+
+    def node_fqdns(self, node: str) -> list[str]:
+        """Noms de domaine ACME configurés sur un nœud.
+
+        Args:
+            node: Nom du nœud.
+
+        Returns:
+            Les FQDN trouvés dans `acmedomain0` à `acmedomain5`.
+        """
+        config = self._get(f"nodes/{node}/config")
+        found: list[str] = []
+        for index in range(6):
+            raw = str(config.get(f"acmedomain{index}", ""))
+            for part in raw.split(","):
+                value = part.removeprefix("domain=").strip()
+                if value and "=" not in value and value not in found:
+                    found.append(value)
+        return found
