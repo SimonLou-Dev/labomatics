@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ipaddress
 from typing import Any
 
 import yaml
@@ -38,8 +39,9 @@ class ClusterConfigBuilder:
             "network": wan.network,
             "gateway": wan.gateway,
         }
-        if wan.exclusions:
-            wan_entry["exclusions"] = wan.exclusions
+        exclusions = [*wan.exclusions, *self.reserved_in_wan()]
+        if exclusions:
+            wan_entry["exclusions"] = exclusions
         vnet_entry: dict[str, Any] = {
             "name": vxlan.vnet_name,
             "network": vxlan.network,
@@ -65,6 +67,33 @@ class ClusterConfigBuilder:
             "wan": [wan_entry],
             "vnets": [vnet_entry],
         }
+
+    def reserved_in_wan(self) -> list[str]:
+        """Adresses déjà prises dans le réseau WAN quand il est partagé avec l'admin.
+
+        La VM, la passerelle admin et les nœuds Proxmox ne doivent jamais être
+        attribués à un routeur étudiant.
+
+        Returns:
+            Les IP situées dans le réseau WAN et absentes des exclusions saisies.
+        """
+        wan, vm = self.config.wan, self.config.vm
+        assert wan is not None
+        network = ipaddress.ip_network(wan.network, strict=False)
+        candidates = [n.host for n in self.config.nodes.values() if n.host]
+        if vm is not None:
+            candidates = [vm.vm_ip, vm.admin_gateway, *candidates]
+        reserved: list[str] = []
+        for item in candidates:
+            try:
+                address = ipaddress.ip_address(item)
+            except ValueError:
+                continue
+            text = str(address)
+            if address in network and text != wan.gateway:
+                if text not in wan.exclusions and text not in reserved:
+                    reserved.append(text)
+        return reserved
 
     def render(self, token_id: str, token_secret: str) -> str:
         """Sérialise la configuration en YAML.

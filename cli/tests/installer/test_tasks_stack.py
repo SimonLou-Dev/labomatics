@@ -258,6 +258,23 @@ def test_clusterconfig_matches_backend_dto(tmp_path):
     assert dto.vnets[0].vni_max == 4000 and dto.clusters[0].vnet_config.name == "lab1"
 
 
+def test_clusterconfig_reserves_admin_ips_in_shared_wan():
+    """Réseau WAN = réseau admin : VM, passerelle admin et nœuds sont exclus."""
+    wan = {
+        **CONFIG["wan"],
+        "network": "192.168.50.0/24",
+        "gateway": "192.168.50.254",
+        "exclusions": [],
+    }
+    nodes = {
+        "pve1": {"password": "p", "host": "192.168.50.11"},
+        "pve2": {"password": "p"},
+    }
+    config = InstallConfig.model_validate({**CONFIG, "wan": wan, "nodes": nodes})
+    data = ClusterConfigBuilder(config).data("t", "s")
+    assert data["wan"][0]["exclusions"] == ["192.168.50.10", "192.168.50.11"]
+
+
 def test_agent_is_skipped(tmp_path):
     """L'agent n'est jamais nécessaire."""
     ctx = make_ctx(tmp_path)
