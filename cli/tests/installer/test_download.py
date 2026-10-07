@@ -40,6 +40,7 @@ def test_logs_percentage_until_done():
     logs = []
     download(ssh).run(logs.append)
     assert logs == [
+        "Téléchargement lancé (480 Mo), progression toutes les 30 s",
         "Téléchargement : 20 % (100/480 Mo)",
         "Téléchargement : 45 % (216/480 Mo)",
     ]
@@ -52,7 +53,8 @@ def test_unknown_size_logs_megabytes():
     ssh = ScriptedSsh({"cat": ["", "0\n"], "stat": ["5000000\n"]})
     logs = []
     download(ssh).run(logs.append)
-    assert logs == ["Téléchargement : 5 Mo reçus"]
+    assert logs[1:] == ["Téléchargement : 5 Mo reçus"]
+    assert "taille inconnue" in logs[0]
 
 
 def test_wget_failure_reports_log_tail():

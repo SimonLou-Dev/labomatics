@@ -53,6 +53,8 @@ class RemoteDownload:
         """
         total = self._total_size()
         self._start()
+        size = f"{total // 1_000_000} Mo" if total else "taille inconnue"
+        log(f"Téléchargement lancé ({size}), progression toutes les {self.poll:.0f} s")
         waited = 0.0
         while True:
             self.sleep(self.poll)
@@ -73,7 +75,7 @@ class RemoteDownload:
             La taille en octets, ou None si le serveur ne l'indique pas.
         """
         result = self.ssh.run(
-            f"curl -sIL {self.url} | tr -d '\\r' | "
+            f"curl -sIL --max-time 20 {self.url} | tr -d '\\r' | "
             "awk 'tolower($1)==\"content-length:\" {s=$2} END {print s}'",
             check=False,
         )
@@ -86,7 +88,7 @@ class RemoteDownload:
         self.ssh.run(
             f"mkdir -p {folder} && rm -f {self.part} {self.rc} {self.log_file} && "
             f"nohup sh -c 'wget -nv --tries=3 --timeout=60 -O {self.part} {self.url} "
-            f"> {self.log_file} 2>&1; echo $? > {self.rc}' > /dev/null 2>&1 &"
+            f"> {self.log_file} 2>&1; echo $? > {self.rc}' < /dev/null > /dev/null 2>&1 &"
         )
 
     def _exit_code(self) -> Optional[int]:
