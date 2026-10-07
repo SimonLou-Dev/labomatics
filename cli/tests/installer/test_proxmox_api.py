@@ -70,6 +70,7 @@ def test_bridges_and_common_bridges_labels():
     assert [b.name for b in api.bridges("pve1")] == ["vmbr0", "vmbr1"]
     common = api.common_bridges()
     assert [b.label for b in common] == ["vmbr0 (10.100.25.1/24)"]
+    assert common[0].gateway == "10.100.25.254"
     api._client._data["nodes/pve1/network"][0].pop("cidr")
     assert api.common_bridges()[0].label == "vmbr0 (sans IP)"
 

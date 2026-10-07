@@ -33,10 +33,8 @@ class WanPage(Page):
                 "Réseau WAN",
                 key="wan.network",
                 required=True,
-                helper="Format x.x.x.x/xx",
-                validator=v.AllOf(
-                    v.Cidr(), v.NoOverlap("vxlan.network", "vm.admin_network")
-                ),
+                helper="Format x.x.x.x/xx (peut être le réseau admin)",
+                validator=v.AllOf(v.Cidr(), v.NoOverlap("vxlan.network")),
             ),
             TextField(
                 "Passerelle WAN",

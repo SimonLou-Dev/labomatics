@@ -28,7 +28,12 @@ CLUSTER_DATA: dict[str, Any] = {
         }
     },
     "nodes/pve1/network": [
-        {"iface": "vmbr0", "type": "bridge", "cidr": "10.100.25.1/24"},
+        {
+            "iface": "vmbr0",
+            "type": "bridge",
+            "cidr": "10.100.25.1/24",
+            "gateway": "10.100.25.254",
+        },
         {"iface": "vmbr1", "type": "bridge"},
         {"iface": "eno1", "type": "eth"},
     ],

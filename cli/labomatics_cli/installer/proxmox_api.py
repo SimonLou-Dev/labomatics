@@ -57,10 +57,11 @@ class ProxmoxNode:
 
 @dataclass(frozen=True)
 class Bridge:
-    """Bridge réseau d'un nœud, avec son adresse CIDR éventuelle."""
+    """Bridge réseau d'un nœud, avec son adresse CIDR et sa passerelle éventuelles."""
 
     name: str
     cidr: Optional[str] = None
+    gateway: Optional[str] = None
 
     @property
     def label(self) -> str:
@@ -272,19 +273,25 @@ class ProxmoxApi:
             node: Nom du nœud.
 
         Returns:
-            Les bridges Linux et OVS avec leur CIDR éventuel.
+            Les bridges Linux et OVS avec leur CIDR et leur passerelle éventuels.
         """
         found = []
         for item in self._get(f"nodes/{node}/network"):
             if item.get("type") in ("bridge", "OVSBridge"):
-                found.append(Bridge(item["iface"], item.get("cidr") or None))
+                found.append(
+                    Bridge(
+                        item["iface"],
+                        item.get("cidr") or None,
+                        item.get("gateway") or None,
+                    )
+                )
         return sorted(found, key=lambda b: b.name)
 
     def common_bridges(self) -> list[Bridge]:
         """Bridges présents sur tous les nœuds.
 
         Returns:
-            Les bridges communs, avec le CIDR du premier nœud qui en a un.
+            Les bridges communs, avec le CIDR et la passerelle du premier nœud qui en a.
         """
         per_node = [self.bridges(n.name) for n in self.nodes()]
         if not per_node:
@@ -292,8 +299,10 @@ class ProxmoxApi:
         common = set.intersection(*({b.name for b in bridges} for bridges in per_node))
         result = []
         for name in sorted(common):
-            cidrs = [b.cidr for bridges in per_node for b in bridges if b.name == name]
-            result.append(Bridge(name, next((c for c in cidrs if c), None)))
+            same = [b for bridges in per_node for b in bridges if b.name == name]
+            cidr = next((b.cidr for b in same if b.cidr), None)
+            gateway = next((b.gateway for b in same if b.gateway), None)
+            result.append(Bridge(name, cidr, gateway))
         return result
 
     def shared_storages(self) -> list[Storage]:

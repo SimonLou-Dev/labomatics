@@ -7,8 +7,9 @@ from typing import Callable, Optional
 
 from labomatics_cli.installer.checks import Checks
 from labomatics_cli.installer.pages.base import DATA_BRIDGES, Page, offload
-from labomatics_cli.installer.pages.fields import SuggestField
+from labomatics_cli.installer.pages.fields import PrefillField
 from labomatics_cli.installer.pages.rules import DifferentFrom
+from labomatics_cli.installer.proxmox_api import Bridge
 from labomatics_cli.tui import ListField, SelectField, Step, TextField, WizardContext
 from labomatics_cli.tui import validators as v
 
@@ -27,6 +28,34 @@ def bridge_options(ctx: WizardContext) -> list[tuple[str, str]]:
     return [(b.name, b.label) for b in ctx.data.get(DATA_BRIDGES, [])]
 
 
+def chosen_bridge(ctx: WizardContext, iface_key: str) -> Optional[Bridge]:
+    """Bridge sélectionné dans le champ d'interface.
+
+    Args:
+        ctx: Contexte de l'assistant (`ctx.data["bridges"]`).
+        iface_key: Clé du champ d'interface.
+
+    Returns:
+        Le bridge choisi, ou None.
+    """
+    chosen = ctx.values.get(iface_key)
+    return next((b for b in ctx.data.get(DATA_BRIDGES, []) if b.name == chosen), None)
+
+
+def iface_gateway(ctx: WizardContext, iface_key: str) -> Optional[str]:
+    """Passerelle configurée sur l'interface choisie, si elle en a une.
+
+    Args:
+        ctx: Contexte de l'assistant.
+        iface_key: Clé du champ d'interface.
+
+    Returns:
+        L'adresse de la passerelle, ou None.
+    """
+    bridge = chosen_bridge(ctx, iface_key)
+    return bridge.gateway if bridge else None
+
+
 def iface_network(ctx: WizardContext, iface_key: str) -> Optional[str]:
     """Réseau CIDR de l'interface choisie, si elle porte une IP.
 
@@ -37,11 +66,10 @@ def iface_network(ctx: WizardContext, iface_key: str) -> Optional[str]:
     Returns:
         Le réseau (ex. « 10.100.25.0/24 »), ou None.
     """
-    chosen = ctx.values.get(iface_key)
-    for bridge in ctx.data.get(DATA_BRIDGES, []):
-        if bridge.name == chosen and bridge.cidr:
-            return str(ipaddress.ip_network(bridge.cidr, strict=False))
-    return None
+    bridge = chosen_bridge(ctx, iface_key)
+    if bridge is None or not bridge.cidr:
+        return None
+    return str(ipaddress.ip_network(bridge.cidr, strict=False))
 
 
 class VmPage(Page):
@@ -85,7 +113,7 @@ class VmPage(Page):
                 required=True,
                 helper="Bridge présent sur tous les nœuds",
             ),
-            SuggestField(
+            PrefillField(
                 "Réseau admin",
                 key="vm.admin_network",
                 suggest=lambda c: iface_network(c, IFACE_KEY),
@@ -93,9 +121,10 @@ class VmPage(Page):
                 helper="Ex. 10.100.25.0/24",
                 validator=v.Cidr(),
             ),
-            TextField(
+            PrefillField(
                 "Passerelle admin",
                 key="vm.admin_gateway",
+                suggest=lambda c: iface_gateway(c, IFACE_KEY),
                 required=True,
                 validator=v.IpIn("vm.admin_network"),
             ),

@@ -56,7 +56,7 @@ def submit(wizard):
 
 
 NETWORK_DATA = {
-    "bridges": [Bridge("vmbr0", "10.100.25.1/24"), Bridge("vmbr1")],
+    "bridges": [Bridge("vmbr0", "10.100.25.1/24", "10.100.25.254"), Bridge("vmbr1")],
     "storages": [],
 }
 
@@ -156,9 +156,22 @@ def test_vm_page_options_and_network_suggestion():
         "vmbr1 (sans IP)",
     ]
     assert field(w, "vm.admin_network").value == "10.100.25.0/24"
+    assert field(w, "vm.admin_gateway").value == "10.100.25.254"
+    assert field(w, "vm.admin_gateway").input.text == "10.100.25.254"
     iface.set_value("vmbr1")
     w.collect()
     assert field(w, "vm.admin_network").value == ""
+    assert field(w, "vm.admin_gateway").value == ""
+
+
+def test_vm_page_prefill_keeps_user_input():
+    """Une valeur saisie par l'utilisateur n'est jamais écrasée par le préremplissage."""
+    w = make(VmPage(fake_checks()), NETWORK_DATA, {"vm.domain": "a.fr"})
+    gateway = field(w, "vm.admin_gateway")
+    gateway.set_value("10.100.25.1")
+    field(w, "vm.admin_iface").set_value("vmbr1")
+    w.collect()
+    assert gateway.value == "10.100.25.1"
 
 
 def test_vm_page_validation_and_ping():
@@ -194,6 +207,19 @@ def wan_values(**over):
         "wan.gateway": "10.210.0.1",
     }
     return {**base, **over}
+
+
+def test_wan_page_accepts_admin_network():
+    """Le réseau WAN peut être le même que le réseau d'administration."""
+    values = {
+        "vm.admin_network": "192.168.10.0/24",
+        "wan.network": "192.168.10.0/24",
+        "wan.gateway": "192.168.10.254",
+    }
+    others = (VmPage(fake_checks()), VxlanPage())
+    w = make(WanPage(), NETWORK_DATA, wan_values(), others)
+    fill(w, values)
+    assert submit(w) == (True, None)
 
 
 def test_wan_page_checks():

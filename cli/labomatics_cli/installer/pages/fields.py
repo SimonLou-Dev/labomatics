@@ -50,8 +50,8 @@ class HintField(TextField):
         return [("class:helper", self._hint_text() or "")]
 
 
-class SuggestField(HintField):
-    """Champ texte qui prend une valeur suggérée tant qu'il reste vide."""
+class PrefillField(TextField):
+    """Champ texte prérempli à partir des autres champs, tant que l'utilisateur ne l'a pas modifié."""
 
     def __init__(
         self,
@@ -64,31 +64,45 @@ class SuggestField(HintField):
 
         Args:
             label: Libellé du champ.
-            suggest: Fonction (contexte) renvoyant la valeur suggérée, ou None.
+            suggest: Fonction (contexte) renvoyant la valeur à préremplir, ou None.
             **kw: Options communes de `TextField`.
         """
+        super().__init__(label, **kw)
         self.suggest = suggest
-        super().__init__(label, hint=self._suggestion_hint, **kw)
+        self._filled = ""
 
-    def _suggestion_hint(self, ctx: WizardContext) -> Optional[str]:
-        """Aide indiquant la valeur utilisée si le champ reste vide.
+    def sync(self) -> None:
+        """Recopie la suggestion si le champ est vide ou contient encore l'ancien préremplissage."""
+        if self.locked:
+            return
+        text = self.input.text.strip()
+        if text and text != self._filled:
+            return
+        suggestion = self.suggest(self.ctx) or ""
+        if suggestion != text:
+            self.set_value(suggestion)
+        self._filled = suggestion
 
-        Args:
-            ctx: Contexte de l'assistant.
+    def on_enter(self) -> None:
+        """Préremplit le champ à l'affichage de l'étape."""
+        super().on_enter()
+        self.sync()
+
+    def _hint_visible(self) -> bool:
+        """Resynchronise le préremplissage à chaque rendu (changement de bridge).
 
         Returns:
-            Le texte d'aide, ou None sans suggestion ou si le champ est rempli.
+            True s'il y a une erreur ou une aide.
         """
-        suggestion = self.suggest(ctx)
-        if suggestion and not self.input.text.strip():
-            return f"Laisser vide pour utiliser {suggestion}"
-        return None
+        self.sync()
+        return super()._hint_visible()
 
     @property
     def value(self) -> str:
-        """Texte saisi, ou la suggestion si le champ est vide.
+        """Texte du champ, après synchronisation du préremplissage.
 
         Returns:
             La valeur effective.
         """
-        return super().value or (self.suggest(self.ctx) or "")
+        self.sync()
+        return super().value
