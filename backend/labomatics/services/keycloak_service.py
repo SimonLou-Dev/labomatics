@@ -16,12 +16,16 @@ class KeycloakService:
     """Service pour gérer les users Keycloak."""
 
     def __init__(self) -> None:
+        """Se connecte à l'API d'administration avec le compte de service du client.
+
+        Grant `client_credentials` : le client du backend porte les rôles
+        `realm-management` nécessaires, aucun mot de passe utilisateur n'est requis.
+        """
         self.admin_client = KeycloakAdmin(
             server_url=settings.keycloak_url,
-            username=settings.keycloak_admin_username,
-            password=settings.keycloak_admin_password,
             realm_name=settings.keycloak_realm,
-            client_id="admin-cli",
+            client_id=settings.keycloak_client_id,
+            client_secret_key=settings.keycloak_client_secret,
             verify=False,
         )
 
