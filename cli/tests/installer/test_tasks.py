@@ -80,7 +80,10 @@ def test_vm_creation_path(tmp_path):
     assert any(
         "getent hosts download.fedoraproject.org" in c for c in node_ssh.commands
     )
-    assert any("wget -nv" in c and ".part" in c for c in node_ssh.commands)
+    assert any(
+        "flock -n" in c and "wget -c -nv" in c and ".part" in c
+        for c in node_ssh.commands
+    )
     assert any(
         "qm importdisk 105" in c and "ceph --format qcow2" in c
         for c in node_ssh.commands

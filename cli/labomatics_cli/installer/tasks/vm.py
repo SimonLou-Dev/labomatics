@@ -113,10 +113,15 @@ class VmTask(InstallTask):
             raise RuntimeError(
                 f"Le nœud ne résout pas {server} : vérifie son DNS (/etc/resolv.conf)"
             )
+        # -c reprend un .part interrompu ; flock refuse un second téléchargement
+        # simultané du même fichier (code 75) au lieu de l'écraser.
         ssh.run(
-            f"mkdir -p {IMAGE_CACHE} && "
-            f"wget -nv --tries=3 --timeout=60 -O {path}.part {IMAGE_URL} "
-            f"&& mv {path}.part {path} || {{ rm -f {path}.part; exit 1; }}",
+            f"mkdir -p {IMAGE_CACHE}; "
+            f"flock -n -E 75 {path}.lock "
+            f"wget -c -nv --tries=3 --timeout=60 -O {path}.part {IMAGE_URL}; rc=$?; "
+            f"if [ $rc -eq 75 ]; then "
+            f"echo 'Un autre téléchargement de l image est déjà en cours' >&2; fi; "
+            f"[ $rc -eq 0 ] && mv {path}.part {path}; exit $rc",
             timeout=DOWNLOAD_TIMEOUT,
         )
         ctx.log("Image téléchargée", "ok")
