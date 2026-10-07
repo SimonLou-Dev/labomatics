@@ -7,7 +7,11 @@ from labomatics_cli.installer.tasks.base import InstallTask
 
 
 class NodeDnsTask(InstallTask):
-    """Pointe le DNS de chaque nœud vers la VM, via l'API Proxmox."""
+    """Pointe le DNS de chaque nœud vers la VM, avec les DNS amont en secours, via l'API Proxmox.
+
+    Les DNS amont restent configurés pour que les nœuds résolvent encore les
+    noms quand la VM est arrêtée ou pas encore créée (réinstallation).
+    """
 
     name = "node_dns"
     label = "DNS des nœuds Proxmox"
@@ -20,10 +24,13 @@ class NodeDnsTask(InstallTask):
         """
         assert ctx.config.vm is not None
         vm = ctx.config.vm
+        servers = [vm.vm_ip, *[ip for ip in vm.dns_upstream if ip != vm.vm_ip]][:3]
+        wanted = {f"dns{i}": ip for i, ip in enumerate(servers, start=1)}
         for node in ctx.proxmox.nodes():
             current = ctx.proxmox.node_dns(node.name)
-            if current.get("dns1") == vm.vm_ip and current.get("search") == vm.domain:
+            same = all(current.get(k) == v for k, v in wanted.items())
+            if same and current.get("search") == vm.domain:
                 ctx.log(f"DNS de {node.name} déjà à jour", "ok")
                 continue
-            ctx.proxmox.set_node_dns(node.name, vm.vm_ip, vm.domain)
-            ctx.log(f"DNS de {node.name} -> {vm.vm_ip}", "ok")
+            ctx.proxmox.set_node_dns(node.name, servers, vm.domain)
+            ctx.log(f"DNS de {node.name} -> {', '.join(servers)}", "ok")

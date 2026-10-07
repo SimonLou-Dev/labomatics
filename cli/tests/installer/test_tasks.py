@@ -172,7 +172,8 @@ def test_node_dns_sets_then_is_idempotent(tmp_path):
     ctx = make_ctx(tmp_path, api)
     NodeDnsTask().run(ctx)
     assert api.names() == ["set_node_dns", "set_node_dns"]
-    assert ("set_node_dns", "pve1", "192.168.50.10", "lab.fr") in api.calls
+    servers = ("192.168.50.10", "1.1.1.1", "9.9.9.9")
+    assert ("set_node_dns", "pve1", servers, "lab.fr") in api.calls
     api.calls.clear()
     NodeDnsTask().run(ctx)
     assert api.calls == []

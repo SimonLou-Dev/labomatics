@@ -328,16 +328,17 @@ class FakeProxmox:
         """
         return self.dns.get(node, {})
 
-    def set_node_dns(self, node: str, dns1: str, search: str) -> None:
+    def set_node_dns(self, node: str, servers: list[str], search: str) -> None:
         """Configure le DNS d'un nœud.
 
         Args:
             node: Nœud.
-            dns1: Serveur.
+            servers: Serveurs par priorité.
             search: Domaine.
         """
-        self._rec("set_node_dns", node, dns1, search)
-        self.dns[node] = {"dns1": dns1, "search": search}
+        self._rec("set_node_dns", node, tuple(servers), search)
+        self.dns[node] = {f"dns{i}": ip for i, ip in enumerate(servers, start=1)}
+        self.dns[node]["search"] = search
 
     def node_fqdns(self, node: str) -> list[str]:
         """Noms ACME d'un nœud.

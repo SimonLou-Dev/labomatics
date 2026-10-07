@@ -243,9 +243,9 @@ def test_vm_and_image_calls():
     assert api.node_fqdns("pve1") == ["a.lab.fr", "b.lab.fr"]
     assert api.create_vm("pve1", 101, name="x") == "UPID:pve1:c"
     assert calls[-1] == ("post", "nodes/pve1/qemu", {"vmid": 101, "name": "x"})
-    api.set_node_dns("pve1", "10.0.0.5", "lab.fr")
+    api.set_node_dns("pve1", ["10.0.0.5", "1.1.1.1"], "lab.fr")
     assert calls[-1] == (
         "put",
         "nodes/pve1/dns",
-        {"dns1": "10.0.0.5", "search": "lab.fr"},
+        {"search": "lab.fr", "dns1": "10.0.0.5", "dns2": "1.1.1.1"},
     )

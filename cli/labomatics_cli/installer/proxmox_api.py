@@ -590,15 +590,16 @@ class ProxmoxApi:
         """
         return dict(self._get(f"nodes/{node}/dns"))
 
-    def set_node_dns(self, node: str, dns1: str, search: str) -> None:
+    def set_node_dns(self, node: str, servers: list[str], search: str) -> None:
         """Configure le DNS d'un nœud.
 
         Args:
             node: Nom du nœud.
-            dns1: Serveur DNS principal.
+            servers: Serveurs DNS par ordre de priorité (3 au maximum).
             search: Domaine de recherche.
         """
-        self._request("put", f"nodes/{node}/dns", dns1=dns1, search=search)
+        params = {f"dns{i}": ip for i, ip in enumerate(servers[:3], start=1)}
+        self._request("put", f"nodes/{node}/dns", search=search, **params)
 
     def node_fqdns(self, node: str) -> list[str]:
         """Noms de domaine ACME configurés sur un nœud.
