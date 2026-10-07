@@ -1,27 +1,32 @@
-"""Tâche 11 : jeton du backend, clusterconfig.yaml, backend.env et redémarrage."""
+"""Tâche 11 : jeton du backend, clusterconfig.yaml, backend.env et démarrage de l'app."""
 
 from __future__ import annotations
 
 from labomatics_cli.installer.clusterconfig import ClusterConfigBuilder
 from labomatics_cli.installer.context import InstallContext
-from labomatics_cli.installer.stack import STACK_ROOT, StackFiles
+from labomatics_cli.installer.stack import APP_SERVICES, STACK_ROOT, StackFiles
 from labomatics_cli.installer.tasks.base import InstallTask
 from labomatics_cli.installer.tasks.token import USER_ID
 
 BACKEND_TOKEN = "backend"
-RESTART = f"cd {STACK_ROOT} && sudo docker compose up -d --force-recreate api worker"
+START_APP = (
+    f"cd {STACK_ROOT} && sudo docker compose up -d --force-recreate "
+    + " ".join(APP_SERVICES)
+)
 
 
 class BackendTask(InstallTask):
-    """Prépare la configuration du backend puis recrée l'API et les workers."""
+    """Prépare la configuration du backend puis démarre l'API, le worker et le frontend."""
 
     name = "backend"
     label = "YAML d'init du backend"
 
     def run(self, ctx: InstallContext) -> None:
-        """Crée le jeton, dépose le YAML et le `backend.env`, recrée `api` et `worker`.
+        """Crée le jeton, dépose le YAML et le `backend.env`, puis lance l'application.
 
-        Les conteneurs sont recréés (et non redémarrés) : `restart` ne relit pas `env_file`.
+        Premier démarrage de `api`, `worker` et `frontend` : ils ont besoin du realm,
+        du secret du client Keycloak et du clusterconfig.yaml. Ils sont recréés (et non
+        redémarrés) aux passages suivants : `restart` ne relit pas `env_file`.
 
         Args:
             ctx: Contexte d'installation.
@@ -41,8 +46,11 @@ class BackendTask(InstallTask):
         ssh.put_text(f"{STACK_ROOT}/{env.target}", files.render(env), env.mode)
         ctx.log("backend.env réécrit avec le secret Keycloak", "ok")
 
-        ssh.run(RESTART, timeout=600)
-        ctx.log("API et workers recréés", "ok")
+        ctx.log(
+            "Démarrage de l'API, du worker et du frontend (téléchargement des images)"
+        )
+        ssh.run(START_APP, timeout=1800)
+        ctx.log("API, worker et frontend démarrés", "ok")
 
     def _token(self, ctx: InstallContext) -> str:
         """Garantit le jeton `labomatics@pve!backend` et renvoie son secret.

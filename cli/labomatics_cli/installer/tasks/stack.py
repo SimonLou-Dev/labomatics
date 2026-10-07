@@ -1,11 +1,11 @@
-"""Tâche 7 : CA, certificats, fichiers de la stack et `docker compose up`."""
+"""Tâche 7 : CA, certificats, fichiers de la stack et démarrage de l'infrastructure."""
 
 from __future__ import annotations
 
 import posixpath
 
 from labomatics_cli.installer.context import InstallContext
-from labomatics_cli.installer.stack import STACK_ROOT, StackFiles
+from labomatics_cli.installer.stack import APP_SERVICES, STACK_ROOT, StackFiles
 from labomatics_cli.installer.tasks.base import InstallTask
 
 PREPARE_SCRIPT = f"""set -e
@@ -13,20 +13,28 @@ sudo mkdir -p {STACK_ROOT}/certs
 sudo chown -R labomatics:labomatics {STACK_ROOT}
 sudo chmod 755 {STACK_ROOT}
 """
-UP_SCRIPT = f"cd {STACK_ROOT} && sudo docker compose up -d --remove-orphans"
+APP_PATTERN = "|".join(APP_SERVICES)
+UP_SCRIPT = (
+    f"cd {STACK_ROOT} && sudo docker compose up -d --remove-orphans "
+    f"$(sudo docker compose config --services | grep -vxE '{APP_PATTERN}')"
+)
 CERTS_TMP = "/tmp/labomatics-generate-certs.sh"
 WAIT_TMP = "/tmp/labomatics-wait-ready.sh"
 PLACEHOLDER_CLUSTERCONFIG = "clusters: []\n"
 
 
 class StackTask(InstallTask):
-    """Génère la CA et les certificats, dépose les fichiers de la stack et la démarre."""
+    """Génère la CA et les certificats, dépose les fichiers et démarre l'infrastructure.
+
+    L'API, le worker et le frontend attendent la tâche backend : il leur faut le
+    realm Keycloak, le secret du client et le clusterconfig.yaml.
+    """
 
     name = "stack"
     label = "CA, templates et docker up"
 
     def run(self, ctx: InstallContext) -> None:
-        """Prépare le dossier, génère les certificats, dépose les fichiers et démarre.
+        """Prépare le dossier, génère les certificats, dépose les fichiers et démarre l'infra.
 
         Args:
             ctx: Contexte d'installation.
@@ -45,9 +53,9 @@ class StackTask(InstallTask):
             ctx.log(line, "ok")
 
         self._write_files(ctx, files)
-        ctx.log("Démarrage de la stack (téléchargement des images)")
+        ctx.log("Démarrage de l'infrastructure (téléchargement des images)")
         ssh.run(UP_SCRIPT, timeout=1800)
-        ctx.log("Stack démarrée", "ok")
+        ctx.log("Postgres, Redis, Keycloak et Traefik démarrés", "ok")
 
         ssh.put_text(
             WAIT_TMP, ctx.templates.render("stack/init/wait-ready.sh.j2", domain=domain)

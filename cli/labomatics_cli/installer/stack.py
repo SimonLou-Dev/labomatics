@@ -11,6 +11,7 @@ from labomatics_cli.installer.templates import TemplateRenderer
 from labomatics_cli.models.install_config import InstallConfig, MailSection
 
 STACK_ROOT = "/etc/labomatics"
+APP_SERVICES = ("api", "worker", "frontend")
 
 
 @dataclass(frozen=True)

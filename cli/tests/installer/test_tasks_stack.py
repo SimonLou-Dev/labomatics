@@ -40,7 +40,8 @@ def test_stack_writes_files_generates_certs_and_starts(tmp_path):
     assert "/etc/labomatics/radius/clients.conf" in ssh.files
     assert "/etc/labomatics/ldap/bootstrap.ldif" in ssh.files
     assert "CN = *.lab.fr" in ssh.files["/tmp/labomatics-generate-certs.sh"]
-    assert any("docker compose up -d" in c for c in ssh.commands)
+    up = next(c for c in ssh.commands if "docker compose up -d" in c)
+    assert "grep -vxE 'api|worker|frontend'" in up
     assert "keycloak.lab.fr" in ssh.files["/tmp/labomatics-wait-ready.sh"]
     assert any("clusters: []" in c for c in ssh.commands)
 
@@ -220,7 +221,7 @@ def test_proxmox_oidc_creates_client_realm_and_admin(tmp_path):
 
 
 def test_backend_writes_config_env_and_recreates(tmp_path):
-    """Jeton backend, YAML 600, backend.env avec secret Keycloak, recréation api/worker."""
+    """Jeton backend, YAML 600, backend.env avec secret Keycloak, démarrage de l'app."""
     api, sessions = FakeProxmox(), []
     ctx = make_ctx(tmp_path, api, sessions)
     ctx.store.save_secret("keycloak_client_secret", "kc-secret")
@@ -234,7 +235,7 @@ def test_backend_writes_config_env_and_recreates(tmp_path):
     assert (
         "KEYCLOAK_CLIENT_SECRET=kc-secret" in ssh.files["/etc/labomatics/backend.env"]
     )
-    assert "--force-recreate api worker" in ssh.commands[-1]
+    assert "--force-recreate api worker frontend" in ssh.commands[-1]
     api.calls.clear()
     BackendTask().run(ctx)
     assert "create_token" not in api.names() and "delete_token" not in api.names()
