@@ -34,6 +34,9 @@ services:
       KC_HOSTNAME: keycloak.{{ domain }}
       KC_HOSTNAME_STRICT: false
       KC_HTTP_ENABLED: true
+      # Tas Java plafonné à 3 Go, sous la limite du conteneur
+      JAVA_OPTS_APPEND: "-Xms512m -Xmx3g"
+    mem_limit: 4g
     depends_on:
       postgres:
         condition: service_healthy

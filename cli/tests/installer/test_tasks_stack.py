@@ -94,6 +94,9 @@ def test_templates_content(tmp_path):
     ):
         assert expected in env
     assert "WAN_INTERFACE: vmbr1" in by_target["docker-compose.yml"]
+    keycloak = yaml.safe_load(by_target["docker-compose.yml"])["services"]["keycloak"]
+    assert keycloak["mem_limit"] == "4g"
+    assert "-Xmx3g" in keycloak["environment"]["JAVA_OPTS_APPEND"]
     assert "dc=lab,dc=fr" in by_target["ldap/bootstrap.ldif"]
 
 
