@@ -59,7 +59,7 @@ class InstallRunner:
                         continue
                     await asyncio.to_thread(task.run, ctx)
                 except Exception as exc:
-                    message = f"{task.label} : {exc}"
+                    message = f"{task.label} : {str(exc) or type(exc).__name__}"
                     store.mark_failed(message)
                     raise InstallError(message) from exc
                 if task.recorded:

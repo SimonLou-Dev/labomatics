@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import socket
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -220,11 +221,18 @@ class SshSession:
             Sortie standard, sortie d'erreur et code de retour.
 
         Raises:
-            SshError: Si `check` est vrai et que la commande échoue.
+            SshError: Si `check` est vrai et que la commande échoue, ou si
+                elle dépasse le délai.
         """
         _, stdout, stderr = self._connected().exec_command(command, timeout=timeout)
-        out = stdout.read().decode(errors="replace")
-        err = stderr.read().decode(errors="replace")
+        try:
+            out = stdout.read().decode(errors="replace")
+            err = stderr.read().decode(errors="replace")
+        except socket.timeout as exc:
+            short = command if len(command) <= 80 else command[:77] + "..."
+            raise SshError(
+                f"Délai de {timeout} s dépassé sur {self.host} : {short}"
+            ) from exc
         result = CommandResult(out, err, stdout.channel.recv_exit_status())
         if check and not result.ok:
             lines = (result.stderr or result.stdout).strip().splitlines()

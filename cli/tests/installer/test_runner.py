@@ -133,3 +133,15 @@ def test_unrecorded_task_runs_every_time(tmp_path):
     ctx2, runner2 = prepare(tmp_path, [task])
     asyncio.run(runner2.run(ctx2))
     assert log == ["h", "h"] and ctx.store.completed_tasks == []
+
+
+def test_error_without_message_shows_its_type(tmp_path):
+    """Une exception sans message affiche au moins son type."""
+
+    class Silent(FakeTask):
+        def run(self, ctx):
+            raise TimeoutError()
+
+    ctx, runner = prepare(tmp_path, [Silent("a", [])])
+    with pytest.raises(InstallError, match="a : TimeoutError"):
+        asyncio.run(runner.run(ctx))

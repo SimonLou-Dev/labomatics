@@ -1,4 +1,6 @@
 import paramiko
+import socket
+
 import pytest
 
 from labomatics_cli.installer import ssh as ssh_module
@@ -124,3 +126,20 @@ def test_run_requires_connection():
     """Sans connexion, `run` lève une erreur claire."""
     with pytest.raises(SshError, match="non connectée"):
         SshSession("h", "u").run("x")
+
+
+def test_run_timeout_names_the_command(fake_paramiko, monkeypatch):
+    """Un délai dépassé donne une erreur qui cite la commande (jamais un message vide)."""
+
+    class SlowStream(FakeStream):
+        def read(self):
+            raise socket.timeout()
+
+    monkeypatch.setattr(
+        FakeClient,
+        "exec_command",
+        lambda self, command, timeout=None: (None, SlowStream("", 0), SlowStream("")),
+    )
+    with SshSession("h", "u", delay=0) as session:
+        with pytest.raises(SshError, match="Délai de 5 s dépassé sur h : wget x"):
+            session.run("wget x", timeout=5)
