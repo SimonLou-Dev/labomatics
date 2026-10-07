@@ -41,7 +41,8 @@ class InstallRunner:
         """Exécute les tâches ; chaque tâche terminée est sauvegardée aussitôt.
 
         Une tâche ignorée n'est pas enregistrée comme terminée : elle est
-        réévaluée à chaque passage.
+        réévaluée à chaque passage. Les tâches à rejouer sont oubliées d'abord,
+        pour qu'une reprise après échec les rejoue aussi.
 
         Args:
             ctx: Contexte d'installation.
@@ -51,6 +52,7 @@ class InstallRunner:
         """
         store, ui = ctx.store, ctx.ui
         store.mark_in_progress()
+        store.forget_tasks(self.rerun)
         try:
             for task in self.tasks:
                 if store.is_task_done(task.name) and task.name not in self.rerun:
@@ -66,7 +68,8 @@ class InstallRunner:
                     message = f"{task.label} : {exc}"
                     store.mark_failed(message)
                     raise InstallError(message) from exc
-                store.mark_task_done(task.name)
+                if task.recorded:
+                    store.mark_task_done(task.name)
             store.mark_completed()
         finally:
             ctx.close()

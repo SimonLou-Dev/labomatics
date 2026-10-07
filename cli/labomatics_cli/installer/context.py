@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Callable, Optional
 
+from labomatics_cli.installer.keycloak_api import KeycloakApi
 from labomatics_cli.installer.proxmox_api import ProxmoxApi
 from labomatics_cli.installer.ssh import CliKey, SshError, SshSession
 from labomatics_cli.installer.store import InstallStore
@@ -27,6 +28,7 @@ class InstallContext:
         *,
         api_factory: Callable[..., ProxmoxApi] = ProxmoxApi,
         ssh_factory: Callable[..., SshSession] = SshSession,
+        keycloak_factory: Callable[..., KeycloakApi] = KeycloakApi,
         key: Optional[CliKey] = None,
     ) -> None:
         """Initialise le contexte.
@@ -37,6 +39,7 @@ class InstallContext:
             ui: Rapporteur de l'écran d'installation.
             api_factory: Construit le client Proxmox (url, utilisateur, jeton, secret).
             ssh_factory: Construit une session SSH, remplaçable en test.
+            keycloak_factory: Construit le client Keycloak (url, utilisateur, mot de passe, host).
             key: Clé SSH du CLI.
         """
         self.config = config
@@ -46,6 +49,8 @@ class InstallContext:
         self.templates = TemplateRenderer()
         self._api_factory = api_factory
         self._ssh_factory = ssh_factory
+        self._keycloak_factory = keycloak_factory
+        self._keycloak: Optional[KeycloakApi] = None
         self._proxmox: Optional[ProxmoxApi] = None
         self._vm_ssh: Optional[SshSession] = None
         self._sessions: list[SshSession] = []
@@ -104,6 +109,31 @@ class InstallContext:
             self._sessions.append(session)
         return self._vm_ssh
 
+    @property
+    def keycloak(self) -> KeycloakApi:
+        """Client Keycloak (compte `admin` du realm master), créé au premier accès.
+
+        L'API est jointe par l'IP de la VM avec l'en-tête `Host` du nom Keycloak :
+        le PC d'administration n'a pas forcément le DNS du domaine.
+
+        Returns:
+            Le client, authentifié à la première requête.
+
+        Raises:
+            RuntimeError: Si la page VM n'est pas renseignée.
+        """
+        if self._keycloak is None:
+            vm = self.config.vm
+            if vm is None:
+                raise RuntimeError("Configuration de la VM absente")
+            self._keycloak = self._keycloak_factory(
+                f"https://{vm.vm_ip}",
+                "admin",
+                self.store.secrets.keycloak_admin_password,
+                host=f"keycloak.{vm.domain}",
+            )
+        return self._keycloak
+
     def node_ssh(self, node: str) -> SshSession:
         """Ouvre une session SSH sur un nœud Proxmox (mot de passe de la page 10).
 
@@ -127,8 +157,9 @@ class InstallContext:
         return session
 
     def close(self) -> None:
-        """Ferme toutes les sessions SSH ouvertes."""
+        """Ferme les sessions SSH et abandonne le client Keycloak."""
         for session in self._sessions:
             session.close()
         self._sessions = []
         self._vm_ssh = None
+        self._keycloak = None

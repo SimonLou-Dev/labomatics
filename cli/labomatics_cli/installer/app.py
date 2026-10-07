@@ -26,9 +26,11 @@ from labomatics_cli.installer.pages import (
     WanPage,
 )
 from labomatics_cli.installer.proxmox_api import ProxmoxApi, ProxmoxError
-from labomatics_cli.installer.store import InstallMode, InstallStore
+from labomatics_cli.installer.rerun import RerunPlanner
 from labomatics_cli.installer.runner import InstallRunner
+from labomatics_cli.installer.store import InstallMode, InstallStore
 from labomatics_cli.installer.tasks import build_tasks
+from labomatics_cli.models.install_config import InstallConfig
 from labomatics_cli.tui import InstallReporter, Step, Wizard, WizardContext
 
 CLUSTER_NAME_KEY = "proxmox.cluster_name"
@@ -61,6 +63,7 @@ class InstallerApp:
         self.api_factory = api_factory
         self.checks = checks or Checks()
         self.store: Optional[InstallStore] = None
+        self.before: Optional[InstallConfig] = None
         self.console = Console()
         self.proxmox_page = ProxmoxPage(api_factory, self._taken_names)
         self.pages: list[Page] = [
@@ -148,6 +151,8 @@ class InstallerApp:
         else:
             config = self.store.config
             initial = config.to_flat()
+            if self.mode == InstallMode.edit:
+                self.before = config.model_copy(deep=True)
             locked = {CLUSTER_NAME_KEY} | (
                 config.locked_keys() if self.mode == InstallMode.edit else set()
             )
@@ -217,13 +222,15 @@ class InstallerApp:
         self.store.save_page(ctx.values, PAGE_SECTIONS[step.title])
 
     async def _install(self, values: dict, ui: InstallReporter) -> None:
-        """Construit le contexte d'installation et lance l'exécuteur.
+        """Planifie les tâches à rejouer (mode édition), puis lance l'exécuteur.
 
         Args:
             values: Valeurs finales du wizard.
             ui: Rapporteur de l'écran d'installation.
         """
         assert self.store is not None
+        if self.before is not None:
+            self.runner.rerun = RerunPlanner(self.before, self.store.config).plan()
         ctx = InstallContext(
             self.store.config, self.store, ui, api_factory=self.api_factory
         )

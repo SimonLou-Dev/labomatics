@@ -105,10 +105,9 @@ def test_rerun_replays_done_tasks(tmp_path):
     assert log == ["a", "b", "b"]
 
 
-def test_default_tasks_names_and_pending_skipped(tmp_path):
-    """Les 13 tâches ont un nom stable ; les tâches 7 à 13 sont ignorées sans être enregistrées."""
-    tasks = build_tasks()
-    assert [t.name for t in tasks] == [
+def test_default_tasks_names(tmp_path):
+    """Les 13 tâches ont un nom stable, dans l'ordre."""
+    assert [t.name for t in build_tasks()] == [
         "token",
         "sdn",
         "vm",
@@ -123,8 +122,42 @@ def test_default_tasks_names_and_pending_skipped(tmp_path):
         "agent",
         "health",
     ]
-    ctx, _ = prepare(tmp_path, tasks)
-    runner = InstallRunner(tasks[6:])
-    ctx.ui = InstallReporter(runner.labels)
+
+
+def test_skipped_agent_does_not_prevent_completed(tmp_path):
+    """Une tâche ignorée (agent) n'empêche pas le statut terminé."""
+    log = []
+    tasks = [FakeTask("a", log), FakeTask("agent", log, needed=False)]
+    ctx, runner = prepare(tmp_path, tasks)
     asyncio.run(runner.run(ctx))
-    assert set(ctx.ui.status) == {"skipped"} and ctx.store.completed_tasks == []
+    assert ctx.store.status == InstallStatus.completed
+    assert ctx.store.completed_tasks == ["a"]
+
+
+def test_unrecorded_task_runs_every_time(tmp_path):
+    """Une tâche `recorded = False` est rejouée à chaque installation."""
+    log = []
+    task = FakeTask("h", log)
+    task.recorded = False
+    ctx, runner = prepare(tmp_path, [task])
+    asyncio.run(runner.run(ctx))
+    ctx2, runner2 = prepare(tmp_path, [task])
+    asyncio.run(runner2.run(ctx2))
+    assert log == ["h", "h"] and ctx.store.completed_tasks == []
+
+
+def test_rerun_tasks_are_forgotten_so_a_resume_replays_them(tmp_path):
+    """Les tâches à rejouer sont oubliées d'abord : un échec puis une reprise les rejoue."""
+    log = []
+    tasks = [FakeTask("a", log), FakeTask("b", log)]
+    ctx, runner = prepare(tmp_path, tasks)
+    asyncio.run(runner.run(ctx))
+    tasks[0].fail = True
+    ctx2, runner2 = prepare(tmp_path, tasks, rerun={"a", "b"})
+    with pytest.raises(InstallError):
+        asyncio.run(runner2.run(ctx2))
+    assert ctx2.store.completed_tasks == []
+    tasks[0].fail = False
+    ctx3, runner3 = prepare(tmp_path, tasks)
+    asyncio.run(runner3.run(ctx3))
+    assert log == ["a", "b", "a", "a", "b"]

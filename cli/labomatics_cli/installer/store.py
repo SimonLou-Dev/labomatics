@@ -1,8 +1,10 @@
+"""Persistance de l'installation : configuration, état d'exécution et secrets d'un cluster."""
+
 import json
 import os
 from enum import Enum
 from pathlib import Path
-from typing import Any, Mapping, Optional
+from typing import Any, Collection, Mapping, Optional
 
 import yaml
 from pydantic import BaseModel
@@ -288,6 +290,17 @@ class InstallStore:
         """
         if name not in self._state.completed_tasks:
             self._state.completed_tasks.append(name)
+            self._persist_state()
+
+    def forget_tasks(self, names: Collection[str]) -> None:
+        """Oublie certaines tâches terminées (pour les rejouer) et sauvegarde.
+
+        Args:
+            names: Noms des tâches à oublier.
+        """
+        kept = [n for n in self._state.completed_tasks if n not in names]
+        if kept != self._state.completed_tasks:
+            self._state.completed_tasks = kept
             self._persist_state()
 
     def reset_tasks(self) -> None:
