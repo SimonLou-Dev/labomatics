@@ -46,7 +46,6 @@ STACK_FILES = (
     StackFile(
         "ldap/bootstrap.ldif.j2", "ldap/bootstrap.ldif", 0o644, lambda i: i.local
     ),
-    StackFile("ldap/setup-acls.sh", "ldap/setup-acls.sh", 0o644, lambda i: i.local),
     StackFile(
         "radius/clients.conf.j2", "radius/clients.conf", 0o644, lambda i: i.radius
     ),
