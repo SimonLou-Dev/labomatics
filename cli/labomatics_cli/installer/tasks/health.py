@@ -159,7 +159,7 @@ class HealthTask(InstallTask):
             raise RuntimeError(f"{name} résolu en {found or 'rien'}")
 
     def _summary(self, ctx: InstallContext) -> None:
-        """Consigne les URLs et l'accès administrateur pour l'écran final.
+        """Enregistre les URLs et l'accès administrateur pour l'écran final.
 
         Args:
             ctx: Contexte d'installation.
@@ -174,12 +174,3 @@ class HealthTask(InstallTask):
             "admin_temp_password": ctx.store.secrets.admin_temp_password,
         }
         ctx.store.set_data("final_summary", summary)
-        ctx.log(f"Application : {summary['frontend_url']}", "ok")
-        ctx.log(f"API : {summary['api_url']}", "ok")
-        ctx.log(f"Keycloak : {summary['keycloak_url']}", "ok")
-        ctx.log(f"Identifiant : {summary['admin_username']}", "ok")
-        ctx.log(
-            f"Mot de passe temporaire : {summary['admin_temp_password']} "
-            "(à changer à la première connexion)",
-            "warn",
-        )

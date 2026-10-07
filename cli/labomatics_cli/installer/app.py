@@ -29,6 +29,7 @@ from labomatics_cli.installer.proxmox_api import ProxmoxApi, ProxmoxError
 from labomatics_cli.installer.rerun import RerunPlanner
 from labomatics_cli.installer.runner import InstallRunner
 from labomatics_cli.installer.store import InstallMode, InstallStore
+from labomatics_cli.installer.summary import FinalSummary
 from labomatics_cli.installer.tasks import build_tasks
 from labomatics_cli.models.install_config import InstallConfig
 from labomatics_cli.tui import InstallReporter, Step, Wizard, WizardContext
@@ -222,7 +223,7 @@ class InstallerApp:
         self.store.save_page(ctx.values, PAGE_SECTIONS[step.title])
 
     async def _install(self, values: dict, ui: InstallReporter) -> None:
-        """Planifie les tâches à rejouer (mode édition), puis lance l'exécuteur.
+        """Planifie les tâches à rejouer (mode édition), lance l'exécuteur, puis affiche le résumé.
 
         Args:
             values: Valeurs finales du wizard.
@@ -235,3 +236,5 @@ class InstallerApp:
             self.store.config, self.store, ui, api_factory=self.api_factory
         )
         await self.runner.run(ctx)
+        for level, line in FinalSummary(self.store.get_data("final_summary")).lines():
+            ui.log(line, level)

@@ -89,6 +89,39 @@ def test_install_runs_the_runner_with_a_context(tmp_path):
     assert seen[0].config.proxmox.cluster_name == "lab1"
 
 
+def test_install_logs_the_final_summary_after_the_run(tmp_path):
+    """Une fois les tâches terminées, le résumé de `health` est affiché dans le journal."""
+    seed(tmp_path, proxmox=PROXMOX)
+    app = make_app(tmp_path, "lab1", runner=InstallRunner([]))
+    app._select_cluster()
+    app.store.set_data(
+        "final_summary",
+        {
+            "frontend_url": "https://labomatics.lab.fr",
+            "api_url": "https://api.labomatics.lab.fr",
+            "keycloak_url": "https://keycloak.lab.fr/admin/labomatics/console/",
+            "admin_username": "jean.dupont",
+            "admin_temp_password": "Tmp-Pass-1",
+        },
+    )
+    reporter = InstallReporter(["x"])
+    asyncio.run(app._install({}, reporter))
+    texts = [line.text for line in reporter.lines]
+    assert "Application : https://labomatics.lab.fr" in texts
+    assert "Identifiant : jean.dupont" in texts
+    assert any("Tmp-Pass-1" in t for t in texts)
+
+
+def test_install_without_summary_logs_nothing(tmp_path):
+    """Sans résumé enregistré, aucune ligne n'est ajoutée."""
+    seed(tmp_path, proxmox=PROXMOX)
+    app = make_app(tmp_path, "lab1", runner=InstallRunner([]))
+    app._select_cluster()
+    reporter = InstallReporter(["x"])
+    asyncio.run(app._install({}, reporter))
+    assert reporter.lines == []
+
+
 def test_new_mode_prefills_name_and_refuses_existing(tmp_path):
     """Nouveau cluster : nom prérempli, nom déjà pris refusé."""
     app = make_app(tmp_path, "lab2")
