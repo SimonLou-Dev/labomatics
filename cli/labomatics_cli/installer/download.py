@@ -4,11 +4,14 @@ from __future__ import annotations
 
 import posixpath
 import time
+from urllib.parse import urlparse
 from typing import Callable, Optional
 
 from labomatics_cli.installer.ssh import SshSession
 
 Log = Callable[[str], None]
+
+FIRST_CHECK = 5
 
 
 class RemoteDownload:
@@ -49,16 +52,19 @@ class RemoteDownload:
             log: Reçoit les messages de progression.
 
         Raises:
-            RuntimeError: Si `wget` échoue ou si le délai est dépassé.
+            RuntimeError: Si l'hôte ne résout pas le serveur, si `wget` échoue
+                ou si le délai est dépassé.
         """
+        self._check_dns()
         total = self._total_size()
         self._start()
         size = f"{total // 1_000_000} Mo" if total else "taille inconnue"
         log(f"Téléchargement lancé ({size}), progression toutes les {self.poll:.0f} s")
         waited = 0.0
         while True:
-            self.sleep(self.poll)
-            waited += self.poll
+            delay = min(FIRST_CHECK, self.poll) if waited == 0 else self.poll
+            self.sleep(delay)
+            waited += delay
             code = self._exit_code()
             if code is not None:
                 self._finish(code)
@@ -67,6 +73,18 @@ class RemoteDownload:
                 self.ssh.run(f"pkill -f '[w]get .*{self.part}'", check=False)
                 raise RuntimeError(f"Téléchargement trop long (> {self.timeout:.0f} s)")
             log(self._progress(total))
+
+    def _check_dns(self) -> None:
+        """Vérifie que l'hôte résout le nom du serveur de téléchargement.
+
+        Raises:
+            RuntimeError: Si le nom ne se résout pas (DNS de l'hôte en panne).
+        """
+        server = urlparse(self.url).hostname or ""
+        if not self.ssh.run(f"getent hosts {server}", check=False).ok:
+            raise RuntimeError(
+                f"Le nœud ne résout pas {server} : vérifie son DNS (/etc/resolv.conf)"
+            )
 
     def _total_size(self) -> Optional[int]:
         """Taille annoncée par le serveur (après redirections).
@@ -112,6 +130,9 @@ class RemoteDownload:
         text = self.ssh.run(f"stat -c %s {self.part}", check=False).stdout.strip()
         done = int(text) if text.isdigit() else 0
         mb = done // 1_000_000
+        if done == 0:
+            last = self.ssh.run(f"tail -n 1 {self.log_file}", check=False).stdout
+            return f"Téléchargement : rien reçu pour l'instant {last.strip()}".rstrip()
         if total:
             percent = min(100, done * 100 // total)
             return f"Téléchargement : {percent} % ({mb}/{total // 1_000_000} Mo)"

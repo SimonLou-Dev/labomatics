@@ -66,6 +66,41 @@ def test_wget_failure_reports_log_tail():
         download(ssh).run(lambda m: None)
 
 
+def test_unresolvable_server_fails_before_download():
+    """DNS de l'hôte en panne : erreur explicite, wget n'est pas lancé."""
+
+    class NoDns(ScriptedSsh):
+        def run(self, command, check=True, timeout=900):
+            self.commands.append(command)
+            code = 2 if command.startswith("getent") else 0
+            return CommandResult("", "", code)
+
+    ssh = NoDns({})
+    with pytest.raises(RuntimeError, match="ne résout pas x : vérifie son DNS"):
+        download(ssh).run(lambda m: None)
+    assert not any("wget" in c for c in ssh.commands)
+
+
+def test_nothing_received_shows_wget_log():
+    """Rien reçu : le message reprend la dernière ligne du journal de wget."""
+    ssh = ScriptedSsh(
+        {"cat": ["", "0\n"], "stat": [""], "tail": ["Connecting to x... \n"]}
+    )
+    logs = []
+    download(ssh).run(logs.append)
+    assert logs[1] == "Téléchargement : rien reçu pour l'instant Connecting to x..."
+
+
+def test_first_check_is_quick():
+    """Le premier contrôle a lieu après 5 s, les suivants à l'intervalle choisi."""
+    waits = []
+    ssh = ScriptedSsh({"cat": ["", "0\n"], "stat": ["1000000\n"]})
+    RemoteDownload(ssh, "https://x/i", "/c/i", poll=30, sleep=waits.append).run(
+        lambda m: None
+    )
+    assert waits == [5, 30]
+
+
 def test_timeout_kills_wget():
     """Délai dépassé : wget est arrêté et une erreur est levée."""
     ssh = ScriptedSsh({})
