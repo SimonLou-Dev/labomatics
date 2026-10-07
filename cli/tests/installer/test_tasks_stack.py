@@ -9,7 +9,6 @@ import yaml
 from keycloak_fakes import FakeKeycloak
 from labomatics_cli.installer.clusterconfig import ClusterConfigBuilder
 from labomatics_cli.installer.dns_probe import DnsProbe
-from labomatics_cli.installer.rerun import RerunPlanner
 from labomatics_cli.installer.stack import STACK_FILES, StackFiles
 from labomatics_cli.installer.tasks.agent import AgentTask
 from labomatics_cli.installer.tasks.backend import BackendTask
@@ -346,31 +345,3 @@ def test_health_reports_every_failure(tmp_path):
     text = str(err.value)
     assert "API /health" in text and "Découverte OIDC" in text
     assert "Realm OIDC Proxmox" in text and "Résolution DNS" in text
-
-
-def test_rerun_planner_maps_changed_fields():
-    """Chaque champ modifié rejoue les tâches de la spec."""
-    old = InstallConfig.model_validate(CONFIG)
-
-    def plan(**sections):
-        """Plan pour une configuration où des sections sont remplacées."""
-        return RerunPlanner(
-            old, InstallConfig.model_validate(variant(**sections))
-        ).plan()
-
-    assert plan() == set()
-    assert plan(proxy={"trusted_hosts": []}) == {"stack"}
-    assert plan(mail={"enabled": False}) == {"stack", "keycloak", "backend"}
-    assert plan(auth={"directory": "none"}) == {"stack", "keycloak"}
-    assert plan(vm={**CONFIG["vm"], "dns_upstream": ["8.8.8.8"]}) == {"dns"}
-    assert plan(wan={**CONFIG["wan"], "gateway": "10.210.0.253"}) == {"sdn", "backend"}
-    assert plan(admin={**CONFIG["admin"], "first_name": "Paul"}) == {
-        "keycloak",
-        "proxmox_oidc",
-    }
-    assert "dns" in plan(vm={**CONFIG["vm"], "domain": "autre.fr"})
-    assert plan(vm={**CONFIG["vm"], "domain": "autre.fr"}) >= {
-        "stack",
-        "keycloak",
-        "backend",
-    }

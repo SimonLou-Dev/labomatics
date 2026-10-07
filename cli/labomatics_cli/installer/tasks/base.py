@@ -12,8 +12,8 @@ if TYPE_CHECKING:
 class InstallTask(ABC):
     """Tâche idempotente : vérifie l'existant, met à jour ou ne fait rien.
 
-    Une tâche dont `recorded` est faux n'est jamais enregistrée comme terminée :
-    elle est exécutée à chaque installation.
+    Toutes les tâches sont exécutées à chaque installation. Une tâche dont
+    `recorded` est faux n'est jamais enregistrée comme terminée dans l'état.
     """
 
     name: str
