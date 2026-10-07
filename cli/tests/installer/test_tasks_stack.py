@@ -359,7 +359,7 @@ def test_health_unresolved_names_only_warn(tmp_path):
     warnings = [line.text for line in ctx.ui.lines if line.level == "warn"]
     assert any("fichier hosts" in m for m in warnings)
     assert (
-        "192.168.50.10 keycloak.lab.fr labomatics.lab.fr api.labomatics.lab.fr "
-        "traefik.lab.fr" in warnings
+        "192.168.50.10 keycloak.lab.fr labomatics.lab.fr api.labomatics.lab.fr"
+        in warnings
     )
     assert ctx.store.get_data("final_summary") is not None

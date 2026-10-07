@@ -14,7 +14,7 @@ from labomatics_cli.installer.tasks.base import InstallTask
 
 HTTP_ATTEMPTS = 30
 HTTP_DELAY = 5.0
-PUBLIC_HOSTS = ("keycloak", "labomatics", "api.labomatics", "traefik")
+PUBLIC_HOSTS = ("keycloak", "labomatics", "api.labomatics")
 
 
 def resolve_locally(name: str) -> list[str]:
