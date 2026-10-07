@@ -1,6 +1,174 @@
 # CHANGELOG
 
 
+## v0.5.0-rc.1 (2026-10-07)
+
+### Bug Fixes
+
+- Adapte le LDAP local à l'image vegardit
+  ([`eef57b5`](https://github.com/SimonLou-Dev/labomatics/commit/eef57b5ef3eafa7403e822772fee7f84aa715faa))
+
+- Affiche l'erreur du téléchargement de l'image
+  ([`424dd2b`](https://github.com/SimonLou-Dev/labomatics/commit/424dd2b4c7fe61667b178b83eb105cda4b91719f))
+
+- Affiche les délais dépassés et erreurs vides
+  ([`b21b378`](https://github.com/SimonLou-Dev/labomatics/commit/b21b378fd8e0c35d5e29835fd16269596b2a4084))
+
+- Affiche les erreurs longues sur plusieurs lignes
+  ([`cbb2b2a`](https://github.com/SimonLou-Dev/labomatics/commit/cbb2b2a7cfa49906e9f51fb3960736691db17ae3))
+
+- Complète une VM laissée incomplète
+  ([`721159c`](https://github.com/SimonLou-Dev/labomatics/commit/721159c8fa4a39832b43e619769e2fa540afb5bb))
+
+- Corrige les types signalés par mypy
+  ([`99a395a`](https://github.com/SimonLou-Dev/labomatics/commit/99a395a0a7fb8705ca7bab3a0a2f72acf94dfdb2))
+
+- Crée la VM avec qm importdisk
+  ([`fe54108`](https://github.com/SimonLou-Dev/labomatics/commit/fe541086696f64bce26b43f93f352e1e67abd56a))
+
+- Démarre l'app après la configuration Keycloak
+  ([`5ad0d06`](https://github.com/SimonLou-Dev/labomatics/commit/5ad0d062c76582af845cb13f9f62e37b09a13c0a))
+
+- Garde les DNS amont en secours sur les nœuds
+  ([`9fc46db`](https://github.com/SimonLou-Dev/labomatics/commit/9fc46dbfc355d11819041fd5af16304cf2c2de58))
+
+- Garde les variables admin Keycloak factices
+  ([`710f92a`](https://github.com/SimonLou-Dev/labomatics/commit/710f92a73383a6bf055d3e51f092142a23d3963a))
+
+- Limite la mémoire de Keycloak à 4 Go
+  ([`5f4b092`](https://github.com/SimonLou-Dev/labomatics/commit/5f4b092d4508536aecb9a507140cc682f170d7db))
+
+- Ne vérifie le VXLAN que sur sa page
+  ([`9dfebc1`](https://github.com/SimonLou-Dev/labomatics/commit/9dfebc123017c644fffa375c3ceeda196b3b844a))
+
+- Ne vérifie plus la résolution de traefik
+  ([`6589d1d`](https://github.com/SimonLou-Dev/labomatics/commit/6589d1da89f72d41376523672d1f1ce32736597b))
+
+- Reprend le téléchargement interrompu sans doublon
+  ([`ddc487b`](https://github.com/SimonLou-Dev/labomatics/commit/ddc487bd74e016112088452e5aacc73fa0c5b712))
+
+- Resume mode when pages saved before install
+  ([`86e8958`](https://github.com/SimonLou-Dev/labomatics/commit/86e8958aa02bfd389bd1d44b743d5a1a025e3e80))
+
+- Revérifie toutes les tâches à chaque installation
+  ([`f89133f`](https://github.com/SimonLou-Dev/labomatics/commit/f89133f8a742f0a42d8801af6c76428a1525fadd))
+
+- Signale tout de suite les échecs du téléchargement
+  ([`eb06120`](https://github.com/SimonLou-Dev/labomatics/commit/eb061203118a3c7fff1719dbc837e3fb844206c3))
+
+- Transmet le storage du cluster au backend
+  ([`778af9e`](https://github.com/SimonLou-Dev/labomatics/commit/778af9ef967711cecfaeee45deac6b9f34e51bf3))
+
+- Vérifie le DNS depuis le poste local
+  ([`fc2119d`](https://github.com/SimonLou-Dev/labomatics/commit/fc2119db0f47a7237d3a8d171aa4c5ff322f763c))
+
+- Évite le blocage avant la progression
+  ([`fc94462`](https://github.com/SimonLou-Dev/labomatics/commit/fc944624403ccd74739d9e52b4ab2a8297c28746))
+
+### Chores
+
+- Ajoute la dépendance prompt-toolkit
+  ([`cfaaa3b`](https://github.com/SimonLou-Dev/labomatics/commit/cfaaa3b7c97c97362b8fc0905c684495392099d9))
+
+- Ajoute les stubs yaml et ldap3
+  ([`2b312a0`](https://github.com/SimonLou-Dev/labomatics/commit/2b312a0e67326aeff68cb984ce0cc156d70db8b0))
+
+- Retire la dépendance typing-extensions
+  ([`666bb30`](https://github.com/SimonLou-Dev/labomatics/commit/666bb30c5532d99d334da4c6e6393c49cc68da20))
+
+- Supprime l'ancienne VM PowerDNS du provisioning
+  ([`7392bda`](https://github.com/SimonLou-Dev/labomatics/commit/7392bda3c8ce0ef3216a5d2ba650da6d613ab471))
+
+### Documentation
+
+- Met à jour la doc de l'installation
+  ([`ad0ebcf`](https://github.com/SimonLou-Dev/labomatics/commit/ad0ebcf49a874e86dae6291305fed5c86bad7abe))
+
+### Features
+
+- Add installer config models
+  ([`89640aa`](https://github.com/SimonLou-Dev/labomatics/commit/89640aa1a148e125398daa82e48ee16a5c792b2d))
+
+- Add installer store and generated secrets
+  ([`c8311cf`](https://github.com/SimonLou-Dev/labomatics/commit/c8311cf55c38c034acd5f14a96fd91b434422c28))
+
+- Affiche la progression du téléchargement de l'image
+  ([`cddb618`](https://github.com/SimonLou-Dev/labomatics/commit/cddb618d66d36e72ee234fa217e8e71ff9bd50d9))
+
+- Affiche le résumé en fin d'installation
+  ([`37dbf2e`](https://github.com/SimonLou-Dev/labomatics/commit/37dbf2ec5a9d7fa929d522f2e338abffffe4603c))
+
+- Ajoute la session SSH et le rendu des templates
+  ([`0d15f60`](https://github.com/SimonLou-Dev/labomatics/commit/0d15f60aa9145b7cc70beaaa28f67a3948667857))
+
+- Ajoute le client Keycloak de l'installation
+  ([`cfe5ce5`](https://github.com/SimonLou-Dev/labomatics/commit/cfe5ce54cf4a4be6f14db3c470953f497258e673))
+
+- Ajoute le client Proxmox et les contrôles réseau
+  ([`3d68be8`](https://github.com/SimonLou-Dev/labomatics/commit/3d68be8d184c8393094d9d434fdb280810fd7b40))
+
+- Ajoute le kit d'interface du wizard
+  ([`ba6316d`](https://github.com/SimonLou-Dev/labomatics/commit/ba6316d56d41683e50c102617880f98b69322d91))
+
+- Ajoute le runner et les tâches 1 à 6
+  ([`643c0bd`](https://github.com/SimonLou-Dev/labomatics/commit/643c0bd60b3baabe4c0dca8241cb1ea7f681e9b2))
+
+- Ajoute les dix pages du wizard d'installation
+  ([`1f18c0a`](https://github.com/SimonLou-Dev/labomatics/commit/1f18c0af7cc47d9fe0963a47afad9f8bb3fddb46))
+
+- Ajoute les tâches d'installation 7 à 13
+  ([`840420d`](https://github.com/SimonLou-Dev/labomatics/commit/840420d129c2f674c1f8d9514c7a426e03e046af))
+
+- Ajoute manage_user et manage_cluster au client
+  ([`949d3f3`](https://github.com/SimonLou-Dev/labomatics/commit/949d3f36f00299e397f8e6d13b7cea70a36f6cb0))
+
+- Branche le wizard sur labomatics install
+  ([`bb07828`](https://github.com/SimonLou-Dev/labomatics/commit/bb07828dc2afde34aa599b47c196e9064b6adaba))
+
+- Complète la config et la déplace dans models
+  ([`0eceffb`](https://github.com/SimonLou-Dev/labomatics/commit/0eceffbc7a5c8ca5f9c43b0cc671fe9b480480ae))
+
+- Enrichit le client Proxmox pour l'installation
+  ([`93fc4bd`](https://github.com/SimonLou-Dev/labomatics/commit/93fc4bda1b647228ab3acba930185e426a251f9b))
+
+- Préremplit réseau et passerelle admin
+  ([`55c9a52`](https://github.com/SimonLou-Dev/labomatics/commit/55c9a52911961d65b957fb838b0f225a168dfb3a))
+
+- Refait l'écran final de l'installation
+  ([`4119064`](https://github.com/SimonLou-Dev/labomatics/commit/4119064fbe33ae293b95eb943918965320c69c4c))
+
+- Réserve les IP admin dans le WAN partagé
+  ([`0affb64`](https://github.com/SimonLou-Dev/labomatics/commit/0affb64b1c6877eca5faf0011b1799613952cdc9))
+
+### Refactoring
+
+- Authentifie le backend Keycloak par client
+  ([`231dfa2`](https://github.com/SimonLou-Dev/labomatics/commit/231dfa2cbb6d03314670b56d55ea94dbbbb495b0))
+
+- Décrit les templates VM en YAML
+  ([`8216a7c`](https://github.com/SimonLou-Dev/labomatics/commit/8216a7cd1f5acc6dfd4814d68b8b9f2e2125ab89))
+
+- Déplace OpenWrt dans templates à la racine
+  ([`51cc684`](https://github.com/SimonLou-Dev/labomatics/commit/51cc68436e7b0ada73d2868c7bf43c6550891a0e))
+
+- Range les templates de l'install par cible
+  ([`ce9a2f0`](https://github.com/SimonLou-Dev/labomatics/commit/ce9a2f0bb5ea21523183181496fd16bee1f4f018))
+
+- Retire la progression du téléchargement
+  ([`93635c9`](https://github.com/SimonLou-Dev/labomatics/commit/93635c95412b3997c41aca1010e097fbb26d957b))
+
+- Supprime l'ancien système d'installation
+  ([`b96ecdd`](https://github.com/SimonLou-Dev/labomatics/commit/b96ecdd040ffcd9359351d2082321cb3f548aab9))
+
+- Utilise le compte de service du client
+  ([`b3cdf5b`](https://github.com/SimonLou-Dev/labomatics/commit/b3cdf5bc002715cedaa0364874efa543f4833d57))
+
+### Testing
+
+- Ajoute les tests du kit d'interface
+  ([`80619c1`](https://github.com/SimonLou-Dev/labomatics/commit/80619c151eba2f2643dd09d2ac21cc76bcb783e1))
+
+
 ## v0.4.1-rc.6 (2026-10-07)
 
 ### Bug Fixes
