@@ -2,22 +2,43 @@
 
 from __future__ import annotations
 
+import socket
 import time
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
 import requests
 
 from labomatics_cli.installer.context import InstallContext
-from labomatics_cli.installer.dns_probe import DnsProbe
 from labomatics_cli.installer.keycloak_api import REALM
 from labomatics_cli.installer.tasks.base import InstallTask
 
 HTTP_ATTEMPTS = 30
 HTTP_DELAY = 5.0
+PUBLIC_HOSTS = ("keycloak", "labomatics", "api.labomatics", "traefik")
+
+
+def resolve_locally(name: str) -> list[str]:
+    """Résout un nom en IPv4 avec le résolveur du poste (fichier hosts compris).
+
+    Args:
+        name: Nom à résoudre.
+
+    Returns:
+        Les adresses trouvées, liste vide si le nom est inconnu.
+    """
+    try:
+        infos = socket.getaddrinfo(name, None, socket.AF_INET)
+    except socket.gaierror:
+        return []
+    return sorted({str(info[4][0]) for info in infos})
 
 
 class HealthTask(InstallTask):
-    """Vérifie l'API, la découverte OIDC, le realm Proxmox et le DNS, puis affiche l'accès."""
+    """Vérifie l'API, la découverte OIDC et le realm Proxmox, puis affiche l'accès.
+
+    La résolution des noms depuis le poste n'est qu'un avertissement : elle dépend
+    du DNS de l'utilisateur, pas de l'installation.
+    """
 
     name = "health"
     label = "Contrôle de santé"
@@ -26,19 +47,19 @@ class HealthTask(InstallTask):
     def __init__(
         self,
         session: Optional[requests.Session] = None,
-        dns: Optional[DnsProbe] = None,
+        resolver: Callable[[str], list[str]] = resolve_locally,
         delay: float = HTTP_DELAY,
     ) -> None:
         """Initialise la tâche.
 
         Args:
             session: Session HTTP, remplaçable en test.
-            dns: Sonde DNS, remplaçable en test.
+            resolver: Résolution d'un nom en IPv4, remplaçable en test.
             delay: Pause entre deux tentatives HTTP en secondes.
         """
         self.session = session or requests.Session()
         self.session.verify = False
-        self.dns = dns or DnsProbe()
+        self.resolver = resolver
         self.delay = delay
 
     def run(self, ctx: InstallContext) -> None:
@@ -55,7 +76,6 @@ class HealthTask(InstallTask):
             ("API /health", self._api),
             ("Découverte OIDC Keycloak", self._discovery),
             ("Realm OIDC Proxmox", self._proxmox_realm),
-            ("Résolution DNS", self._dns),
         ):
             try:
                 check(ctx)
@@ -64,6 +84,7 @@ class HealthTask(InstallTask):
                 ctx.log(f"{label} : {exc}", "error")
             else:
                 ctx.log(label, "ok")
+        self._local_dns(ctx)
         if failures:
             raise RuntimeError("; ".join(failures))
         self._summary(ctx)
@@ -139,24 +160,26 @@ class HealthTask(InstallTask):
         if not ctx.proxmox.realm_exists(REALM):
             raise RuntimeError(f"realm {REALM} absent de Proxmox")
 
-    def _dns(self, ctx: InstallContext) -> None:
-        """Vérifie que le DNS de la VM résout le domaine vers la VM.
+    def _local_dns(self, ctx: InstallContext) -> None:
+        """Vérifie que le poste résout les noms publics vers la VM, sinon explique quoi faire.
 
         Args:
             ctx: Contexte d'installation.
-
-        Raises:
-            RuntimeError: Si la réponse ne contient pas l'IP de la VM.
         """
         assert ctx.config.vm is not None
         vm = ctx.config.vm
-        name = f"keycloak.{vm.domain}"
-        try:
-            found = self.dns.resolve(vm.vm_ip, name)
-        except OSError as exc:
-            raise RuntimeError(f"{vm.vm_ip} ne répond pas ({exc})") from exc
-        if vm.vm_ip not in found:
-            raise RuntimeError(f"{name} résolu en {found or 'rien'}")
+        names = [f"{host}.{vm.domain}" for host in PUBLIC_HOSTS]
+        wrong = [name for name in names if vm.vm_ip not in self.resolver(name)]
+        if not wrong:
+            ctx.log("Résolution DNS depuis ce poste", "ok")
+            return
+        ctx.log(f"Ce poste ne résout pas vers {vm.vm_ip} : {', '.join(wrong)}", "warn")
+        ctx.log(
+            f"Ajoute une zone {vm.domain} pointant vers {vm.vm_ip} dans ton DNS "
+            f"(le DNS de la VM répond sur {vm.vm_ip}:53), ou dans le fichier hosts :",
+            "warn",
+        )
+        ctx.log(f"{vm.vm_ip} {' '.join(names)}", "warn")
 
     def _summary(self, ctx: InstallContext) -> None:
         """Enregistre les URLs et l'accès administrateur pour l'écran final.

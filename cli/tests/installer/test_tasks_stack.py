@@ -8,7 +8,6 @@ import yaml
 
 from keycloak_fakes import FakeKeycloak
 from labomatics_cli.installer.clusterconfig import ClusterConfigBuilder
-from labomatics_cli.installer.dns_probe import DnsProbe
 from labomatics_cli.installer.stack import STACK_FILES, StackFiles
 from labomatics_cli.installer.tasks.agent import AgentTask
 from labomatics_cli.installer.tasks.backend import BackendTask
@@ -324,25 +323,13 @@ class FakeSession:
         return FakeResponse(200, {"issuer": self.issuer})
 
 
-class FakeDns(DnsProbe):
-    """Sonde DNS factice."""
-
-    def __init__(self, answer):
-        """Initialise avec la réponse à renvoyer."""
-        self.answer = answer
-
-    def resolve(self, server, name):
-        """Renvoie la réponse configurée."""
-        return self.answer
-
-
 def test_health_ok_exposes_final_summary(tmp_path):
     """Contrôles réussis : URLs, identifiant et mot de passe temporaire enregistrés."""
     api = FakeProxmox()
     api.realms["labomatics"] = "x"
     ctx = make_ctx(tmp_path, api)
     session = FakeSession()
-    task = HealthTask(session, FakeDns(["192.168.50.10"]), delay=0)
+    task = HealthTask(session, lambda name: ["192.168.50.10"], delay=0)
     assert task.recorded is False
     task.run(ctx)
     assert ("https://192.168.50.10/health", "api.labomatics.lab.fr") in session.requests
@@ -355,9 +342,24 @@ def test_health_ok_exposes_final_summary(tmp_path):
 def test_health_reports_every_failure(tmp_path):
     """Plusieurs contrôles en échec : tous sont listés dans l'erreur."""
     ctx = make_ctx(tmp_path, FakeProxmox())
-    task = HealthTask(FakeSession(issuer="autre", api=500), FakeDns([]), delay=0)
+    task = HealthTask(FakeSession(issuer="autre", api=500), lambda name: [], delay=0)
     with pytest.raises(RuntimeError) as err:
         task.run(ctx)
     text = str(err.value)
     assert "API /health" in text and "Découverte OIDC" in text
-    assert "Realm OIDC Proxmox" in text and "Résolution DNS" in text
+    assert "Realm OIDC Proxmox" in text and "DNS" not in text
+
+
+def test_health_unresolved_names_only_warn(tmp_path):
+    """Noms non résolus depuis le poste : avertissement avec la ligne hosts, pas d'échec."""
+    api = FakeProxmox()
+    api.realms["labomatics"] = "x"
+    ctx = make_ctx(tmp_path, api)
+    HealthTask(FakeSession(), lambda name: [], delay=0).run(ctx)
+    warnings = [line.text for line in ctx.ui.lines if line.level == "warn"]
+    assert any("fichier hosts" in m for m in warnings)
+    assert (
+        "192.168.50.10 keycloak.lab.fr labomatics.lab.fr api.labomatics.lab.fr "
+        "traefik.lab.fr" in warnings
+    )
+    assert ctx.store.get_data("final_summary") is not None
