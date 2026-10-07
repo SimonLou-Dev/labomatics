@@ -1,0 +1,15 @@
+#!/bin/bash
+# Attend que PostgreSQL et Keycloak répondent (Keycloak via Traefik).
+for i in $(seq 1 60); do
+  sudo docker exec labomatics-postgres pg_isready -U postgres >/dev/null 2>&1 && break
+  [ "$i" = 60 ] && { echo "PostgreSQL ne répond pas" >&2; exit 1; }
+  sleep 5
+done
+echo "PostgreSQL prêt"
+for i in $(seq 1 90); do
+  code=$(curl -sk -o /dev/null -w '%{http_code}' --resolve keycloak.{{ domain }}:443:127.0.0.1 https://keycloak.{{ domain }}/realms/master || true)
+  [ "$code" = 200 ] && break
+  [ "$i" = 90 ] && { echo "Keycloak ne répond pas (HTTP $code)" >&2; exit 1; }
+  sleep 5
+done
+echo "Keycloak prêt"

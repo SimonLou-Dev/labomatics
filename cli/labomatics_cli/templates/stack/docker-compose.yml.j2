@@ -1,0 +1,232 @@
+x-common-env: &common-env
+  WAN_INTERFACE: {{ wan_iface }}
+  DOMAIN: {{ domain }}
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: labomatics-postgres
+    environment:
+      POSTGRES_PASSWORD: {{ secrets.pg_root_password }}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh
+    networks:
+      - labomatics
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0.5
+    container_name: labomatics-keycloak
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: {{ secrets.keycloak_db_password }}
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: {{ secrets.keycloak_admin_password }}
+      KC_PROXY_HEADERS: xforwarded
+      KC_HOSTNAME: keycloak.{{ domain }}
+      KC_HOSTNAME_STRICT: false
+      KC_HTTP_ENABLED: true
+      # Tas Java plafonné à 3 Go, sous la limite du conteneur
+      JAVA_OPTS_APPEND: "-Xms512m -Xmx3g"
+    mem_limit: 4g
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - labomatics
+      - proxy
+    restart: unless-stopped
+    command: start-dev
+    labels:
+      - traefik.enable=true
+      # HTTP
+      - "traefik.http.routers.keycloak-http.rule=Host(`keycloak.{{ domain }}`)"
+      - "traefik.http.routers.keycloak-http.entrypoints=web"
+      - "traefik.http.routers.keycloak-http.service=keycloak"
+      - "traefik.http.routers.keycloak-http.middlewares=https-redirect@file"
+      # HTTPS
+      - traefik.http.routers.keycloak-https.rule=Host(`keycloak.{{ domain }}`)
+      - traefik.http.routers.keycloak-https.entrypoints=websecure
+      - traefik.http.routers.keycloak-https.tls=true
+      - traefik.http.routers.keycloak-https.service=keycloak
+      - traefik.http.services.keycloak.loadbalancer.server.port=8080
+
+{% if local_ldap %}
+  ldap:
+    image: ghcr.io/vegardit/openldap:latest@sha256:ffe216e09673d9b3f561a6b02e691bab44a2f9849f7d3bb8be16957f6f826dae
+    container_name: labomatics-ldap
+    environment:
+      LDAP_INIT_ORG_DN: "{{ base_dn }}"
+      LDAP_INIT_ORG_NAME: "labomatics"
+      LDAP_INIT_ROOT_USER_PW: "{{ secrets.ldap_admin_password }}"
+      LDAP_TLS_SSF: "0"
+      LDAP_TLS_CERT_FILE: /run/secrets/ldap/ldap.{{ domain }}.crt
+      LDAP_TLS_KEY_FILE: /run/secrets/ldap/ldap.{{ domain }}.key
+      LDAP_TLS_CA_FILE: /run/secrets/ldap/ca.crt
+    volumes:
+      - ldap_data:/var/lib/ldap
+      - ldap_config:/etc/ldap/slapd.d
+      - ./ldap/bootstrap.ldif:/opt/ldifs/custom/01-bootstrap.ldif:ro
+      - ./certs:/run/secrets/ldap:ro
+    networks:
+      - labomatics
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "ldapsearch", "-x", "-H", "ldap://localhost", "-D", "uid=admin,{{ base_dn }}", "-w", "{{ secrets.ldap_admin_password }}", "-b", "{{ base_dn }}", "-s", "base"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 180s
+
+{% endif %}
+{% if radius %}
+  radius:
+    image: freeradius/freeradius-server:3.2.10-alpine
+    container_name: labomatics-radius
+    command: radiusd -X
+    volumes:
+      - ./radius/clients.conf:/etc/raddb/clients.conf:ro
+      - ./radius/mods-enabled/ldap:/etc/raddb/mods-enabled/ldap:ro
+      - ./radius/sites-enabled/default:/etc/raddb/sites-enabled/default:ro
+      - ./certs/ca.crt:/etc/raddb/certs/ca.crt:ro
+    ports:
+      - "1812:1812/udp"
+      - "1813:1813/udp"
+    networks:
+      - labomatics
+    depends_on:
+      - ldap
+    restart: unless-stopped
+{% endif %}
+
+  redis:
+    image: redis:7-alpine
+    container_name: labomatics-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - labomatics
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    image: ghcr.io/simonlou-dev/labomatics/labomatics-backend:latest-rc
+    pull_policy: always
+    env_file: backend.env
+    container_name: labomatics-api
+    volumes:
+      - ./init-backend.sh:/app/init-backend.sh:ro
+      - ./clusterconfig.yaml:/etc/labomatics/clusterconfig.yaml:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - labomatics
+      - proxy
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.api-https.rule=Host(`api.labomatics.{{ domain }}`)
+      - traefik.http.routers.api-https.entrypoints=websecure
+      - traefik.http.routers.api-https.tls=true
+      - traefik.http.routers.api-https.service=api
+      - traefik.http.services.api.loadbalancer.server.port=8000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  worker:
+    image: ghcr.io/simonlou-dev/labomatics/labomatics-worker:latest-rc
+    pull_policy: always
+    env_file: backend.env
+    container_name: labomatics-worker
+    volumes:
+      - ./clusterconfig.yaml:/etc/labomatics/clusterconfig.yaml:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - labomatics
+    restart: unless-stopped
+
+  frontend:
+    image: ghcr.io/simonlou-dev/labomatics/labomatics-frontend:latest-rc
+    pull_policy: always
+    env_file: frontend.env
+    container_name: labomatics-frontend
+    depends_on:
+      - api
+    networks:
+      - proxy
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.frontend-https.rule=Host(`labomatics.{{ domain }}`)
+      - traefik.http.routers.frontend-https.entrypoints=websecure
+      - traefik.http.routers.frontend-https.tls=true
+      - traefik.http.routers.frontend-https.service=frontend
+      - traefik.http.services.frontend.loadbalancer.server.port=80
+
+  traefik:
+    image: traefik:v3.7.9
+    command:
+      - --configFile=/etc/traefik/traefik.yml
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./dynamic:/etc/traefik/dynamic:ro
+      - ./certs:/etc/traefik/certs:ro
+      - traefik_logs:/var/log/traefik
+    networks:
+      - proxy
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      # - traefik.http.routers.traefik-http.rule=Host(`traefik.{{ domain }}`)
+      # - traefik.http.routers.traefik-http.entrypoints=web
+      # - traefik.http.routers.traefik-http.middlewares=https-redirect@file
+      - traefik.http.routers.traefik-https.rule=Host(`traefik.{{ domain }}`)
+      - traefik.http.routers.traefik-https.entrypoints=websecure
+      - traefik.http.routers.traefik-https.tls=true
+      - traefik.http.routers.traefik-https.service=api@internal
+      #- traefik.http.routers.traefik-https.middlewares=admin-chain@file
+
+networks:
+  proxy:
+    driver: bridge
+  labomatics:
+    driver: bridge
+
+
+volumes:
+  postgres_data:
+    driver: local
+  ldap_data:
+    driver: local
+  ldap_config:
+    driver: local
+  traefik_acme:
+    driver: local
+  traefik_logs:
+    driver: local

@@ -16,8 +16,9 @@ paramiko = "^3.0"
 jinja2 = "^3.0"
 pyyaml = "^6.0"
 proxmoxer = "^2.0"
-typing-extensions = "^4.16.0"
 readchar = "^4.2.2"
+prompt-toolkit = "^3.0"
+ldap3 = "^2.9.1"
 
 [tool.poetry.scripts]
 labomatics = "labomatics_cli.__main__:main"
@@ -27,6 +28,8 @@ pytest = "^7.0"
 black = "^23.0"
 ruff = "^0.1"
 mypy = "^1.0"
+types-pyyaml = "^6.0.12.20260906"
+types-ldap3 = "^2.9.13.20260827"
 
 [build-system]
 requires = ["poetry-core"]

@@ -1,0 +1,11 @@
+ldap {
+    server = 'ldap://ldap:389'
+    identity = 'cn=radius-bind,ou=svcaccounts,{{ base_dn }}'
+    password = '{{ secrets.ldap_radius_bind_password }}'
+    base_dn = 'ou=users,{{ base_dn }}'
+
+    user {
+        base_dn = "${..base_dn}"
+        filter = "{% raw %}(uid=%{%{Stripped-User-Name}:-%{User-Name}}){% endraw %}"
+    }
+}

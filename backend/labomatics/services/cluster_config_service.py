@@ -224,7 +224,7 @@ class ClusterConfigService:
                         ClusterCreateDTO(
                             name=cluster_entry.name,
                             url=cluster_entry.url,
-                            default_storage="shared",
+                            default_storage=cluster_entry.default_storage or "shared",
                             sdn_zone=cluster_entry.sdn_zone,
                             is_default_for_new_cohorts=True,
                         ),
@@ -236,7 +236,7 @@ class ClusterConfigService:
                         ClusterCreateDTO(
                             name=cluster_entry.name,
                             url=cluster_entry.url,
-                            default_storage="shared",
+                            default_storage=cluster_entry.default_storage or "shared",
                             sdn_zone=cluster_entry.sdn_zone,
                             is_default_for_new_cohorts=is_default,
                         )

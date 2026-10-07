@@ -26,6 +26,7 @@ class ClusterEntryDTO(BaseModel):
     name: str
     url: str
     sdn_zone: str
+    default_storage: str | None = None
     wan_configs: list[WanConfigDTO]
     vnet_config: VnetConfigDTO | None = None
     token_id: str | None

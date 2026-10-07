@@ -1,0 +1,243 @@
+import asyncio
+
+from installer_fakes import UUID, FakeApi, fake_checks
+from labomatics_cli.installer.app import InstallerApp
+from labomatics_cli.installer.pages import NEW_CLUSTER, ClusterChoice
+from labomatics_cli.installer.proxmox_api import ProxmoxConnectionError
+from labomatics_cli.installer.store import InstallMode, InstallStore
+from labomatics_cli.installer.runner import InstallRunner
+from labomatics_cli.installer.tasks import build_tasks
+from labomatics_cli.models.install_config import InstallConfig
+from labomatics_cli.tui import InstallReporter
+from tui_harness import CTRL_C, DOWN, ENTER, TAB, WaitUntil, check, run
+
+PROXMOX = {
+    "cluster_name": "lab1",
+    "url": "https://pve1.lab:8006",
+    "user": "root@pam",
+    "token_id": "tok",
+    "token_secret": UUID,
+}
+VM = {
+    "domain": "lab.fr",
+    "admin_iface": "vmbr0",
+    "admin_network": "192.168.50.0/24",
+    "admin_gateway": "192.168.50.254",
+    "vm_ip": "192.168.50.10",
+    "dns_upstream": ["1.1.1.1"],
+}
+
+
+def make_app(tmp_path, cluster=None, api=None, **kw):
+    """Crée une application avec un faux Proxmox et un dossier temporaire."""
+    return InstallerApp(
+        cluster,
+        base_dir=tmp_path,
+        api_factory=kw.pop("api_factory", lambda *a: api or FakeApi()),
+        checks=fake_checks(("192.168.50.254",)),
+        **kw,
+    )
+
+
+def seed(tmp_path, **sections):
+    """Crée un cluster sauvegardé avec les sections données."""
+    store = InstallStore.open("lab1", tmp_path)
+    store.save_config(InstallConfig.model_validate(sections))
+    return store
+
+
+def test_default_runner_labels_feed_the_install_screen(tmp_path):
+    """Les 13 libellés du runner par défaut alimentent l'écran d'installation."""
+    app = make_app(tmp_path)
+    labels = InstallRunner(build_tasks()).labels
+    assert len(labels) == 13 and labels[7] == "Propagation des CA"
+    assert app.build_wizard().reporter.steps == labels
+
+
+def test_vm_exists_tests_the_vm_task_by_name(tmp_path):
+    """La page VM se verrouille quand la tâche `vm` est terminée."""
+    store = seed(tmp_path, proxmox=PROXMOX)
+    app = make_app(tmp_path, "lab1")
+    app._select_cluster()
+    assert not app._vm_exists()
+    store.mark_task_done("vm")
+    app.store = InstallStore.open("lab1", tmp_path)
+    assert app._vm_exists()
+
+
+def test_install_runs_the_runner_with_a_context(tmp_path):
+    """`_install` construit le contexte et lance le runner sur le store."""
+    seen = []
+
+    class Spy(InstallRunner):
+        """Runner espion qui mémorise le contexte reçu."""
+
+        async def run(self, ctx):
+            """Mémorise le contexte.
+
+            Args:
+                ctx: Contexte d'installation.
+            """
+            seen.append(ctx)
+
+    seed(tmp_path, proxmox=PROXMOX)
+    app = make_app(tmp_path, "lab1", runner=Spy([]))
+    app._select_cluster()
+    reporter = InstallReporter(["x"])
+    asyncio.run(app._install({}, reporter))
+    assert seen[0].store is app.store and seen[0].ui is reporter
+    assert seen[0].config.proxmox.cluster_name == "lab1"
+
+
+def test_install_builds_the_final_summary_after_the_run(tmp_path):
+    """Une fois les tâches terminées, le résumé de `health` devient le récapitulatif."""
+    seed(tmp_path, proxmox=PROXMOX)
+    app = make_app(tmp_path, "lab1", runner=InstallRunner([]))
+    app._select_cluster()
+    app.store.set_data(
+        "final_summary",
+        {
+            "frontend_url": "https://labomatics.lab.fr",
+            "api_url": "https://api.labomatics.lab.fr",
+            "keycloak_url": "https://keycloak.lab.fr/admin/labomatics/console/",
+            "admin_username": "jean.dupont",
+            "admin_temp_password": "Tmp-Pass-1",
+        },
+    )
+    reporter = InstallReporter(["x"])
+    asyncio.run(app._install({}, reporter))
+    access, account = reporter.summary
+    assert ("Application", "https://labomatics.lab.fr") in access.rows
+    assert ("Identifiant", "jean.dupont") in account.rows
+    assert ("Mot de passe", "Tmp-Pass-1") in account.rows
+    assert "première connexion" in account.note
+    assert reporter.lines == []
+
+
+def test_install_without_summary_logs_nothing(tmp_path):
+    """Sans résumé enregistré, ni ligne ni récapitulatif."""
+    seed(tmp_path, proxmox=PROXMOX)
+    app = make_app(tmp_path, "lab1", runner=InstallRunner([]))
+    app._select_cluster()
+    reporter = InstallReporter(["x"])
+    asyncio.run(app._install({}, reporter))
+    assert reporter.lines == [] and reporter.summary == []
+
+
+def test_new_mode_prefills_name_and_refuses_existing(tmp_path):
+    """Nouveau cluster : nom prérempli, nom déjà pris refusé."""
+    app = make_app(tmp_path, "lab2")
+    assert app._select_cluster() and app.store is None
+    w = app.build_wizard()
+    name = w.steps[0].fields[0]
+    assert name.value == "lab2" and not name.locked
+    seed(tmp_path, proxmox=PROXMOX)
+    name.set_value("lab1")
+    assert not name.validate() and "existe déjà" in name.error
+
+
+def test_page_save_opens_store_and_locks_name(tmp_path):
+    """La sauvegarde de la page 1 ouvre le store, enregistre sa section seule et verrouille le nom."""
+    app = make_app(tmp_path)
+    w = app.build_wizard()
+    step = w.steps[0]
+    for key, value in {f"proxmox.{k}": v for k, v in PROXMOX.items()}.items():
+        next(f for f in step.fields if f.key == key).set_value(value)
+    w.collect()
+    app._save(step, w.ctx)
+    assert app.store is not None and InstallStore.list_clusters(tmp_path) == ["lab1"]
+    assert app.store.config.proxmox.url == "https://pve1.lab:8006"
+    assert app.store.config.vm is None
+    assert step.fields[0].locked
+    assert app.mode == InstallMode.resume
+
+
+def test_resume_starts_at_first_unsaved_page(tmp_path):
+    """Reprise : préremplissage, rien de verrouillé sauf le nom, départ à la 3e page."""
+    seed(tmp_path, proxmox=PROXMOX, vm=VM)
+    app = make_app(tmp_path, "lab1")
+    app._select_cluster()
+    assert app.mode == InstallMode.resume
+    w = app.build_wizard()
+    assert w.index == 2 and w.current.title == "Labs : WAN"
+    assert w.ctx.data["api"] is not None
+    vm_fields = {f.key: f for f in w.steps[1].fields}
+    assert (
+        vm_fields["vm.domain"].value == "lab.fr" and not vm_fields["vm.domain"].locked
+    )
+    assert w.steps[0].fields[0].locked
+
+
+def test_resume_restarts_at_first_page_when_proxmox_is_down(tmp_path):
+    """Reprise : si Proxmox est injoignable, on repart de la première page."""
+
+    def down(*args):
+        """Simule un Proxmox injoignable."""
+        raise ProxmoxConnectionError("injoignable")
+
+    seed(tmp_path, proxmox=PROXMOX, vm=VM)
+    app = make_app(tmp_path, "lab1", api_factory=down)
+    app._select_cluster()
+    assert app.build_wizard().index == 0
+
+
+def test_edit_mode_locks_saved_values(tmp_path):
+    """Édition : tout ce qui est en config est verrouillé, le reste reste libre."""
+    store = seed(tmp_path, proxmox=PROXMOX, vm=VM)
+    store.mark_completed()
+    app = make_app(tmp_path, "lab1")
+    app._select_cluster()
+    assert app.mode == InstallMode.edit
+    w = app.build_wizard()
+    assert w.index == 0
+    by_key = {f.key: f for s in w.steps for f in s.fields}
+    assert by_key["vm.domain"].locked and by_key["proxmox.url"].locked
+    assert not by_key["wan.network"].locked
+    assert by_key["vm.domain"].value == "lab.fr"
+
+
+def test_select_cluster_uses_choice_when_clusters_exist(tmp_path, monkeypatch):
+    """Sans --cluster et avec des clusters existants, le choix est proposé."""
+    seed(tmp_path, proxmox=PROXMOX)
+    monkeypatch.setattr(ClusterChoice, "ask", lambda self: "lab1")
+    app = make_app(tmp_path)
+    assert app._select_cluster() and app.store is not None
+    monkeypatch.setattr(ClusterChoice, "ask", lambda self: NEW_CLUSTER)
+    app = make_app(tmp_path)
+    assert app._select_cluster() and app.store is None and app.cluster is None
+    monkeypatch.setattr(ClusterChoice, "ask", lambda self: None)
+    assert not make_app(tmp_path)._select_cluster()
+
+
+def test_cluster_choice_screen():
+    """L'écran de choix renvoie le cluster sélectionné."""
+    wizard = ClusterChoice(["lab1", "lab2"]).build_wizard()
+    result, _ = run(wizard, [ENTER, DOWN, DOWN, ENTER, TAB, ENTER])
+    assert result == {"cluster": "lab2"}
+
+
+def test_first_page_flow_saves_and_advances(tmp_path):
+    """Page Proxmox saisie au clavier : connexion simulée, sauvegarde, passage à la page VM."""
+    app = make_app(tmp_path)
+    w = app.build_wizard()
+    feed = [
+        TAB,
+        "https://pve1.lab:8006",
+        TAB,
+        TAB,
+        "tok",
+        TAB,
+        UUID,
+        TAB,
+        ENTER,
+        WaitUntil(lambda: w.index == 1),
+        check(
+            lambda: app.store is not None
+            and app.store.config.proxmox.token_id == "tok"
+            and w.ctx.data["nodes"],
+            "page sauvegardée",
+        ),
+        CTRL_C,
+    ]
+    result, _ = run(w, feed)
+    assert result is None

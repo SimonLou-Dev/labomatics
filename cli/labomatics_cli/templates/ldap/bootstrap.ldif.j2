@@ -1,0 +1,70 @@
+# Chargé une seule fois, à l'initialisation, après l'arbre de l'image vegardit
+# (ou=Users, ou=Groups et des comptes d'exemple déjà créés).
+
+dn: ou=svcaccounts,{{ base_dn }}
+objectClass: organizationalUnit
+ou: svcaccounts
+
+dn: cn=keycloak-bind,ou=svcaccounts,{{ base_dn }}
+objectClass: organizationalRole
+objectClass: simpleSecurityObject
+cn: keycloak-bind
+userPassword: {{ secrets.ldap_keycloak_bind_password }}
+description: Compte de service utilise par Keycloak (User Federation WRITABLE)
+
+dn: cn=radius-bind,ou=svcaccounts,{{ base_dn }}
+objectClass: organizationalRole
+objectClass: simpleSecurityObject
+cn: radius-bind
+userPassword: {{ secrets.ldap_radius_bind_password }}
+description: Compte utilise par FreeRADIUS pour les recherches LDAP (rlm_ldap)
+
+dn: uid=admin,ou=users,{{ base_dn }}
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+uid: admin
+cn: Administrator
+sn: Administrator
+userPassword: {{ secrets.ldap_admin_password }}
+description: Compte administrateur
+
+dn: cn=superadmin,ou=groups,{{ base_dn }}
+objectClass: groupOfNames
+cn: superadmin
+member: uid=admin,ou=users,{{ base_dn }}
+
+dn: cn=prof,ou=groups,{{ base_dn }}
+objectClass: groupOfNames
+cn: prof
+member: uid=admin,ou=users,{{ base_dn }}
+
+dn: cn=student,ou=groups,{{ base_dn }}
+objectClass: groupOfNames
+cn: student
+member: uid=admin,ou=users,{{ base_dn }}
+
+# Les ACL de l'image donnent l'écriture au groupe ldap-admins : Keycloak en devient
+# le seul membre pour créer et modifier les comptes.
+dn: cn=ldap-admins,ou=groups,{{ base_dn }}
+changetype: modify
+replace: uniqueMember
+uniqueMember: cn=keycloak-bind,ou=svcaccounts,{{ base_dn }}
+
+# Groupes et comptes d'exemple de l'image (mot de passe « changeit »).
+dn: cn=employees,ou=groups,{{ base_dn }}
+changetype: delete
+
+dn: cn=guests,ou=groups,{{ base_dn }}
+changetype: delete
+
+dn: cn=machines,ou=groups,{{ base_dn }}
+changetype: delete
+
+dn: uid=employee1,ou=Internal,ou=users,{{ base_dn }}
+changetype: delete
+
+dn: uid=guest1,ou=External,ou=users,{{ base_dn }}
+changetype: delete
+
+dn: uid=machine1,ou=TechnicalAccounts,ou=users,{{ base_dn }}
+changetype: delete

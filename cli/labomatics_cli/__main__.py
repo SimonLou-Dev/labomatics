@@ -7,13 +7,25 @@ import warnings
 
 from rich.console import Console
 
-from .commands.install import cmd_install
 from .commands.templates import cmd_templates
+from .installer.app import InstallerApp
 
 # Suppress SSL warnings for self-signed certs (Proxmox, etc)
 warnings.filterwarnings("ignore", message="Unverified HTTPS request")
 
 console = Console()
+
+
+def cmd_install(args: argparse.Namespace) -> int:
+    """Lance le wizard d'installation.
+
+    Args:
+        args: Arguments de la ligne de commande (`cluster`).
+
+    Returns:
+        0 si le wizard est allé au bout, 1 s'il a été abandonné.
+    """
+    return InstallerApp(cluster=args.cluster).run()
 
 
 def main() -> int:
@@ -35,9 +47,8 @@ def main() -> int:
         help="Gestion des templates",
     )
     install_parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Afficher les actions sans les exécuter",
+        "--cluster",
+        help="Nom du cluster à installer, reprendre ou modifier",
     )
     install_parser.set_defaults(func=cmd_install)
     tempaltes_parser.set_defaults(func=cmd_templates)

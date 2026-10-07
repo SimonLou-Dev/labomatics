@@ -160,6 +160,29 @@ Exemple : Jean Dupont → `jdupont@pve`, pool `jdupont`.
 
 ---
 
+## Installation de la stack avec `labomatics install`
+
+Le wizard installe la VM Labomatics et ses services (Docker, Keycloak, LDAP, backend)
+et configure Proxmox (zone VXLAN, client OIDC). Il s'exécute en local et se
+connecte à Proxmox par API et SSH.
+
+```bash
+labomatics install
+```
+
+1. Répondre aux 10 pages (Proxmox, VM, WAN, VXLAN, administrateur, authentification,
+   LDAP externe, reverse proxy, e-mail, mots de passe SSH des nœuds) ; chaque page est
+   sauvegardée dès sa validation.
+2. Valider le récapitulatif : les 13 tâches s'enchaînent.
+3. Noter l'URL, l'identifiant et le mot de passe temporaire affichés en fin d'installation.
+
+Les fichiers sont dans `~/.labomatics/clusters/<cluster>/` (`install.yaml`, `state.json`).
+Relancer `labomatics install --cluster <cluster>` reprend une installation interrompue,
+ou ouvre le mode édition si elle est terminée (valeurs existantes verrouillées,
+seules les tâches concernées sont rejouées).
+
+---
+
 ## Ordre de mise en place (à suivre dans cet ordre)
 
 > **Ces étapes sont à réaliser une seule fois avant le premier `apply`.**

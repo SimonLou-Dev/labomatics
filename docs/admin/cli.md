@@ -12,7 +12,7 @@ labomatics <groupe> <commande> [options]
 
 | Groupe      | Description                                                          |
 |-------------|----------------------------------------------------------------------|
-| `setup`     | Assistant d'installation interactif                                  |
+| `install`   | Assistant d'installation de la stack Labomatics (VM, Keycloak, agent) |
 | `student`   | Gestion des étudiants et de leurs VMs                                |
 | `pool`      | Pools Proxmox gérés (quotas, nombre de VMs)                          |
 | `network`   | Réseau : zones SDN, VNets VXLAN, utilisation des adresses IP         |
@@ -24,18 +24,27 @@ labomatics <groupe> <commande> [options]
 
 ---
 
-## `setup` — Assistant d'installation
+## `install` — Assistant d'installation
 
-Lance le wizard complet : saisie credentials, copie des fichiers de config,
-vérification Proxmox, ouverture de `infra.yaml`, vérification bridges/storages/SDN,
-création du pool template, conseil SPICE et build OpenWrt optionnel.
-
-Le wizard est **idempotent** : si `.env` ou `infra.yaml` existent déjà, ils ne sont pas écrasés.
+Lance le wizard d'installation de la stack Labomatics sur un cluster Proxmox :
+10 pages de saisie (Proxmox, VM, réseaux des labs, compte administrateur,
+authentification, LDAP externe, reverse proxy, e-mail, accès SSH aux nœuds),
+récapitulatif, puis 13 tâches (token, zone VXLAN, VM, Docker, DNS, stack, Keycloak,
+client OIDC Proxmox, backend, agent, contrôle de santé). L'écran final affiche
+les URLs, l'identifiant administrateur et son mot de passe temporaire.
 
 ```bash
-labomatics setup
-labomatics setup --dir ./config   # répertoire de configuration alternatif
+labomatics install                  # propose les clusters existants ou un nouveau
+labomatics install --cluster lab1   # reprend ou modifie le cluster « lab1 »
 ```
+
+La configuration et l'état sont sauvegardés après chaque page et chaque tâche dans
+`~/.labomatics/clusters/<cluster>/` (`install.yaml`, `state.json`, droits 600) :
+
+- **Reprise** : après une interruption, le wizard reprend à la première page non
+  sauvegardée et saute les tâches déjà faites.
+- **Édition** : sur une installation terminée, les valeurs existantes sont verrouillées
+  (seuls des ajouts dans les listes sont possibles) et seules les tâches impactées sont rejouées.
 
 ---
 

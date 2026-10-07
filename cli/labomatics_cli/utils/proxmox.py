@@ -188,8 +188,20 @@ class ProxmoxClient:
         upid = self.proxmox.nodes(node).qemu.create(**data)
         return upid
 
-    def create_vm_from_data(self, node: str, vmid: str, data: str) -> str:
-        """Créer une VM vide et retourner le UPID."""
+    def create_vm_from_data(self, node: str, vmid: int, data: Dict[str, Any]) -> str:
+        """Créer une VM à partir de ses paramètres et retourner le UPID.
+
+        Args:
+            node: Nœud Proxmox cible.
+            vmid: Identifiant de la VM.
+            data: Paramètres de création passés à l'API.
+
+        Returns:
+            L'UPID de la tâche de création.
+
+        Raises:
+            RuntimeError: Si la VM existe déjà.
+        """
         if self.vm_exists(node, vmid):
             raise RuntimeError(f"VM {vmid} existe déjà sur le nœud {node}")
 

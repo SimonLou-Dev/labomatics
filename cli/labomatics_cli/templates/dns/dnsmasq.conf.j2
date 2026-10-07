@@ -1,0 +1,25 @@
+# dnsmasq configuration (généré par labomatics install)
+listen-address=0.0.0.0
+port=53
+bind-interfaces
+
+# Zone locale
+address=/keycloak.{{ domain }}/{{ vm_ip }}
+address=/labomatics.{{ domain }}/{{ vm_ip }}
+address=/api.labomatics.{{ domain }}/{{ vm_ip }}
+address=/traefik.{{ domain }}/{{ vm_ip }}
+{% for fqdn, ip in node_entries.items() %}
+address=/{{ fqdn }}/{{ ip }}
+{% endfor %}
+local=/{{ domain }}/
+no-resolv
+domain-needed
+
+# DNS amont
+{% for server in upstream %}
+server={{ server }}
+{% endfor %}
+
+cache-size=1000
+log-queries
+log-facility=-
