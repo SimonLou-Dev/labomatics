@@ -119,16 +119,46 @@ def test_vm_image_download_fails_fast_without_dns(tmp_path):
 
 
 def test_vm_existing_is_reused(tmp_path):
-    """VM existante : aucune création, démarrage seulement si elle est arrêtée."""
+    """VM complète : pas de création ni d'import, cloud-init réappliqué, démarrage si arrêtée."""
     api = FakeProxmox()
     api.vm = VmInfo(120, "pve2", "labomatics", "running")
+    api.vm_conf = {"scsi0": "ceph:vm-120-disk-1"}
     ctx = make_ctx(tmp_path, api)
     VmTask().run(ctx)
-    assert api.calls == []
+    assert api.names() == ["set_vm_config"]
+    assert api.cloud_options["ipconfig0"] == "ip=192.168.50.10/24,gw=192.168.50.254"
     assert ctx.store.get_data("vmid") == 120 and ctx.store.get_data("vm_node") == "pve2"
+    api.calls.clear()
     api.vm = VmInfo(120, "pve2", "labomatics", "stopped")
     VmTask().run(make_ctx(tmp_path, api))
-    assert api.names() == ["start_vm", "wait_task"]
+    assert api.names() == ["set_vm_config", "start_vm", "wait_task"]
+
+
+def test_vm_left_incomplete_is_repaired(tmp_path):
+    """VM créée mais sans disque ni cloud-init (install interrompue) : complétée."""
+    api, sessions = FakeProxmox(), []
+    api.vm = VmInfo(120, "pve2", "labomatics", "stopped")
+    ctx = make_ctx(tmp_path, api, sessions, outputs={"lsblk": "sda\n"})
+    VmTask().run(ctx)
+    assert api.names() == [
+        "attach_unused_disk",
+        "resize_disk",
+        "set_vm_config",
+        "start_vm",
+        "wait_task",
+    ]
+    assert any("qm importdisk 120" in c for c in sessions[0].commands)
+    assert api.cloud_options["ciuser"] == "labomatics"
+
+
+def test_vm_imported_but_unattached_disk_is_attached(tmp_path):
+    """Disque importé mais pas attaché : attaché sans nouvel import."""
+    api, sessions = FakeProxmox(), []
+    api.vm = VmInfo(120, "pve2", "labomatics", "stopped")
+    api.vm_conf = {"unused0": "ceph:vm-120-disk-1"}
+    VmTask().run(make_ctx(tmp_path, api, sessions, outputs={"lsblk": "sda\n"}))
+    assert "attach_unused_disk" in api.names()
+    assert not any("qm importdisk" in c for s in sessions for c in s.commands)
 
 
 def test_vm_image_already_on_node_is_not_downloaded(tmp_path):

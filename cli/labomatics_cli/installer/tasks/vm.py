@@ -27,7 +27,10 @@ class VmTask(InstallTask):
     label = "VM Labomatics"
 
     def run(self, ctx: InstallContext) -> None:
-        """Crée la VM si elle n'existe pas, s'assure qu'elle tourne et que SSH répond.
+        """Crée ou complète la VM, s'assure qu'elle tourne et que SSH répond.
+
+        Une VM existante (installation interrompue) est complétée : disque
+        système importé s'il manque, cloud-init réappliqué à chaque passage.
 
         Args:
             ctx: Contexte d'installation.
@@ -43,6 +46,8 @@ class VmTask(InstallTask):
             ctx.log(f"VM existante réutilisée ({vmid} sur {node})", "ok")
         ctx.store.set_data("vmid", vmid)
         ctx.store.set_data("vm_node", node)
+        self._ensure_system_disk(ctx, node, vmid)
+        api.set_vm_config(node, vmid, **self._cloud_init(ctx))
         if status != "running":
             ctx.log("Démarrage de la VM")
             api.wait_task(api.start_vm(node, vmid))
@@ -181,7 +186,7 @@ class VmTask(InstallTask):
         }
 
     def _create(self, ctx: InstallContext) -> tuple[int, str]:
-        """Crée la VM vide, y importe l'image, attache le disque et configure cloud-init.
+        """Crée la VM vide (matériel seulement).
 
         Args:
             ctx: Contexte d'installation.
@@ -192,21 +197,35 @@ class VmTask(InstallTask):
         assert ctx.config.vxlan is not None
         api = ctx.proxmox
         node = self._node(ctx)
-        storage = ctx.config.vxlan.storage
-        node_ssh = ctx.node_ssh(node)
-        image = self._ensure_image(ctx, node_ssh)
         vmid = api.next_vmid()
         ctx.log(f"Création de la VM {vmid} sur {node}")
-        api.wait_task(
-            api.create_vm(node, vmid, **self._hardware(ctx, storage)), timeout=600
-        )
-        ctx.log("Import du disque système")
-        node_ssh.run(
-            f"qm importdisk {vmid} {image} {storage} --format qcow2",
-            timeout=IMPORT_TIMEOUT,
-        )
-        api.attach_unused_disk(node, vmid, "scsi0")
-        api.resize_disk(node, vmid, "scsi0", DISK_SIZE)
-        api.set_vm_config(node, vmid, **self._cloud_init(ctx))
+        hardware = self._hardware(ctx, ctx.config.vxlan.storage)
+        api.wait_task(api.create_vm(node, vmid, **hardware), timeout=600)
         ctx.log("VM créée", "ok")
         return vmid, node
+
+    def _ensure_system_disk(self, ctx: InstallContext, node: str, vmid: int) -> None:
+        """Importe l'image et attache le disque système s'il manque, puis l'agrandit.
+
+        Args:
+            ctx: Contexte d'installation.
+            node: Nœud hôte.
+            vmid: Identifiant de la VM.
+        """
+        assert ctx.config.vxlan is not None
+        api = ctx.proxmox
+        config = api.vm_config(node, vmid)
+        if "scsi0" in config:
+            return
+        if not any(key.startswith("unused") for key in config):
+            storage = ctx.config.vxlan.storage
+            node_ssh = ctx.node_ssh(node)
+            image = self._ensure_image(ctx, node_ssh)
+            ctx.log("Import du disque système")
+            node_ssh.run(
+                f"qm importdisk {vmid} {image} {storage} --format qcow2",
+                timeout=IMPORT_TIMEOUT,
+            )
+        api.attach_unused_disk(node, vmid, "scsi0")
+        api.resize_disk(node, vmid, "scsi0", DISK_SIZE)
+        ctx.log("Disque système attaché", "ok")

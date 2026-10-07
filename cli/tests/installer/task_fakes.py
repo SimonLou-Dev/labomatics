@@ -69,6 +69,7 @@ class FakeProxmox:
         self.dns: dict[str, dict] = {}
         self.fqdns: dict[str, list[str]] = {"pve1": ["pve1.lab.fr"]}
         self.vm_options: dict[str, Any] = {}
+        self.vm_conf: dict[str, Any] = {}
 
     def _rec(self, *call: Any) -> None:
         """Enregistre un appel.
@@ -272,6 +273,18 @@ class FakeProxmox:
         self.vm = VmInfo(vmid, node, options["name"], "stopped")
         return "UPID:pve1:create"
 
+    def vm_config(self, node: str, vmid: int) -> dict:
+        """Configuration de la VM.
+
+        Args:
+            node: Nœud.
+            vmid: VMID.
+
+        Returns:
+            Une copie de la configuration simulée.
+        """
+        return dict(self.vm_conf)
+
     def attach_unused_disk(self, node: str, vmid: int, disk: str) -> None:
         """Enregistre l'attachement du disque importé.
 
@@ -281,6 +294,7 @@ class FakeProxmox:
             disk: Emplacement cible.
         """
         self._rec("attach_unused_disk", disk)
+        self.vm_conf[disk] = "disque-importé"
 
     def set_vm_config(self, node: str, vmid: int, **options: Any) -> None:
         """Enregistre la configuration cloud-init.
