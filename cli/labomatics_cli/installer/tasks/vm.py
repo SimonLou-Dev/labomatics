@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 import ipaddress
-from urllib.parse import quote
+from urllib.parse import quote, urlparse
 
 from labomatics_cli.installer.context import VM_USER, InstallContext
-from labomatics_cli.installer.download import RemoteDownload
 from labomatics_cli.installer.ssh import SshError, SshSession
 from labomatics_cli.installer.tasks.base import InstallTask
 
@@ -26,7 +25,6 @@ class VmTask(InstallTask):
 
     name = "vm"
     label = "VM Labomatics"
-    download_poll: float = 30
 
     def run(self, ctx: InstallContext) -> None:
         """Crée la VM si elle n'existe pas, s'assure qu'elle tourne et que SSH répond.
@@ -110,9 +108,17 @@ class VmTask(InstallTask):
             ctx.log("Image Fedora déjà présente sur le nœud", "ok")
             return path
         ctx.log("Téléchargement de l'image Fedora Cloud sur le nœud")
-        RemoteDownload(
-            ssh, IMAGE_URL, path, poll=self.download_poll, timeout=DOWNLOAD_TIMEOUT
-        ).run(ctx.log)
+        server = urlparse(IMAGE_URL).hostname
+        if not ssh.run(f"getent hosts {server}", check=False).ok:
+            raise RuntimeError(
+                f"Le nœud ne résout pas {server} : vérifie son DNS (/etc/resolv.conf)"
+            )
+        ssh.run(
+            f"mkdir -p {IMAGE_CACHE} && "
+            f"wget -nv --tries=3 --timeout=60 -O {path}.part {IMAGE_URL} "
+            f"&& mv {path}.part {path} || {{ rm -f {path}.part; exit 1; }}",
+            timeout=DOWNLOAD_TIMEOUT,
+        )
         ctx.log("Image téléchargée", "ok")
         return path
 

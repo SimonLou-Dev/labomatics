@@ -1,3 +1,5 @@
+import pytest
+
 from labomatics_cli.installer.proxmox_api import VmInfo
 from labomatics_cli.installer.tasks.dns import DnsTask
 from labomatics_cli.installer.tasks.docker import DockerTask
@@ -6,7 +8,6 @@ from labomatics_cli.installer.tasks.sdn import SdnTask
 from labomatics_cli.installer.tasks.token import TokenTask
 from labomatics_cli.installer.tasks.vm import VmTask
 from task_fakes import FakeProxmox, make_ctx
-import pytest
 
 
 def test_token_creates_user_acl_and_saves_secret(tmp_path):
@@ -62,11 +63,9 @@ def test_vm_creation_path(tmp_path):
         api,
         sessions,
         failing={"test -f": 1},
-        outputs={"lsblk": "sda\n", "cat /var/lib/labomatics": "0\n"},
+        outputs={"lsblk": "sda\n"},
     )
-    task = VmTask()
-    task.download_poll = 0
-    task.run(ctx)
+    VmTask().run(ctx)
     assert api.names() == [
         "create_vm",
         "wait_task",
@@ -78,8 +77,10 @@ def test_vm_creation_path(tmp_path):
     ]
     node_ssh = sessions[0]
     assert node_ssh.args == ("pve1", "root")
-    assert any("nohup sh -c 'wget -nv" in c for c in node_ssh.commands)
-    assert any(c.startswith("mv ") and ".part" in c for c in node_ssh.commands)
+    assert any(
+        "getent hosts download.fedoraproject.org" in c for c in node_ssh.commands
+    )
+    assert any("wget -nv" in c and ".part" in c for c in node_ssh.commands)
     assert any(
         "qm importdisk 105" in c and "ceph --format qcow2" in c
         for c in node_ssh.commands
@@ -101,6 +102,17 @@ def test_vm_creation_path(tmp_path):
     assert sessions[1].args == ("192.168.50.10", "labomatics") and sessions[1].connected
     assert "sudo growpart /dev/sda 3" in sessions[1].commands
     assert sessions[1].commands[-1] == "sudo btrfs filesystem resize max /"
+
+
+def test_vm_image_download_fails_fast_without_dns(tmp_path):
+    """Le nœud ne résout pas le serveur : erreur explicite, pas de wget."""
+    sessions = []
+    ctx = make_ctx(
+        tmp_path, FakeProxmox(), sessions, failing={"test -f": 1, "getent": 2}
+    )
+    with pytest.raises(RuntimeError, match="vérifie son DNS"):
+        VmTask().run(ctx)
+    assert not any("wget" in c for c in sessions[0].commands)
 
 
 def test_vm_existing_is_reused(tmp_path):
