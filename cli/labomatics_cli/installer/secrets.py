@@ -65,7 +65,6 @@ class InstallSecrets(BaseModel):
     ldap_keycloak_bind_password: Optional[str] = None
     ldap_radius_bind_password: Optional[str] = None
     radius_shared_secret: Optional[str] = None
-    labomatics_admin_password: Optional[str] = None
     admin_temp_password: Optional[str] = None
     encryption_key: Optional[str] = None
     labomatics_token_secret: Optional[str] = None
@@ -82,7 +81,6 @@ class InstallSecrets(BaseModel):
         "ldap_keycloak_bind_password",
         "ldap_radius_bind_password",
         "radius_shared_secret",
-        "labomatics_admin_password",
         "admin_temp_password",
     )
 

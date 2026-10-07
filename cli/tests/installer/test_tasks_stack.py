@@ -135,10 +135,14 @@ def test_keycloak_creates_then_second_run_keeps_passwords(tmp_path):
     assert kc.realm_settings["passwordPolicy"] == PASSWORD_POLICY
     assert kc.realm_settings["smtpServer"]["host"] == "smtp.lab.fr"
     assert kc.passwords["u-jean.dupont"] == (secrets.admin_temp_password, True)
-    assert kc.passwords["u-labomatics-admin"] == (
-        secrets.labomatics_admin_password,
-        False,
-    )
+    assert "u-labomatics-admin" not in kc.passwords
+    assert kc.clients["labomatics"]["serviceAccountsEnabled"] is True
+    assert (
+        "assign_client_roles",
+        "sa-c-labomatics",
+        "realm-management",
+        ("manage-users", "view-users", "manage-clients", "view-clients"),
+    ) in kc.calls
     assert kc.clients["labomatics"]["redirectUris"] == [
         "https://labomatics.lab.fr/*",
         "https://api.labomatics.lab.fr/v1/auth/callback",
@@ -161,7 +165,15 @@ def test_keycloak_creates_then_second_run_keeps_passwords(tmp_path):
     kc.passwords["u-jean.dupont"] = ("changed", False)
     KeycloakTask().run(ctx)
     assert kc.passwords["u-jean.dupont"] == ("changed", False)
-    assert kc.passwords["u-labomatics-admin"] == before["u-labomatics-admin"]
+    assert kc.passwords == {**before, "u-jean.dupont": ("changed", False)}
+
+
+def test_keycloak_removes_legacy_service_user(tmp_path):
+    """L'ancien utilisateur labomatics-admin d'une installation précédente est supprimé."""
+    kc = FakeKeycloak()
+    kc.users["labomatics-admin"] = "u-labomatics-admin"
+    KeycloakTask().run(make_ctx(tmp_path, keycloak=kc))
+    assert "labomatics-admin" not in kc.users
 
 
 def test_keycloak_external_ldap_and_no_mail(tmp_path):

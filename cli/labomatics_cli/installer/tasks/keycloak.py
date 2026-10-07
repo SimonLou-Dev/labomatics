@@ -32,7 +32,7 @@ REALM_ROLES = (
         False,
     ),
 )
-SERVICE_ACCOUNT = "labomatics-admin"
+LEGACY_SERVICE_USER = "labomatics-admin"
 SERVICE_ROLES = ["manage-users", "view-users", "manage-clients", "view-clients"]
 CLIENT_ID = "labomatics"
 
@@ -114,9 +114,10 @@ class KeycloakTask(InstallTask):
     def _accounts(
         self, ctx: InstallContext, api: KeycloakApi, groups: dict[str, str]
     ) -> None:
-        """Crée l'administrateur et le compte de service du backend.
+        """Crée l'administrateur et retire l'ancien compte de service du backend.
 
-        Les mots de passe ne sont posés qu'à la création, pour ne pas écraser un changement.
+        Le mot de passe n'est posé qu'à la création, pour ne pas écraser un changement.
+        Le backend utilise désormais le compte de service du client `labomatics`.
 
         Args:
             ctx: Contexte d'installation.
@@ -141,25 +142,14 @@ class KeycloakTask(InstallTask):
         ctx.store.set_data("admin_username", admin.username)
         ctx.log(f"Administrateur {admin.username} prêt", "ok")
 
-        service_id, _ = api.ensure_user(
-            REALM,
-            SERVICE_ACCOUNT,
-            {
-                "firstName": "Labomatics",
-                "lastName": "Admin",
-                "email": f"admin@labomatics.{ctx.config.vm.domain}",
-                "emailVerified": True,
-            },
-        )
-        if not api.has_password(REALM, service_id):
-            api.set_password(
-                REALM, service_id, secrets.labomatics_admin_password or "", False
-            )
-        api.assign_client_roles(REALM, service_id, "realm-management", SERVICE_ROLES)
-        ctx.log(f"Compte de service {SERVICE_ACCOUNT} prêt", "ok")
+        if api.delete_user(REALM, LEGACY_SERVICE_USER):
+            ctx.log(f"Ancien compte {LEGACY_SERVICE_USER} supprimé", "ok")
 
     def _client(self, ctx: InstallContext, api: KeycloakApi) -> str:
-        """Crée le client web `labomatics` et conserve son secret.
+        """Crée le client `labomatics` du backend, son compte de service et son secret.
+
+        Le compte de service (grant `client_credentials`) reçoit les rôles
+        `realm-management` dont le backend a besoin pour gérer les comptes.
 
         Args:
             ctx: Contexte d'installation.
@@ -181,8 +171,11 @@ class KeycloakTask(InstallTask):
                 ],
                 "webOrigins": [f"https://labomatics.{domain}"],
                 "standardFlowEnabled": True,
+                "serviceAccountsEnabled": True,
             },
         )
+        service_id = api.service_account_user(REALM, client_uuid)
+        api.assign_client_roles(REALM, service_id, "realm-management", SERVICE_ROLES)
         api.ensure_client_role(
             REALM,
             client_uuid,

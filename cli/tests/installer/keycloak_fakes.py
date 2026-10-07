@@ -123,6 +123,19 @@ class FakeKeycloak:
         self.users.setdefault(username, f"u-{username}")
         return self.users[username], created
 
+    def delete_user(self, realm: str, username: str) -> bool:
+        """Supprime un utilisateur s'il existe.
+
+        Args:
+            realm: Realm.
+            username: Identifiant.
+
+        Returns:
+            True s'il existait.
+        """
+        self._rec("delete_user", username)
+        return self.users.pop(username, None) is not None
+
     def has_password(self, realm: str, user_id: str) -> bool:
         """Mot de passe défini ?
 
@@ -186,6 +199,18 @@ class FakeKeycloak:
         """
         self.clients[client_id] = settings
         return f"c-{client_id}"
+
+    def service_account_user(self, realm: str, client_uuid: str) -> str:
+        """Utilisateur du compte de service.
+
+        Args:
+            realm: Realm.
+            client_uuid: Client.
+
+        Returns:
+            Un identifiant dérivé du client.
+        """
+        return f"sa-{client_uuid}"
 
     def ensure_client_role(
         self, realm: str, client_uuid: str, name: str, description: str

@@ -296,6 +296,22 @@ class KeycloakApi:
         response = self._request("POST", f"/{realm}/users", json=body)
         return self._created_id(response), True
 
+    def delete_user(self, realm: str, username: str) -> bool:
+        """Supprime un utilisateur s'il existe.
+
+        Args:
+            realm: Nom du realm.
+            username: Identifiant de connexion.
+
+        Returns:
+            True si un utilisateur a été supprimé.
+        """
+        existing = self.find_user(realm, username)
+        if existing is None:
+            return False
+        self._request("DELETE", f"/{realm}/users/{existing['id']}")
+        return True
+
     def has_password(self, realm: str, user_id: str) -> bool:
         """Indique si l'utilisateur a déjà un mot de passe.
 
@@ -395,6 +411,21 @@ class KeycloakApi:
             "GET", f"/{realm}/clients/{client_uuid}/client-secret"
         ).json()
         return str(data["value"])
+
+    def service_account_user(self, realm: str, client_uuid: str) -> str:
+        """Identifiant de l'utilisateur de compte de service d'un client.
+
+        Args:
+            realm: Nom du realm.
+            client_uuid: Identifiant interne du client (comptes de service activés).
+
+        Returns:
+            L'identifiant de l'utilisateur `service-account-<client>`.
+        """
+        data = self._request(
+            "GET", f"/{realm}/clients/{client_uuid}/service-account-user"
+        ).json()
+        return str(data["id"])
 
     def ensure_client_role(
         self, realm: str, client_uuid: str, name: str, description: str
