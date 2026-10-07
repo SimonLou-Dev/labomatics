@@ -116,7 +116,7 @@ class Cidr(Validator):
             loose = _network(text)
             if loose is None:
                 return "Réseau invalide (ex. 10.10.0.0/16)"
-            return f"Adresse d'hôte, pas de réseau : utilise {loose}"
+            return f"Pas une adresse de réseau : utilise {loose}"
         if self.max_prefix is not None and network.prefixlen > self.max_prefix:
             return f"Préfixe trop long : /{self.max_prefix} maximum"
         return None

@@ -285,7 +285,11 @@ class Field:
                 dont_extend_width=True,
             )
             hint = ConditionalContainer(
-                Window(FormattedTextControl(self._hint_fragments), height=1),
+                Window(
+                    FormattedTextControl(self._hint_fragments),
+                    wrap_lines=True,
+                    dont_extend_height=True,
+                ),
                 filter=Condition(self._hint_visible),
             )
             self._container = VSplit(
