@@ -3,9 +3,14 @@
 from __future__ import annotations
 
 from labomatics_cli.installer.pages.base import Page
+from labomatics_cli.installer.pages.fields import PrefillField
 from labomatics_cli.installer.pages.rules import AddressPool
-from labomatics_cli.installer.pages.vm import bridge_options
-from labomatics_cli.tui import ListField, SelectField, Step, TextField, WizardContext
+from labomatics_cli.installer.pages.vm import (
+    bridge_options,
+    iface_gateway,
+    iface_network,
+)
+from labomatics_cli.tui import ListField, SelectField, Step, WizardContext
 from labomatics_cli.tui import validators as v
 
 
@@ -29,16 +34,18 @@ class WanPage(Page):
                 required=True,
                 helper="Bridge présent sur tous les nœuds",
             ),
-            TextField(
+            PrefillField(
                 "Réseau WAN",
                 key="wan.network",
+                suggest=lambda c: iface_network(c, "wan.iface"),
                 required=True,
                 helper="Format x.x.x.x/xx (peut être le réseau admin)",
-                validator=v.AllOf(v.Cidr(), v.NoOverlap("vxlan.network")),
+                validator=v.Cidr(),
             ),
-            TextField(
+            PrefillField(
                 "Passerelle WAN",
                 key="wan.gateway",
+                suggest=lambda c: iface_gateway(c, "wan.iface"),
                 required=True,
                 validator=v.IpIn("wan.network"),
             ),

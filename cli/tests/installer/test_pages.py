@@ -222,8 +222,15 @@ def test_wan_page_accepts_admin_network():
     assert submit(w) == (True, None)
 
 
+def test_wan_page_prefills_from_bridge():
+    """Réseau et passerelle WAN sont préremplis depuis le bridge choisi."""
+    w = make(WanPage(), NETWORK_DATA, {"wan.iface": "vmbr0"})
+    assert field(w, "wan.network").value == "10.100.25.0/24"
+    assert field(w, "wan.gateway").value == "10.100.25.254"
+
+
 def test_wan_page_checks():
-    """Chevauchement, exclusions hors réseau et réseau saturé sont refusés."""
+    """Exclusions hors réseau et réseau saturé sont refusés ; le VXLAN n'est pas vérifié ici."""
     assert submit(make(WanPage(), NETWORK_DATA, wan_values(), (VxlanPage(),))) == (
         True,
         None,
@@ -234,7 +241,7 @@ def test_wan_page_checks():
         wan_values(**{"wan.network": "10.96.0.0/12", "wan.gateway": "10.96.0.1"}),
         (VxlanPage(),),
     )
-    assert submit(w)[0] is False and "Chevauche" in field(w, "wan.network").error
+    assert submit(w) == (True, None)
     w = make(WanPage(), NETWORK_DATA, wan_values(), (VxlanPage(),))
     exclusions = field(w, "wan.exclusions")
     exclusions.input.text = "10.211.0.5"
