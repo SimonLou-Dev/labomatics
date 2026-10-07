@@ -58,9 +58,15 @@ def test_vm_creation_path(tmp_path):
     """Image absente : téléchargée sur le nœud, disque importé, attaché, cloud-init, SSH."""
     api, sessions = FakeProxmox(), []
     ctx = make_ctx(
-        tmp_path, api, sessions, failing={"test -f": 1}, outputs={"lsblk": "sda\n"}
+        tmp_path,
+        api,
+        sessions,
+        failing={"test -f": 1},
+        outputs={"lsblk": "sda\n", "cat /var/lib/labomatics": "0\n"},
     )
-    VmTask().run(ctx)
+    task = VmTask()
+    task.download_poll = 0
+    task.run(ctx)
     assert api.names() == [
         "create_vm",
         "wait_task",
@@ -72,7 +78,8 @@ def test_vm_creation_path(tmp_path):
     ]
     node_ssh = sessions[0]
     assert node_ssh.args == ("pve1", "root")
-    assert any("wget -nv" in c and ".part" in c for c in node_ssh.commands)
+    assert any("nohup sh -c 'wget -nv" in c for c in node_ssh.commands)
+    assert any(c.startswith("mv ") and ".part" in c for c in node_ssh.commands)
     assert any(
         "qm importdisk 105" in c and "ceph --format qcow2" in c
         for c in node_ssh.commands
