@@ -7,6 +7,7 @@ from labomatics_cli.tui import (
     RadioField,
     SelectField,
     Step,
+    SummarySection,
     TextField,
     Wizard,
     WizardContext,
@@ -403,11 +404,11 @@ def test_install_done_skip_step_and_success():
         ),
         check(
             lambda: on_screen(w, "Réseau : ignoré (déjà configuré)")
-            and on_screen(w, "Installation terminée ✓"),
+            and on_screen(w, "Tout est prêt ✓"),
             "logs",
         ),
         check(
-            lambda: on_screen(w, "Étape 4/4 — Vérifications")
+            lambda: on_screen(w, "Installation terminée — 4/4 étapes")
             and not any("%" in row for row in screen_lines(w)),
             "libellé",
         ),
@@ -420,6 +421,64 @@ def test_install_done_skip_step_and_success():
     result, rendered = run(w, feed)
     assert result == {"a": "x"}
     assert "38;2;255;107;53" in rendered
+
+
+def test_install_success_shows_summary_and_warnings():
+    """Succès avec récapitulatif : sections alignées et avertissements, journal masqué."""
+
+    async def install(values, ui):
+        """Simule une installation qui prépare un récapitulatif."""
+        ui.step("Un")
+        ui.log("détail technique", "ok")
+        ui.log("ajoute une entrée hosts", "warn")
+        ui.summary = [
+            SummarySection("Accès", [("Application", "https://app.lab.fr")]),
+            SummarySection("Compte", [("Identifiant", "jean")], "À changer."),
+        ]
+
+    w = Wizard(
+        "T", [Step("A", [])], install_steps=["Un"], on_install=install, recap=False
+    )
+    feed = [
+        ENTER,
+        WaitUntil(lambda: w.install.done),
+        check(
+            lambda: on_screen(w, "Application   https://app.lab.fr")
+            and on_screen(w, "Identifiant   jean")
+            and on_screen(w, "Accès")
+            and on_screen(w, "À changer.")
+            and on_screen(w, "À vérifier")
+            and on_screen(w, "! ajoute une entrée hosts"),
+            "récapitulatif",
+        ),
+        check(lambda: not on_screen(w, "détail technique"), "journal masqué"),
+        ENTER,
+    ]
+    run(w, feed)
+
+
+def test_install_long_log_line_does_not_shift_the_log():
+    """Une dernière ligne plus large que l'écran ne décale pas le journal à gauche."""
+
+    async def install(values, ui):
+        """Simule une installation qui échoue sur un message très long."""
+        ui.step("Un")
+        ui.log("première ligne", "ok")
+        raise RuntimeError("Disque plein " + "x" * 300)
+
+    w = Wizard(
+        "T", [Step("A", [])], install_steps=["Un"], on_install=install, recap=False
+    )
+    feed = [
+        ENTER,
+        WaitUntil(lambda: w.install.done),
+        check(
+            lambda: on_screen(w, "✓ première ligne") and on_screen(w, "✗ Disque plein"),
+            "début des lignes visible",
+        ),
+        ENTER,
+    ]
+    run(w, feed)
 
 
 def test_install_failure():

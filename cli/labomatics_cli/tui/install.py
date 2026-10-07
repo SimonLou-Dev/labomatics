@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Awaitable, Callable
 
@@ -30,6 +30,15 @@ class LogLine:
     text: str
 
 
+@dataclass
+class SummarySection:
+    """Section du récapitulatif affiché à la fin d'une installation réussie."""
+
+    title: str
+    rows: list[tuple[str, str]] = field(default_factory=list)
+    note: str = ""
+
+
 class InstallReporter:
     """Suit les phases et le journal d'une installation."""
 
@@ -48,7 +57,9 @@ class InstallReporter:
         self.status = [PENDING] * len(self.steps)
         self.current = -1
         self.failed = False
+        self.finished = False
         self.lines: list[LogLine] = []
+        self.summary: list[SummarySection] = []
         self._on_change = on_change or (lambda: None)
         if not steps:
             self.step(0)
@@ -142,14 +153,17 @@ class InstallReporter:
         """Termine toutes les phases non ignorées."""
         self.status = [s if s == SKIPPED else DONE for s in self.status]
         self.current = self.total - 1
+        self.finished = True
         self._on_change()
 
     def label(self) -> str:
         """Libellé « Étape x/n — nom » de la phase courante.
 
         Returns:
-            Le libellé, ou « Échec à l'étape … » en cas d'échec.
+            Le libellé, « Échec à l'étape … » en cas d'échec, ou la fin de l'installation.
         """
+        if self.finished and not self.failed:
+            return f"Installation terminée — {self.total}/{self.total} étapes"
         index = min(max(self.current, 0), self.total - 1)
         prefix = "Échec à l'étape" if self.failed else "Étape"
         return f"{prefix} {index + 1}/{self.total} — {self.steps[index]}"
@@ -180,12 +194,24 @@ class InstallScreen:
         self.busy = Busy(spinner, lambda: "Installation en cours…")
         self.quit_btn = PillButton("Quitter", on_quit)
         finished = Condition(lambda: self.done)
+        recap = Condition(lambda: self.succeeded and bool(self.reporter.summary))
         self.container = HSplit(
             [
                 Window(FormattedTextControl(self._bar), height=1),
                 Window(FormattedTextControl(self._label), height=1),
                 Window(height=1),
-                Window(FormattedTextControl(self._logs), height=self._log_height),
+                ConditionalContainer(
+                    Window(
+                        FormattedTextControl(self._logs),
+                        height=self._log_height,
+                        wrap_lines=True,
+                    ),
+                    filter=~recap,
+                ),
+                ConditionalContainer(
+                    Window(FormattedTextControl(self._summary), wrap_lines=True),
+                    filter=recap,
+                ),
                 Window(height=1),
                 ConditionalContainer(self.busy, filter=~finished),
                 ConditionalContainer(
@@ -280,17 +306,47 @@ class InstallScreen:
             Les fragments de texte formaté.
         """
         out: list[Any] = []
+        last = len(self.reporter.lines) - 1
         for i, line in enumerate(self.reporter.lines):
             if i:
                 out.append(("", "\n"))
+            if i == last:
+                # Curseur en début de dernière ligne : défilement vertical seulement,
+                # une ligne longue ne décale plus tout le journal vers la gauche.
+                out.append(("[SetCursorPosition]", ""))
             symbol = LOG_SYMBOLS.get(line.level, "·")
             out += [
                 ("class:log-time", f"{line.time} "),
                 (f"class:log-{line.level}", f"{symbol} {line.text}"),
             ]
-        out.append(
-            ("[SetCursorPosition]", "")
-        )  # fait défiler la fenêtre jusqu'à la dernière ligne
+        return out
+
+    def _summary(self) -> list[Any]:
+        """Dessine le récapitulatif final, suivi des avertissements de l'installation.
+
+        Returns:
+            Les fragments de texte formaté.
+        """
+        out: list[Any] = []
+        sections = list(self.reporter.summary)
+        warnings = [line.text for line in self.reporter.lines if line.level == "warn"]
+        width = max((len(k) for sec in sections for k, _ in sec.rows), default=0)
+        for index, section in enumerate(sections):
+            if index:
+                out.append(("", "\n"))
+            out.append(("class:recap-step", f"{section.title}\n"))
+            for key, value in section.rows:
+                out += [
+                    ("class:recap-key", f"  {key.ljust(width)}   "),
+                    ("class:recap-value", f"{value}\n"),
+                ]
+            if section.note:
+                out.append(("class:helper", f"  {section.note}\n"))
+        if warnings:
+            out += [("", "\n"), ("class:log-warn", "À vérifier\n")]
+            out += [
+                ("class:log-warn", f"  {LOG_SYMBOLS['warn']} {w}\n") for w in warnings
+            ]
         return out
 
     def _status(self) -> list[Any]:
@@ -301,4 +357,4 @@ class InstallScreen:
         """
         if self.reporter.failed:
             return [("class:error", "✗ L'installation a échoué (voir les logs)")]
-        return [("class:title", "Installation terminée ✓")]
+        return [("class:title", "Tout est prêt ✓")]

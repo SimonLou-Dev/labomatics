@@ -218,7 +218,7 @@ class InstallerApp:
         self.store.save_page(ctx.values, PAGE_SECTIONS[step.title])
 
     async def _install(self, values: dict, ui: InstallReporter) -> None:
-        """Lance l'exécuteur (toutes les tâches), puis affiche le résumé.
+        """Lance l'exécuteur (toutes les tâches), puis prépare le récapitulatif final.
 
         Args:
             values: Valeurs finales du wizard.
@@ -229,5 +229,4 @@ class InstallerApp:
             self.store.config, self.store, ui, api_factory=self.api_factory
         )
         await self.runner.run(ctx)
-        for level, line in FinalSummary(self.store.get_data("final_summary")).lines():
-            ui.log(line, level)
+        ui.summary = FinalSummary(self.store.get_data("final_summary")).sections()

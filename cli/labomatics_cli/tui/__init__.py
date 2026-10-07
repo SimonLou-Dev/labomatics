@@ -9,7 +9,7 @@ from .fields import (
     SelectField,
     TextField,
 )
-from .install import InstallReporter
+from .install import InstallReporter, SummarySection
 from .step import Step
 from .validators import Validator
 from .wizard import Wizard
@@ -23,6 +23,7 @@ __all__ = [
     "RadioField",
     "SelectField",
     "Step",
+    "SummarySection",
     "TextField",
     "Validator",
     "Wizard",

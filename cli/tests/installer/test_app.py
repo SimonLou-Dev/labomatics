@@ -89,8 +89,8 @@ def test_install_runs_the_runner_with_a_context(tmp_path):
     assert seen[0].config.proxmox.cluster_name == "lab1"
 
 
-def test_install_logs_the_final_summary_after_the_run(tmp_path):
-    """Une fois les tâches terminées, le résumé de `health` est affiché dans le journal."""
+def test_install_builds_the_final_summary_after_the_run(tmp_path):
+    """Une fois les tâches terminées, le résumé de `health` devient le récapitulatif."""
     seed(tmp_path, proxmox=PROXMOX)
     app = make_app(tmp_path, "lab1", runner=InstallRunner([]))
     app._select_cluster()
@@ -106,20 +106,22 @@ def test_install_logs_the_final_summary_after_the_run(tmp_path):
     )
     reporter = InstallReporter(["x"])
     asyncio.run(app._install({}, reporter))
-    texts = [line.text for line in reporter.lines]
-    assert "Application : https://labomatics.lab.fr" in texts
-    assert "Identifiant : jean.dupont" in texts
-    assert any("Tmp-Pass-1" in t for t in texts)
+    access, account = reporter.summary
+    assert ("Application", "https://labomatics.lab.fr") in access.rows
+    assert ("Identifiant", "jean.dupont") in account.rows
+    assert ("Mot de passe", "Tmp-Pass-1") in account.rows
+    assert "première connexion" in account.note
+    assert reporter.lines == []
 
 
 def test_install_without_summary_logs_nothing(tmp_path):
-    """Sans résumé enregistré, aucune ligne n'est ajoutée."""
+    """Sans résumé enregistré, ni ligne ni récapitulatif."""
     seed(tmp_path, proxmox=PROXMOX)
     app = make_app(tmp_path, "lab1", runner=InstallRunner([]))
     app._select_cluster()
     reporter = InstallReporter(["x"])
     asyncio.run(app._install({}, reporter))
-    assert reporter.lines == []
+    assert reporter.lines == [] and reporter.summary == []
 
 
 def test_new_mode_prefills_name_and_refuses_existing(tmp_path):
