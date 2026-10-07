@@ -13,7 +13,7 @@ from ...utils.state import InstallState
 
 console = Console()
 
-_OPENWRT_INIT = Path(__file__).parent.parent.parent / "templates" / "OPENWRT_INIT"
+_OPENWRT_INIT = Path(__file__).parent / "OPENWRT_INIT"
 _OPENWRT_RELEASES_URL = "https://downloads.openwrt.org/releases/"
 
 
