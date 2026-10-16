@@ -268,7 +268,7 @@ qm create {vmid} --name "openwrt-{version}" --memory 256 --cores 1 \\
 echo "==> Import du disque..."
 qm importdisk {vmid} "$IMG" {storage} || exit 1
 
-DISK_ID=$(qm config {vmid} | grep '^unused' | head -1 | cut -d: -f2 | tr -d ' ')
+DISK_ID=$(qm config {vmid} | grep '^unused' | head -1 | cut -d: -f2- | tr -d ' ')
 [ -n "$DISK_ID" ] || DISK_ID="{storage}:vm-{vmid}-disk-0"
 qm set {vmid} --virtio0 "${{DISK_ID}},discard=on,iothread=1" --boot order=virtio0 || exit 1
 
