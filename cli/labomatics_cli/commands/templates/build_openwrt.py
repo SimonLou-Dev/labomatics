@@ -29,6 +29,7 @@ from ...installer.ssh import CliKey
 from ...installer.store import DEFAULT_BASE_DIR, InstallStore
 from ...utils.proxmox import ProxmoxClient
 from ...utils.theme import info, prompt_with_retry, step, success, title
+from ._ssh import SSH_OPTS as _SSH_OPTS
 from .orchestrator import _delete_existing_template
 
 console = Console()
@@ -40,16 +41,6 @@ _REPO_TEMPLATES_DIR = Path(
 )
 _OPENWRT_INIT = _REPO_TEMPLATES_DIR / "openwrt" / "OPENWRT_INIT"
 _OPENWRT_RELEASES_URL = "https://downloads.openwrt.org/releases/"
-# Clé dédiée du CLI, déployée sur les nœuds par `labomatics install` (pas la
-# clé personnelle de l'opérateur : voir `installer.ssh.CliKey`).
-_SSH_OPTS = [
-    "-i",
-    str(CliKey().path),
-    "-o",
-    "StrictHostKeyChecking=no",
-    "-o",
-    "ConnectTimeout=10",
-]
 
 DEFAULT_VMID = 90200
 DEFAULT_PASSWORD = "labomatics"  # noqa: S105

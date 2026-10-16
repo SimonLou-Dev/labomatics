@@ -1,30 +1,26 @@
 """Installation command - main entry point."""
 
-from rich.prompt import Confirm
-
+from ...utils.proxmox import ProxmoxClient
 from ...utils.theme import console
-from ...utils.state import InstallState
-
+from .build_openwrt import _resolve_node, _resolve_proxmox_connection
 from .orchestrator import run_installation
 
 
 def cmd_templates(args) -> int:
-    """Installer les templates sur un cluster."""
-    state = InstallState()
+    """Construit les templates VM (alpine/debian/el/ubuntu…) sur un cluster.
 
-    # Check for in-progress installation
-    if state.is_in_progress():
-        domain = state.get("domain")
-        console.print(f"\n[yellow]Vous êtres sur le cluster de {domain} ")
+    Args:
+        args: Arguments de la ligne de commande (`cluster`, `cluster_url`, `user`,
+            `token_id`, `token_secret`, `node`, `ssh_host`).
 
-        if Confirm.ask("Confirmez vous?", default=True):
-            console.print("[dim]Démarage du gestionaire de tempaltes...[/dim]\n")
-        else:
-            console.print("[yellow]Opération annulée[/yellow]")
-            return 1
-
+    Returns:
+        0 en cas de succès, 1 en cas d'abandon ou d'erreur.
+    """
     try:
-        return run_installation(state)
+        url, user, token_id, token_secret = _resolve_proxmox_connection(args)
+        pve = ProxmoxClient(url, user, token_id, token_secret)
+        node, ssh_host = _resolve_node(pve, args)
+        return run_installation(pve, node, ssh_host)
     except KeyboardInterrupt:
         console.print("\n[yellow]Opération annulée[/yellow]")
         return 1

@@ -52,6 +52,21 @@ def main() -> int:
         help="Nom du cluster à installer, reprendre ou modifier",
     )
     install_parser.set_defaults(func=cmd_install)
+    tempaltes_parser.add_argument(
+        "--cluster", help="Nom d'un cluster déjà configuré par `labomatics install`"
+    )
+    tempaltes_parser.add_argument(
+        "--cluster-url", help="URL Proxmox (ex: https://10.0.0.1:8006)"
+    )
+    tempaltes_parser.add_argument("--user", help="User Proxmox (ex: root@pam)")
+    tempaltes_parser.add_argument("--token-id", help="Token ID API Proxmox")
+    tempaltes_parser.add_argument("--token-secret", help="Token secret API Proxmox")
+    tempaltes_parser.add_argument(
+        "--node", help="Nœud Proxmox cible (sinon sélection interactive)"
+    )
+    tempaltes_parser.add_argument(
+        "--ssh-host", help="Hôte/IP SSH du nœud cible (sinon résolu via l'API)"
+    )
     tempaltes_parser.set_defaults(func=cmd_templates)
 
     template_subparsers = tempaltes_parser.add_subparsers(dest="template_action")

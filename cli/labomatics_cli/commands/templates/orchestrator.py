@@ -1,12 +1,11 @@
 import subprocess
 import time
-import platform
 
 from rich.console import Console
 
 from ...utils.proxmox import ProxmoxClient
-from ...utils.state import InstallState
 from ...utils.theme import title, multi_select, prompt_with_retry
+from ._ssh import SSH_OPTS as _SSH_OPTS
 from .templates import images_list
 
 
@@ -46,14 +45,13 @@ def _get_storage_base_path(client: ProxmoxClient, storage: str) -> str:
     return ""
 
 
-def _find_image_path(node: str, storage_path: str, filename: str) -> str:
+def _find_image_path(ssh_host: str, storage_path: str, filename: str) -> str:
     """Localise le fichier image sur le nœud via SSH (find récursif)."""
     result = subprocess.run(
         [
             "ssh",
-            "-o",
-            "StrictHostKeyChecking=no",
-            f"root@{node}",
+            *_SSH_OPTS,
+            f"root@{ssh_host}",
             f"find '{storage_path}' -name '{filename}' 2>/dev/null | head -1",
         ],
         capture_output=True,
@@ -62,15 +60,14 @@ def _find_image_path(node: str, storage_path: str, filename: str) -> str:
     return result.stdout.strip()
 
 
-def _resize_image(node: str, image_path: str, size: str) -> None:
+def _resize_image(ssh_host: str, image_path: str, size: str) -> None:
     """Redimensionne une image qcow2 via qemu-img."""
     console.print(f"  [cyan]Redimensionnement image : {size}[/cyan]")
     result = subprocess.run(
         [
             "ssh",
-            "-o",
-            "StrictHostKeyChecking=no",
-            f"root@{node}",
+            *_SSH_OPTS,
+            f"root@{ssh_host}",
             f"qemu-img resize '{image_path}' {size}",
         ],
         capture_output=True,
@@ -85,8 +82,8 @@ def _resize_image(node: str, image_path: str, size: str) -> None:
 # ── Helpers pool ──────────────────────────────────────────────────────────────
 
 
-def _virt_customize_image(node: str, image_path: str, packages: list[str]) -> None:
-    """Pré-installe des packages dans l'image via virt-customize (SSH root@node).
+def _virt_customize_image(ssh_host: str, image_path: str, packages: list[str]) -> None:
+    """Pré-installe des packages dans l'image via virt-customize (SSH root@nœud).
 
     Prérequis : libguestfs-tools installé sur le nœud Proxmox.
     """
@@ -98,9 +95,8 @@ def _virt_customize_image(node: str, image_path: str, packages: list[str]) -> No
     result = subprocess.run(
         [
             "ssh",
-            "-o",
-            "StrictHostKeyChecking=no",
-            f"root@{node}",
+            *_SSH_OPTS,
+            f"root@{ssh_host}",
             f"qemu-img info '{image_path}' | grep 'virtual size'",
         ],
         capture_output=True,
@@ -126,9 +122,9 @@ def _virt_customize_image(node: str, image_path: str, packages: list[str]) -> No
         " --run-command 'sed -i \"/reset_rmc/d\" /etc/cloud/cloud.cfg 2>/dev/null; true'"
         " --run-command ': > /etc/machine-id'"
     )
-    console.print(f"    Exécution SSH sur {node}...")
+    console.print(f"    Exécution SSH sur {ssh_host}...")
     result = subprocess.run(
-        ["ssh", "-o", "StrictHostKeyChecking=no", f"root@{node}", remote_cmd],
+        ["ssh", *_SSH_OPTS, f"root@{ssh_host}", remote_cmd],
         capture_output=True,
         text=True,
     )
@@ -404,54 +400,27 @@ def _convert_to_template(
     )
 
 
-def run_installation(state: InstallState) -> int:
-    """Orchestrer l'installation."""
-    title("labomatics install — gestion des templates")
+def run_installation(pve: ProxmoxClient, node: str, ssh_host: str) -> int:
+    """Orchestre la construction des templates VM sur un cluster.
 
-    missing = [n for n in (1, 2, 3) if not state.get_step(n)]
-    if missing:
-        raise RuntimeError(
-            f"Config `labomatics install` incomplète sur cette machine "
-            f"(étape{'s' if len(missing) > 1 else ''} {', '.join(map(str, missing))} "
-            f"manquante{'s' if len(missing) > 1 else ''} dans {state.state_file}). "
-            "Lance `labomatics install` ici d'abord, ou utilise "
-            "`labomatics template build-openwrt` avec les options --cluster-url/"
-            "--user/--token-id/--token-secret pour builder une template sans config locale."
-        )
+    Args:
+        pve: Client Proxmox déjà connecté au cluster ciblé.
+        node: Nœud Proxmox cible (API : clone/import/conversion en template).
+        ssh_host: Hôte/IP SSH de ce nœud (recherche de fichier, virt-customize —
+            des outils locaux au nœud, pas exposés par l'API Proxmox).
 
-    step_data = state.get_step(10)
+    Returns:
+        0 dans tous les cas (les échecs par template sont juste affichés).
+    """
+    title("labomatics — gestion des templates")
 
     templates_pool = "templates"
     default_packages = ["qemu-guest-agent"]
-    shared_pool = (state.get_step(3) or {}).get("storage", "")
-    bridge = (state.get_step(1) or {}).get("network_iface", "")
-
-    if step_data:
-        ciuser = "labomatics"
-        cipassword = "labomatics"
-        iso_storage_pool = "local"
-    else:
-        ciuser = prompt_with_retry("Utilisateur cloud init", default="labomatics")
-        cipassword = prompt_with_retry("Mot de passe cloud init", default="labomatics")
-        iso_storage_pool = prompt_with_retry("Storage des iso", default="local")
-
-        state.set_step(
-            10,
-            {
-                "ciuser": ciuser,
-                "cipassword": cipassword,
-                "iso_storage_pool": iso_storage_pool,
-            },
-        )
-
-    state_2 = state.get_step(2) or {}
-
-    pve = ProxmoxClient(
-        state_2.get("proxmox_url", ""),
-        state_2.get("proxmox_user", ""),
-        state_2.get("proxmox_token_id", ""),
-        state_2.get("proxmox_token_secret", ""),
-    )
+    bridge = prompt_with_retry("Bridge réseau des templates", default="vmbr0")
+    shared_pool = prompt_with_retry("Storage de destination (VM)", default="local")
+    ciuser = prompt_with_retry("Utilisateur cloud init", default="labomatics")
+    cipassword = prompt_with_retry("Mot de passe cloud init", default="labomatics")
+    iso_storage_pool = prompt_with_retry("Storage des ISO", default="local")
 
     templates = images_list
 
@@ -474,7 +443,6 @@ def run_installation(state: InstallState) -> int:
             console.print(f"  [dim]cloud-init user : {ciuser}[/dim]")
             console.print(f"  [dim]cloud-init password : {cipassword}[/dim]")
 
-        node = platform.node()
         filename = _iso_filename_from_url(tmpl.iso_url)
 
         # 1. Supprimer template existante
@@ -501,19 +469,19 @@ def run_installation(state: InstallState) -> int:
                     f"  [yellow]⚠  packages ignorés : chemin du stockage '{iso_storage_pool}' introuvable[/yellow]"
                 )
             else:
-                image_path = _find_image_path(node, storage_path, filename)
+                image_path = _find_image_path(ssh_host, storage_path, filename)
                 if not image_path:
                     console.print(
                         f"  [yellow]⚠  packages ignorés : fichier '{filename}' introuvable dans {storage_path}[/yellow]"
                     )
                 else:
                     if tmpl.qcow_size:
-                        _resize_image(node, image_path, tmpl.qcow_size)
+                        _resize_image(ssh_host, image_path, tmpl.qcow_size)
                     console.print(
                         f"  [cyan]virt-customize : {', '.join(effective_packages)}[/cyan]"
                     )
                     try:
-                        _virt_customize_image(node, image_path, effective_packages)
+                        _virt_customize_image(ssh_host, image_path, effective_packages)
                         console.print("  [green]✓ virt-customize terminé[/green]")
                     except Exception as e:
                         console.print(f"[red]❌ virt-customize échoué : {e}[/red]")
