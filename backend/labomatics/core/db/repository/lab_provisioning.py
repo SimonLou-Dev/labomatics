@@ -5,8 +5,10 @@ from __future__ import annotations
 from uuid import UUID
 
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 from labomatics.core.db.models import LabProvisioning
+from labomatics.core.db.models.cluster import Cluster
 from labomatics.core.db.repository.base import BaseRepository
 from labomatics.core.db.session import async_session_local
 
@@ -47,5 +49,25 @@ class LabProvisioningRepository(BaseRepository[LabProvisioning]):
         """Liste les provisionings avec un statut donné."""
         async with async_session_local() as session:
             stmt = select(self.model).where(self.model.status == status)
+            result = await session.execute(stmt)
+            return result.scalars().all()
+
+    async def list_active_with_cluster_and_ip(self) -> list[LabProvisioning]:
+        """Labs actifs, avec cluster (+ credential) et allocation IP pré-chargés.
+
+        Utilisé par la tâche quotidienne de contrôle/remédiation réseau (#61),
+        qui a besoin de se connecter au cluster Proxmox de chaque lab et de
+        connaître l'IP WAN allouée sans requête supplémentaire.
+        """
+        async with async_session_local() as session:
+            stmt = (
+                select(self.model)
+                .where(self.model.status == "active")
+                .options(
+                    selectinload(self.model.cluster).selectinload(Cluster.credential),
+                    selectinload(self.model.student),
+                    selectinload(self.model.ip_allocation),
+                )
+            )
             result = await session.execute(stmt)
             return result.scalars().all()

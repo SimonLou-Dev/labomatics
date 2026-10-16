@@ -37,3 +37,5 @@ class EventType(StrEnum):
     LAB_CREATION_FAILED = "lab_creation_failed"
     STUDENT_DELETED = "student_deleted"
     STUDENT_DELETION_FAILED = "student_deletion_failed"
+    WAN_IP_MISMATCH = "wan_ip_mismatch"
+    ROUTER_SECURITY_REMEDIATED = "router_security_remediated"
