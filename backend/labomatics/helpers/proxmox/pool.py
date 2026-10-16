@@ -104,6 +104,27 @@ class ProxmoxPoolClient:
                     f"Failed to add VM {vmid} to pool {pool_name}: {e}"
                 ) from e
 
+    async def remove_vm(self, pool_name: str, vmid: int) -> None:
+        """Retire une VM ou conteneur d'un pool.
+
+        Args:
+            pool_name: Nom du pool.
+            vmid: ID de la VM/LXC.
+
+        Raises:
+            ProxmoxServerError: Si le pool n'existe pas ou problème de retrait.
+        """
+        async with self._proxmox_client.get_context_manager() as client:
+            try:
+                await client.put(
+                    urls.pool_path(pool_name),
+                    data={"vms": str(vmid), "delete": 1},
+                )
+            except ProxmoxServerError as e:
+                raise RuntimeError(
+                    f"Failed to remove VM {vmid} from pool {pool_name}: {e}"
+                ) from e
+
     async def get_vms(self, pool_name: str) -> list[dict]:
         """Retourne les VMs QEMU d'un pool.
 

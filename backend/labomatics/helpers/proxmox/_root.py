@@ -14,6 +14,7 @@ from labomatics.helpers.proxmox.api import (
     ProxmoxServerError,
     urls,
 )
+from labomatics.helpers.proxmox.firewall import ProxmoxVmFirewallClient
 from labomatics.helpers.proxmox.pool import ProxmoxPoolClient
 from labomatics.helpers.proxmox.sdn import ProxmoxSDNClient
 from labomatics.helpers.proxmox.token import ProxmoxTokenClient
@@ -25,6 +26,11 @@ def sanitize_pool_name(name: str) -> str:
     """Sanitize pool name for Proxmox (remove accents and special chars)."""
     name = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode("ascii")
     return re.sub(r"[^a-zA-Z0-9._-]", "", name)
+
+
+# Pool système partagé : routeurs étudiants + VM plateforme, hors du pool
+# personnel de l'étudiant (issue #78 — anti-spoofing / durcissement réseau).
+SYSTEM_POOL_NAME = "labomatics-system"
 
 
 class LabomaticsProxmoxClient:
@@ -62,6 +68,7 @@ class LabomaticsProxmoxClient:
         self.token = ProxmoxTokenClient(proxmox_client=self._proxmox_client)
         self.pool = ProxmoxPoolClient(proxmox_client=self._proxmox_client)
         self.sdn = ProxmoxSDNClient(proxmox_client=self._proxmox_client)
+        self.firewall = ProxmoxVmFirewallClient(proxmox_client=self._proxmox_client)
         self.vm = ProxmoxVMClient(
             proxmox_client=self._proxmox_client, wait_for_task_fn=self._wait_for_task
         )

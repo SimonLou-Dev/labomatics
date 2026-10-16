@@ -226,6 +226,7 @@ class ClusterConfigService:
                             url=cluster_entry.url,
                             default_storage=cluster_entry.default_storage or "shared",
                             sdn_zone=cluster_entry.sdn_zone,
+                            wan_bridge=cluster_entry.wan_bridge,
                             is_default_for_new_cohorts=True,
                         ),
                     )
@@ -238,6 +239,7 @@ class ClusterConfigService:
                             url=cluster_entry.url,
                             default_storage=cluster_entry.default_storage or "shared",
                             sdn_zone=cluster_entry.sdn_zone,
+                            wan_bridge=cluster_entry.wan_bridge,
                             is_default_for_new_cohorts=is_default,
                         )
                     )

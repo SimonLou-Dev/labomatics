@@ -9,7 +9,7 @@ droits strictement limités à ses ressources :
 +=======================================+==================+
 | ``/sdn/zones/{zone}/{vnet}``          | PVESDNUser       |
 +---------------------------------------+------------------+
-| ``/storage``                          | PVEDatastoreUser |
+| ``/storage/local``                    | PVEDatastoreAdmin|
 +---------------------------------------+------------------+
 | ``/pool/{template_pool}``             | PVETemplateUser  |
 |                                       | PVEPoolUser      |
@@ -106,6 +106,35 @@ class ProxmoxAclClient:
                     f"Failed to delete ACL {role} for {userid} on {path}: {e}"
                 ) from e
 
+    async def grant_vm_user(self, vmid: int, user_id: str) -> None:
+        """Donne à un utilisateur le rôle `PVEVMUser` (minimal) sur une VM précise.
+
+        Contrairement à `PVEVMAdmin` sur un pool, `PVEVMUser` donne l'usage de
+        la VM (console, démarrage) sans droit de modifier sa config réseau ou
+        son firewall. Utilisé pour le routeur étudiant, placé hors du pool de
+        l'étudiant (voir `SYSTEM_POOL_NAME`).
+
+        Args:
+            vmid: ID de la VM.
+            user_id: Identifiant de l'utilisateur user@realm.
+
+        Raises:
+            RuntimeError: Problème API.
+        """
+        await self.set(f"/vms/{vmid}", user_id, "PVEVMUser", propagate=0)
+
+    async def revoke_vm_user(self, vmid: int, user_id: str) -> None:
+        """Révoque le rôle `PVEVMUser` donné par `grant_vm_user`.
+
+        Args:
+            vmid: ID de la VM.
+            user_id: Identifiant de l'utilisateur user@realm.
+
+        Raises:
+            RuntimeError: Problème API.
+        """
+        await self.delete(f"/vms/{vmid}", user_id, "PVEVMUser")
+
     async def set_student(
         self,
         zone: str,
@@ -133,7 +162,7 @@ class ProxmoxAclClient:
         # Configurer les ACL
         acl_configs = [
             (f"/sdn/zones/{zone}/{vnet}", "PVESDNUser", 0),
-            ("/storage", "PVEDatastoreUser", 1),
+            ("/storage/local", "PVEDatastoreAdmin", 0),
             (f"/pool/{template_pool}", "PVETemplateUser", 0),
             (f"/pool/{template_pool}", "PVEPoolUser", 0),
             (f"/pool/{user_pool}", "PVETemplateUser", 0),
@@ -170,7 +199,7 @@ class ProxmoxAclClient:
             ProxmoxServerError: Problème API.
         """
         acls: list[tuple[str, str]] = [
-            ("/storage", "PVEDatastoreUser"),
+            ("/storage/local", "PVEDatastoreAdmin"),
             (f"/pool/{template_pool}", "PVETemplateUser"),
             (f"/pool/{template_pool}", "PVEPoolUser"),
             (f"/pool/{user_pool}", "PVETemplateUser"),

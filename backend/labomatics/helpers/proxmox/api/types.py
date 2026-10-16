@@ -1,6 +1,6 @@
 """Types Pydantic pour les retours API Proxmox."""
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class NodeInfo(BaseModel):
@@ -59,6 +59,8 @@ class TaskLog(BaseModel):
 class QemuConfig(BaseModel):
     """Configuration d'une VM QEMU."""
 
+    model_config = ConfigDict(extra="allow")  # Permet d'autres champs
+
     vmid: int
     name: str | None = None
     description: str | None = None
@@ -67,9 +69,6 @@ class QemuConfig(BaseModel):
     memory: int | None = None
     cores: int | None = None
     sockets: int | None = None
-
-    class Config:
-        extra = "allow"  # Permet d'autres champs
 
 
 class CloudInitConfigDTO(BaseModel):
@@ -100,7 +99,7 @@ class CloudInitConfigDTO(BaseModel):
             "ipconfig0": f"ip={self.wan_ip}/{self.wan_prefix},gw={self.wan_gateway}",
             "ipconfig1": f"ip={self.vxlan_gateway_ip}/24",
             "vga": "std",
-            "net0": f"virtio,bridge={self.wan_bridge}",
+            "net0": f"virtio,bridge={self.wan_bridge},firewall=1",
             "net1": f"virtio,bridge={self.vnet_bridge}",
             "onboot": 1 if self.onboot else 0,
             "tags": self.tags,

@@ -61,6 +61,27 @@ def lxc_vm_path(node: str, vmid: int) -> str:
     return f"{node_path(node)}/lxc/{vmid}"
 
 
+# ── Firewall VM (anti-spoofing) ──────────────────────────────────────────────
+def qemu_firewall_options(node: str, vmid: int) -> str:
+    """Chemin des options firewall d'une VM QEMU."""
+    return f"{qemu_vm_path(node, vmid)}/firewall/options"
+
+
+def qemu_firewall_ipset(node: str, vmid: int) -> str:
+    """Chemin de la liste des IPSets d'une VM QEMU."""
+    return f"{qemu_vm_path(node, vmid)}/firewall/ipset"
+
+
+def qemu_firewall_ipset_entries(node: str, vmid: int, name: str) -> str:
+    """Chemin des entrées d'un IPSet de VM QEMU."""
+    return f"{qemu_firewall_ipset(node, vmid)}/{name}"
+
+
+def qemu_firewall_ipset_entry(node: str, vmid: int, name: str, cidr: str) -> str:
+    """Chemin d'une entrée précise d'un IPSet de VM QEMU."""
+    return f"{qemu_firewall_ipset_entries(node, vmid, name)}/{cidr}"
+
+
 # ── Access (Users, Tokens, ACLs) ─────────────────────────────────────────────
 ACCESS = f"{BASE}/access"
 ACCESS_USERS = f"{ACCESS}/users"
