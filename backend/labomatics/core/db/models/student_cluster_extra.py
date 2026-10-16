@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import UUID
 
 from sqlalchemy import ForeignKey, Index, text
@@ -21,7 +21,7 @@ class StudentClusterExtra(Base, UUIDPkMixin, TimestampMixin):
     )
     granted_by: Mapped[UUID | None] = None
     granted_at: Mapped[datetime] = mapped_column(
-        default=lambda: datetime.utcnow().replace(tzinfo=None),
+        default=lambda: datetime.now(UTC).replace(tzinfo=None),
     )
     revoked_at: Mapped[datetime | None] = None
 

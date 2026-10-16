@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy import Index
 from sqlalchemy.dialects.postgresql import JSON
@@ -25,7 +25,7 @@ class AuditLog(Base, UUIDPkMixin):
         nullable=True,
     )
     created_at: Mapped[datetime] = mapped_column(
-        default=lambda: datetime.utcnow().replace(tzinfo=None),
+        default=lambda: datetime.now(UTC).replace(tzinfo=None),
     )
 
     __table_args__ = (

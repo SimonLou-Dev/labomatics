@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
@@ -34,8 +34,8 @@ class TaskTrackingService:
             "type": task_type,
             "description": description,
             "status": "in_progress",
-            "created_at": datetime.utcnow().isoformat(),
-            "started_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(UTC).replace(tzinfo=None).isoformat(),
+            "started_at": datetime.now(UTC).replace(tzinfo=None).isoformat(),
             "completed_at": "",
             "error": "",
             "steps": "[]",
@@ -98,7 +98,7 @@ class TaskTrackingService:
         self, task_id: str, status: str = "completed", error: str | None = None
     ) -> None:
         """Marque une tâche comme terminée."""
-        completed_at = datetime.utcnow().isoformat()
+        completed_at = datetime.now(UTC).replace(tzinfo=None).isoformat()
         self.redis.hset(
             f"task:{task_id}",
             mapping={
