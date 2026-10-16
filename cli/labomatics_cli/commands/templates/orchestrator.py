@@ -408,6 +408,17 @@ def run_installation(state: InstallState) -> int:
     """Orchestrer l'installation."""
     title("labomatics install — gestion des templates")
 
+    missing = [n for n in (1, 2, 3) if not state.get_step(n)]
+    if missing:
+        raise RuntimeError(
+            f"Config `labomatics install` incomplète sur cette machine "
+            f"(étape{'s' if len(missing) > 1 else ''} {', '.join(map(str, missing))} "
+            f"manquante{'s' if len(missing) > 1 else ''} dans {state.state_file}). "
+            "Lance `labomatics install` ici d'abord, ou utilise "
+            "`labomatics template build-openwrt` avec les options --cluster-url/"
+            "--user/--token-id/--token-secret pour builder une template sans config locale."
+        )
+
     step_data = state.get_step(10)
 
     templates_pool = "templates"
