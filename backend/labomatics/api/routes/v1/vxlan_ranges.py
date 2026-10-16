@@ -6,7 +6,11 @@ from uuid import UUID
 
 from fastapi import APIRouter, Query
 
-from labomatics.api.deps.auth import CurrentUser, RequireManageCluster
+from labomatics.api.deps.auth import (
+    CurrentUser,
+    RequireManageCluster,
+    RequireManageUser,
+)
 from labomatics.api.dto.pagination import PaginatedDTO
 from labomatics.api.dto.vxlan_range import (
     VxlanRangeCreateDTO,
@@ -72,7 +76,7 @@ async def get_vxlan_range(
 
 @router.get("/{vxlan_range_id}/allocations")
 async def get_vxlan_range_allocations(
-    _user: CurrentUser,
+    _user: RequireManageUser,
     service: VxlanRangeServiceDep,
     vxlan_range_id: UUID,
     page: int = Query(1, ge=1),

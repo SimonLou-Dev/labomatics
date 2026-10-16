@@ -6,7 +6,11 @@ from uuid import UUID
 
 from fastapi import APIRouter, Query
 
-from labomatics.api.deps.auth import CurrentUser, RequireManageCluster
+from labomatics.api.deps.auth import (
+    CurrentUser,
+    RequireManageCluster,
+    RequireManageUser,
+)
 from labomatics.api.dto.ip_range import (
     IpRangeCreateDTO,
     IpRangeDTO,
@@ -72,7 +76,7 @@ async def delete_ip_range(
 
 @router.get("/{ip_range_id}/allocations")
 async def get_ip_range_allocations(
-    _user: CurrentUser,
+    _user: RequireManageUser,
     service: IpRangeServiceDep,
     ip_range_id: UUID,
     page: int = Query(1, ge=1),

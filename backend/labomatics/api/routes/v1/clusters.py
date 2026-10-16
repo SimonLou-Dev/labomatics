@@ -94,7 +94,7 @@ async def set_cluster_credential(
 
 @router.post("/{cluster_id}/test-connection")
 async def test_cluster_connection(
-    _user: CurrentUser,
+    _user: RequireManageCluster,
     service: ClusterServiceDep,
     cluster_id: UUID,
 ) -> dict:

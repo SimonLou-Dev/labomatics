@@ -34,7 +34,7 @@ router = APIRouter(prefix="/students", tags=["students"])
 
 @router.get("")
 async def list_students(
-    _user: CurrentUser,
+    _user: RequireManageUser,
     service: StudentServiceDep,
     page: int = Query(0, ge=0),
     size: int = Query(20, ge=1, le=100),

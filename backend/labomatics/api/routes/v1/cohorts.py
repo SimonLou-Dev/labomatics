@@ -6,6 +6,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query
 
+from labomatics.api.deps.auth import RequireManageCluster
 from labomatics.api.dto.cohort import ClusterRefDTO, CohortDTO, CohortListResponseDTO
 from labomatics.core.db.models import CohortCluster
 from labomatics.core.db.repository.cluster import ClusterRepository
@@ -17,6 +18,7 @@ router = APIRouter(prefix="/cohorts", tags=["cohorts"])
 
 @router.get("", response_model=CohortListResponseDTO)
 async def list_cohorts(
+    _user: RequireManageCluster,
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
 ) -> CohortListResponseDTO:
@@ -65,6 +67,7 @@ async def list_cohorts(
 
 @router.post("/{cohort_id}/clusters/{cluster_id}", response_model=CohortDTO)
 async def assign_cluster_to_cohort(
+    _user: RequireManageCluster,
     cohort_id: str,
     cluster_id: str,
 ) -> CohortDTO:
@@ -110,6 +113,7 @@ async def assign_cluster_to_cohort(
 
 @router.delete("/{cohort_id}/clusters/{cluster_id}")
 async def remove_cluster_from_cohort(
+    _user: RequireManageCluster,
     cohort_id: str,
     cluster_id: str,
 ) -> None:
@@ -129,6 +133,7 @@ async def remove_cluster_from_cohort(
     "/{cohort_id}/clusters/{cluster_id}/set-default", response_model=CohortDTO
 )
 async def set_default_cluster(
+    _user: RequireManageCluster,
     cohort_id: str,
     cluster_id: str,
 ) -> CohortDTO:
