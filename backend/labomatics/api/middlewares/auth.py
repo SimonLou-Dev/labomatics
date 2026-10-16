@@ -58,6 +58,12 @@ class AuthMiddleware(BaseHTTPMiddleware):
                         request.state.user = user
                         request.state.new_access_token = new_access_token
                         request.state.new_refresh_token = new_refresh_token
+                        request.state.new_expires_in = token_data.get(
+                            "expires_in", 3600
+                        )
+                        request.state.new_refresh_expires_in = token_data.get(
+                            "refresh_expires_in", 30 * 24 * 3600
+                        )
                         logger.info(
                             "Token refreshed successfully from missing access_token"
                         )
@@ -103,6 +109,12 @@ class AuthMiddleware(BaseHTTPMiddleware):
                         # Les nouveaux tokens seront définis dans la réponse
                         request.state.new_access_token = new_access_token
                         request.state.new_refresh_token = new_refresh_token
+                        request.state.new_expires_in = token_data.get(
+                            "expires_in", 3600
+                        )
+                        request.state.new_refresh_expires_in = token_data.get(
+                            "refresh_expires_in", 30 * 24 * 3600
+                        )
                     else:
                         raise Exception("Pas d'access token dans la réponse refresh")
                 except Exception as refresh_err:
@@ -133,7 +145,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
             response.set_cookie(
                 "access_token",
                 request.state.new_access_token,
-                max_age=3600,
+                max_age=getattr(request.state, "new_expires_in", 3600),
                 httponly=True,
                 secure=is_secure,
                 samesite="lax",
@@ -143,7 +155,9 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 response.set_cookie(
                     "refresh_token",
                     request.state.new_refresh_token,
-                    max_age=30 * 24 * 3600,  # 30 jours
+                    max_age=getattr(
+                        request.state, "new_refresh_expires_in", 30 * 24 * 3600
+                    ),
                     httponly=True,
                     secure=is_secure,
                     samesite="lax",

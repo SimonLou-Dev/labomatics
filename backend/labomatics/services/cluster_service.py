@@ -15,6 +15,7 @@ from labomatics.api.dto.cluster import (
     ClusterUpdateDTO,
     RangeRef,
 )
+from labomatics.core.config.settings import settings
 from labomatics.core.db.models.cluster import Cluster
 from labomatics.core.db.models.cluster_credential import ClusterCredential
 from labomatics.core.db.models.ip_range_cluster import IpRangeCluster
@@ -259,7 +260,7 @@ class ClusterService:
                 user=cred.user,
                 token_name=cred.token_id,
                 token_value=token_secret,
-                verify_ssl=False,
+                verify_ssl=settings.tls_verify,
             )
 
             # Effectuer un appel simple pour valider

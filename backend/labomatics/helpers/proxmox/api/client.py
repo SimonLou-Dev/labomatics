@@ -7,6 +7,8 @@ from typing import Any, TypeVar
 import httpx
 from cachetools import TTLCache
 
+from labomatics.core.config.settings import settings
+
 from .errors import (
     ProxmoxAPIError,
     ProxmoxAuthError,
@@ -71,7 +73,7 @@ class AsyncProxmoxClient:
                 max_connections=max_connections,
                 max_keepalive_connections=max_keepalive,
             ),
-            verify=False,  # noqa: S501
+            verify=settings.tls_verify,
         )
 
     async def get(

@@ -7,6 +7,7 @@ from uuid import UUID
 
 from proxmoxer import ProxmoxAPI
 
+from labomatics.core.config.settings import settings
 from labomatics.core.db.repository.cluster import ClusterRepository
 from labomatics.core.security.crypto import decrypt_secret
 
@@ -28,7 +29,7 @@ class ProxmoxClientWrapper:
             user=self.token_id,
             token_name="token",  # noqa: S106
             token_value=self.token_secret,
-            verify_ssl=False,
+            verify_ssl=settings.tls_verify,
         )
 
     async def delete_user(self, login: str) -> bool:

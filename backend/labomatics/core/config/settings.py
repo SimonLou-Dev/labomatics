@@ -1,6 +1,6 @@
 """Configuration de l'applciation."""
 
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -78,6 +78,32 @@ class Settings(BaseSettings):
 
     # --- Misc ---
     environment: str = Field(default="development", alias="ENVIRONMENT")
+
+    # --- TLS ---
+    # Chemin vers un bundle de CA (ou le certificat auto-signé de Keycloak/Proxmox)
+    # à utiliser pour la vérification TLS des appels sortants. En production, ce champ
+    # est obligatoire : on refuse de démarrer plutôt que de couper silencieusement
+    # la vérification des certificats.
+    ca_bundle_path: str | None = Field(default=None, alias="CA_BUNDLE")
+
+    @model_validator(mode="after")
+    def _validate_production_tls(self) -> "Settings":
+        """Interdit de démarrer en production sans vérification TLS configurée."""
+        if self.environment == "production" and not self.ca_bundle_path:
+            raise ValueError(
+                "CA_BUNDLE doit être défini en production pour activer la "
+                "vérification TLS (Keycloak, Proxmox)."
+            )
+        return self
+
+    @property
+    def tls_verify(self) -> str | bool:
+        """Valeur à passer aux clients HTTP (`verify=`) pour la vérification TLS.
+
+        Un chemin de CA bundle (ex: le certificat auto-signé de Keycloak) s'il est
+        configuré, sinon `True` (magasin de certificats système).
+        """
+        return self.ca_bundle_path or True
 
 
 settings = Settings()

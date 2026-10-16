@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { getMe, logout } from '@/api/auth'
+import { getMe } from '@/api/auth'
 import { env } from '@/config/env'
 import type { MeDTO } from '@/api'
 
@@ -39,28 +39,11 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const logoutUser = () => {
-    loading.value = true
-    error.value = null
-
-    return logout()
-      .then((data) => {
-        user.value = null
-        error.value = null
-
-        if (data.logout_url) {
-          window.location.href = data.logout_url
-        } else {
-          window.location.href = '/login'
-        }
-      })
-      .catch((err) => {
-        error.value = err instanceof Error ? err.message : 'Logout failed'
-        console.error('Logout failed:', err)
-        user.value = null
-      })
-      .finally(() => {
-        loading.value = false
-      })
+    // Le backend révoque le refresh token, supprime les cookies et redirige
+    // le navigateur vers Keycloak (même principe que login()) : navigation
+    // directe, pas un appel AJAX, pour que la redirection soit suivie par le navigateur.
+    user.value = null
+    window.location.href = `${env.apiUrl}/v1/auth/logout`
   }
 
   return {
