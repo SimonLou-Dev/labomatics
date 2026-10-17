@@ -34,7 +34,7 @@ TEMPLATE_POOL_NAME = "templates"
 # Rôle custom pour le routeur étudiant : lecture + console + guest agent,
 # explicitement sans VM.PowerMgmt ni droit de config (le routeur est géré par
 # le backend, pas par l'étudiant).
-STUDENT_VM_ROLE = "PVEVMAudit"
+STUDENT_VM_ROLE = "LabomaticsVMAudit"
 STUDENT_VM_ROLE_PRIVILEGES = (
     "VM.Audit",
     "VM.Console",
@@ -158,7 +158,9 @@ class ProxmoxAclClient:
         """Crée un rôle custom, ou met à jour ses privilèges s'ils ont changé.
 
         Args:
-            role_id: Identifiant du rôle (ex: "PVEVMAudit").
+            role_id: Identifiant du rôle (ex: "LabomaticsVMAudit"). Proxmox
+                interdit les rôles custom dont l'ID commence par "PVE"
+                (namespace réservé aux rôles intégrés).
             privileges: Privilèges du rôle (ex: ("VM.Audit", "VM.Console")).
 
         Raises:
