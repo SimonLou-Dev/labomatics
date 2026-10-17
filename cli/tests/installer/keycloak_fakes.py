@@ -225,6 +225,18 @@ class FakeKeycloak:
         """
         self._rec("ensure_client_role", name)
 
+    def ensure_audience_mapper(
+        self, realm: str, client_uuid: str, audience: str
+    ) -> None:
+        """Enregistre l'appel.
+
+        Args:
+            realm: Realm.
+            client_uuid: Client.
+            audience: Audience à ajouter.
+        """
+        self._rec("ensure_audience_mapper", audience)
+
     def client_secret(self, realm: str, client_uuid: str) -> str:
         """Secret du client.
 
