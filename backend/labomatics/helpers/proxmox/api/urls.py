@@ -82,10 +82,22 @@ def qemu_firewall_ipset_entry(node: str, vmid: int, name: str, cidr: str) -> str
     return f"{qemu_firewall_ipset_entries(node, vmid, name)}/{cidr}"
 
 
-# ── Access (Users, Tokens, ACLs) ─────────────────────────────────────────────
+# ── Access (Users, Tokens, ACLs, Groups, Roles) ──────────────────────────────
 ACCESS = f"{BASE}/access"
 ACCESS_USERS = f"{ACCESS}/users"
 ACCESS_ACL = f"{ACCESS}/acl"
+ACCESS_GROUPS = f"{ACCESS}/groups"
+ACCESS_ROLES = f"{ACCESS}/roles"
+
+
+def access_group(groupid: str) -> str:
+    """Chemin d'un groupe."""
+    return f"{ACCESS_GROUPS}/{groupid}"
+
+
+def access_role(roleid: str) -> str:
+    """Chemin d'un rôle."""
+    return f"{ACCESS_ROLES}/{roleid}"
 
 
 def access_user(userid: str) -> str:

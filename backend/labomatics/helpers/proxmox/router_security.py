@@ -26,8 +26,9 @@ async def apply_router_security(
       si elle n'y est pas déjà.
     - Active le firewall de la VM (`enable`, `ipfilter`, `macfilter`).
     - Synchronise l'IPSet `ipfilter-net0` avec l'unique IP WAN autorisée.
-    - Donne à l'étudiant un accès `PVEVMUser` direct sur cette VM (sans
-      toucher au `PVEVMAdmin` qu'il a par ailleurs sur son propre pool).
+    - Donne à l'étudiant le rôle `STUDENT_VM_ROLE` (lecture + console, sans
+      droit de modifier la config) directement sur cette VM ; l'accès au pool
+      système lui-même vient du groupe `STUDENT_GROUP`, pas d'une ACL ici.
 
     Args:
         proxmox: Client Proxmox déjà connecté au cluster du lab.

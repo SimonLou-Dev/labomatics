@@ -3,8 +3,11 @@
 Contrôle la cohérence des IP WAN (Proxmox vs DB) et, en même temps, migre
 progressivement les labs déployés avant le durcissement de l'issue #78 vers
 la configuration sécurisée (pool système, firewall VM, IPSet, ACL minimale) —
-décision actée dans les commentaires des issues #61/#78. Purge aussi les
-audit logs de plus d'un mois.
+décision actée dans les commentaires des issues #61/#78. Réaligne aussi
+chaque jour le groupe/rôle Proxmox et les ACL propres de chaque student
+(`ProxmoxAclClient.ensure_student_defaults`/`set_student`), pour corriger
+toute dérive manuelle sur le cluster. Purge aussi les audit logs de plus
+d'un mois.
 """
 
 from __future__ import annotations
@@ -19,6 +22,7 @@ from labomatics.core.db.models.lab_provisioning import LabProvisioning
 from labomatics.core.db.repository.audit_log import AuditLogRepository
 from labomatics.core.db.repository.lab_provisioning import LabProvisioningRepository
 from labomatics.helpers.proxmox._root import LabomaticsProxmoxClient, sanitize_pool_name
+from labomatics.helpers.proxmox.acl import STUDENT_GROUP
 from labomatics.helpers.proxmox.router_security import apply_router_security
 from labomatics.services.audit_service import AuditService
 from labomatics.worker.broker import celery_app
@@ -76,14 +80,27 @@ async def _check_and_remediate_lab(
         current_pool: str | None = None
         if lab.student:
             student_pool = sanitize_pool_name(lab.student.login)
+            user_id = f"{student_pool}@{settings.keycloak_realm}"
             members = await proxmox.pool.get_vms(student_pool)
             if any(int(m.get("vmid", -1)) == vmid for m in members):
                 current_pool = student_pool
 
-        if lab.student:
-            user_id = (
-                f"{sanitize_pool_name(lab.student.login)}@{settings.keycloak_realm}"
-            )
+            # 3. Réalignement des permissions student (groupe + ACL propres),
+            # re-appliquées sans condition pour corriger toute dérive manuelle.
+            if lab.proxmox_vnet and lab.cluster:
+                try:
+                    await proxmox.acl.set_student(
+                        zone=lab.cluster.sdn_zone,
+                        vnet=lab.proxmox_vnet,
+                        user_pool=student_pool,
+                        user_id=user_id,
+                    )
+                    await proxmox.user.ensure_in_group(user_id, STUDENT_GROUP)
+                except RuntimeError as e:
+                    logger.warning(
+                        f"Failed to realign Proxmox permissions for lab {lab.id}: {e}"
+                    )
+
             await apply_router_security(
                 proxmox,
                 node=node,
@@ -142,6 +159,13 @@ async def _daily_security_check() -> None:
         except ValueError as e:
             logger.error(f"Failed to connect to cluster {cluster_id}: {e}")
             continue
+
+        try:
+            await proxmox.ensure_student_baseline()
+        except RuntimeError as e:
+            logger.error(
+                f"Failed to ensure student role/group on cluster {cluster_id}: {e}"
+            )
 
         try:
             for lab in cluster_labs:
