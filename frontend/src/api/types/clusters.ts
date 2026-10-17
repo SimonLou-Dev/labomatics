@@ -17,6 +17,7 @@ export interface ClusterDTO {
   is_active: boolean
   is_default_for_new_cohorts: boolean
   has_credential: boolean
+  has_ca_cert: boolean
   token_id: string | null
   ip_ranges: RangeRef[]
   vxlan_ranges: RangeRef[]
@@ -45,4 +46,5 @@ export interface ClusterUpdateDTO {
 export interface ClusterCredentialWriteDTO {
   token_id: string
   token_secret: string
+  ca_cert?: string | null
 }

@@ -313,6 +313,28 @@
             :feedback="false"
           />
         </div>
+        <div>
+          <label class="block text-sm font-medium mb-2">
+            CA du cluster Proxmox (optionnel)
+            <Badge
+              v-if="credentialCluster?.has_ca_cert"
+              value="Configurée"
+              severity="success"
+              class="ml-2"
+            />
+          </label>
+          <p class="text-xs text-surface-500 mb-2">
+            Contenu de <code>/etc/pve/pve-root-ca.pem</code> sur un nœud du cluster.
+            Nécessaire pour vérifier le certificat TLS de ce cluster (laisser vide
+            pour ne pas changer la CA actuelle).
+          </p>
+          <Textarea
+            v-model="credentialData.caCert"
+            class="w-full font-mono text-xs"
+            rows="6"
+            placeholder="-----BEGIN CERTIFICATE-----..."
+          />
+        </div>
       </div>
 
       <template #footer>
@@ -480,6 +502,7 @@ import {
   Button,
   InputText,
   Password,
+  Textarea,
   Badge,
   Chip,
   FileUpload,
@@ -522,7 +545,7 @@ const formData = ref<ClusterCreateDTO>({
 
 const showCredentialDialog = ref(false)
 const credentialCluster = ref<ClusterDTO | null>(null)
-const credentialData = ref({ tokenId: '', tokenSecret: '' })
+const credentialData = ref({ tokenId: '', tokenSecret: '', caCert: '' })
 
 const showRangesDialog = ref(false)
 const rangesCluster = ref<ClusterDTO | null>(null)
@@ -622,7 +645,7 @@ async function saveCluster() {
 
 function openCredentialDialog(cluster: ClusterDTO) {
   credentialCluster.value = cluster
-  credentialData.value = { tokenId: '', tokenSecret: '' }
+  credentialData.value = { tokenId: '', tokenSecret: '', caCert: '' }
   showCredentialDialog.value = true
 }
 
@@ -633,7 +656,8 @@ async function saveCredential() {
     await clusterApi.setClusterCredential(
       credentialCluster.value.id,
       credentialData.value.tokenId,
-      credentialData.value.tokenSecret
+      credentialData.value.tokenSecret,
+      credentialData.value.caCert
     )
     toast.add({
       severity: 'success',

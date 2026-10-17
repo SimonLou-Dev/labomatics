@@ -68,6 +68,9 @@ export interface ClusterDTO {
   default_storage: string
   sdn_zone: string
   wan_bridge?: string
+  has_credential: boolean
+  has_ca_cert: boolean
+  token_id?: string | null
   ip_ranges?: IpRangeDTO[]
   vxlan_ranges?: VxlanRangeDTO[]
 }
@@ -85,6 +88,7 @@ export type ClusterUpdateDTO = ClusterCreateDTO
 export interface ClusterCredentialWriteDTO {
   token_id: string
   token_secret: string
+  ca_cert?: string | null
 }
 
 export interface PaginatedResponse<T> {

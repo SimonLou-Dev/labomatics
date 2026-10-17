@@ -48,11 +48,13 @@ export async function setDefaultCluster(id: string): Promise<ClusterDTO> {
 export async function setClusterCredential(
   id: string,
   tokenId: string,
-  tokenSecret: string
+  tokenSecret: string,
+  caCert?: string
 ): Promise<void> {
   const data: ClusterCredentialWriteDTO = {
     token_id: tokenId,
     token_secret: tokenSecret,
+    ca_cert: caCert || null,
   }
   await http.put(`/clusters/${id}/credential`, data)
 }
