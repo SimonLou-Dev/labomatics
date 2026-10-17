@@ -31,8 +31,8 @@ from labomatics.helpers.proxmox.api import (
 STUDENT_GROUP = "student"
 TEMPLATE_POOL_NAME = "templates"
 
-# Rôle custom pour le routeur étudiant : lecture + console + guest agent,
-# explicitement sans VM.PowerMgmt ni droit de config (le routeur est géré par
+# Rôle custom pour le routeur étudiant : lecture + console + guest agent +
+# marche/arrêt, sans droit de modifier sa config réseau/firewall (gérée par
 # le backend, pas par l'étudiant).
 STUDENT_VM_ROLE = "LabomaticsVMAudit"
 STUDENT_VM_ROLE_PRIVILEGES = (
@@ -40,6 +40,7 @@ STUDENT_VM_ROLE_PRIVILEGES = (
     "VM.Console",
     "VM.GuestAgent.Audit",
     "VM.GuestAgent.FileRead",
+    "VM.PowerMgmt",
 )
 
 
@@ -209,13 +210,62 @@ class ProxmoxAclClient:
             except ProxmoxServerError as e:
                 raise RuntimeError(f"Failed to ensure group {group_id}: {e}") from e
 
+    async def list_all(self) -> list[dict]:
+        """Liste toutes les entrées ACL du cluster.
+
+        Returns:
+            Les entrées brutes de `GET /access/acl` (``path``, ``type``,
+            ``ugid``, ``roleid``, ``propagate``).
+
+        Raises:
+            RuntimeError: Problème API.
+        """
+        async with self._proxmox_client.get_context_manager() as client:
+            try:
+                resp = await client.get(urls.ACCESS_ACL, cache=False)
+                return resp.get("data", [])
+            except ProxmoxServerError as e:
+                raise RuntimeError(f"Failed to list ACLs: {e}") from e
+
+    async def purge_legacy_student_acls(self) -> int:
+        """Supprime les ACL individuelles obsolètes des étudiants déjà créés.
+
+        Avant ce refactor, chaque étudiant recevait ces droits en ACL directe
+        plutôt que via `STUDENT_GROUP` ; `set_student` ne les pose plus mais ne
+        les a jamais retirées des comptes déjà provisionnés. Purge aussi les
+        anciens `PVEVMUser` sur `/vms/{vmid}`, remplacés par `STUDENT_VM_ROLE`.
+
+        Returns:
+            Le nombre d'entrées ACL supprimées.
+
+        Raises:
+            RuntimeError: Problème API.
+        """
+        legacy_shared = {
+            ("/storage/local", "PVEDatastoreAdmin"),
+            (f"/pool/{TEMPLATE_POOL_NAME}", "PVETemplateUser"),
+            (f"/pool/{TEMPLATE_POOL_NAME}", "PVEPoolUser"),
+        }
+        removed = 0
+        for entry in await self.list_all():
+            if entry.get("type") != "user":
+                continue
+            path = entry.get("path", "")
+            role = entry.get("roleid", "")
+            is_legacy_vm_role = path.startswith("/vms/") and role == "PVEVMUser"
+            if (path, role) in legacy_shared or is_legacy_vm_role:
+                await self.delete(path, entry["ugid"], role)
+                removed += 1
+        return removed
+
     async def ensure_student_defaults(self, system_pool: str) -> None:
         """Bootstrap idempotent du rôle et du groupe partagés par les étudiants.
 
         À appeler une fois par cluster (pas par étudiant) : installe le rôle
         `STUDENT_VM_ROLE` et le groupe `STUDENT_GROUP` avec les droits communs
-        à tous les étudiants (pool système, pool templates, stockage). Les
-        étudiants rejoignent ce groupe via `ProxmoxUserClient.ensure_in_group`.
+        à tous les étudiants (pool système, pool templates, stockage), rejoint
+        via `ProxmoxUserClient.ensure_in_group`, et purge les ACL individuelles
+        obsolètes que ce groupe remplace (voir `purge_legacy_student_acls`).
 
         Args:
             system_pool: Pool système partagé des routeurs (`SYSTEM_POOL_NAME`).
@@ -235,6 +285,8 @@ class ProxmoxAclClient:
         )
         for path, role in group_acls:
             await self.set_group_acl(path, STUDENT_GROUP, role, propagate=0)
+
+        await self.purge_legacy_student_acls()
 
     async def grant_vm_user(
         self, vmid: int, user_id: str, role: str = STUDENT_VM_ROLE

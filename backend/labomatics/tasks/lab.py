@@ -371,7 +371,7 @@ async def _create_lab(
         await emit(job_id, "step_done", step="vm_configured", task_id=task_id)
 
         # 10b. Anti-spoofing WAN : firewall VM + IPSet limité à l'IP allouée,
-        # et accès restreint de l'étudiant à cette VM (PVEVMUser, pas Admin).
+        # et accès restreint de l'étudiant à cette VM (lecture/console, pas Admin).
         router_user_id = f"{sanitize_pool_name(user_name)}@{settings.keycloak_realm}"
         await apply_router_security(
             proxmox,
