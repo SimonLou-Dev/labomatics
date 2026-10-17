@@ -23,6 +23,7 @@ from labomatics.core.db.repository.audit_log import AuditLogRepository
 from labomatics.core.db.repository.lab_provisioning import LabProvisioningRepository
 from labomatics.helpers.proxmox._root import LabomaticsProxmoxClient, sanitize_pool_name
 from labomatics.helpers.proxmox.acl import STUDENT_GROUP
+from labomatics.helpers.proxmox.firewall import normalize_host_cidr
 from labomatics.helpers.proxmox.router_security import apply_router_security
 from labomatics.services.audit_service import AuditService
 from labomatics.worker.broker import celery_app
@@ -62,7 +63,9 @@ async def _check_and_remediate_lab(
         current_entries = await proxmox.firewall.get_ipset_entries(
             node, vmid, "ipfilter-net0"
         )
-        if current_entries != wanted:
+        if {normalize_host_cidr(c) for c in current_entries} != {
+            normalize_host_cidr(c) for c in wanted
+        }:
             logger.warning(
                 f"WAN IP mismatch for lab {lab.id}: "
                 f"expected {wanted}, found {current_entries}"

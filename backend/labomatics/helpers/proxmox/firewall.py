@@ -15,6 +15,23 @@ from labomatics.helpers.proxmox.api import (
 )
 
 
+def normalize_host_cidr(cidr: str) -> str:
+    """Normalise un CIDR hôte pour comparaison.
+
+    Proxmox stocke une entrée d'IPSet à `/32` sans le masque (ex: on envoie
+    `"1.2.3.4/32"`, l'API renvoie `"1.2.3.4"`). Sans ça, une comparaison de
+    sets voit toujours une différence et `sync_ipset` tente de ré-ajouter une
+    entrée déjà présente, que Proxmox refuse comme doublon.
+
+    Args:
+        cidr: CIDR éventuellement suffixé par `/32`.
+
+    Returns:
+        Le CIDR sans le suffixe `/32`.
+    """
+    return cidr.removesuffix("/32")
+
+
 class ProxmoxVmFirewallClient:
     """Client pour gérer le firewall et les IPSets d'une VM Proxmox."""
 
@@ -139,8 +156,13 @@ class ProxmoxVmFirewallClient:
             existing = {entry.get("cidr") for entry in resp.get("data", [])}
 
         wanted = set(cidrs)
+        existing_norm = {normalize_host_cidr(c) for c in existing}
+        wanted_norm = {normalize_host_cidr(c) for c in wanted}
 
-        for cidr in wanted - existing:
+        to_add = [c for c in wanted if normalize_host_cidr(c) not in existing_norm]
+        to_remove = [c for c in existing if normalize_host_cidr(c) not in wanted_norm]
+
+        for cidr in to_add:
             async with self._proxmox_client.get_context_manager() as client:
                 try:
                     await client.post(
@@ -152,7 +174,7 @@ class ProxmoxVmFirewallClient:
                         f"Failed to add {cidr} to IPSet {name} for VM {vmid}: {e}"
                     ) from e
 
-        for cidr in existing - wanted:
+        for cidr in to_remove:
             async with self._proxmox_client.get_context_manager() as client:
                 try:
                     await client.delete(
