@@ -248,7 +248,7 @@ class StudentService:
                             "cohort_id": cohort.id,
                             "cluster_id": default_cluster.id,
                         },
-                        defaults={},
+                        defaults={"is_default": True},
                     )
                     logger.info(
                         f"Cohort assigné au cluster par défaut: {data.cohort_name} -> {default_cluster.name}"
