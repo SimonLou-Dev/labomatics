@@ -127,6 +127,7 @@ services:
     volumes:
       - ./init-backend.sh:/app/init-backend.sh:ro
       - ./clusterconfig.yaml:/etc/labomatics/clusterconfig.yaml:ro
+      - ./certs/ca.crt:/etc/labomatics/certs/ca.crt:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -156,6 +157,7 @@ services:
     container_name: labomatics-worker
     volumes:
       - ./clusterconfig.yaml:/etc/labomatics/clusterconfig.yaml:ro
+      - ./certs/ca.crt:/etc/labomatics/certs/ca.crt:ro
     depends_on:
       postgres:
         condition: service_healthy
