@@ -60,3 +60,4 @@ logs/
 # OS
 .DS_Store
 Thumbs.db
+ca.crt

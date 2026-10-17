@@ -32,6 +32,7 @@ class ClusterEntryDTO(BaseModel):
     vnet_config: VnetConfigDTO | None = None
     token_id: str | None
     token_secret: str | None
+    ca_cert: str | None = None
 
 
 class GlobalWanConfigDTO(BaseModel):

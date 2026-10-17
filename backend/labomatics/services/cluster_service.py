@@ -15,7 +15,6 @@ from labomatics.api.dto.cluster import (
     ClusterUpdateDTO,
     RangeRef,
 )
-from labomatics.core.config.settings import settings
 from labomatics.core.db.models.cluster import Cluster
 from labomatics.core.db.models.cluster_credential import ClusterCredential
 from labomatics.core.db.models.ip_range_cluster import IpRangeCluster
@@ -29,6 +28,7 @@ from labomatics.core.db.repository.vxlan_range_cluster import (
     VxlanRangeClusterRepository,
 )
 from labomatics.core.security.crypto import decrypt_secret, encrypt_secret
+from labomatics.core.security.tls import resolve_verify
 
 logger = logging.getLogger(__name__)
 
@@ -149,8 +149,11 @@ class ClusterService:
         if not cluster:
             raise HTTPException(404, "Cluster not found")
 
-        # Supprimer l'ancienne credential si elle existe
+        # Supprimer l'ancienne credential si elle existe (en gardant sa CA si le
+        # formulaire n'en envoie pas une nouvelle : une rotation de token ne doit
+        # pas effacer la CA déjà configurée pour ce cluster)
         existing = await self.cred_repo.get_by_cluster_id(cluster_id)
+        ca_cert = dto.ca_cert or (existing.ca_cert if existing else None)
         if existing:
             await self.cred_repo.delete(existing.id)
 
@@ -163,6 +166,7 @@ class ClusterService:
             token_id=token_id,
             encrypted_token_secret=encrypted_secret,
             encryption_key_version=1,
+            ca_cert=ca_cert,
         )
         await self.cred_repo.add(cred)
 
@@ -260,7 +264,7 @@ class ClusterService:
                 user=cred.user,
                 token_name=cred.token_id,
                 token_value=token_secret,
-                verify_ssl=settings.tls_verify,
+                verify_ssl=resolve_verify(cred.ca_cert),
             )
 
             # Effectuer un appel simple pour valider
@@ -286,6 +290,7 @@ class ClusterService:
         """Convertit un modèle Cluster en DTO."""
         token_id = None
         has_credential = False
+        has_ca_cert = False
         ip_ranges: list[RangeRef] = []
         vxlan_ranges: list[RangeRef] = []
 
@@ -295,6 +300,7 @@ class ClusterService:
             if cred:
                 has_credential = True
                 token_id = cred.token_id
+                has_ca_cert = bool(cred.ca_cert)
         except Exception as e:
             logger.warning(f"Failed to load credential for cluster {cluster.id}: {e}")
 
@@ -324,6 +330,7 @@ class ClusterService:
             is_active=cluster.is_active,
             is_default_for_new_cohorts=cluster.is_default_for_new_cohorts,
             has_credential=has_credential,
+            has_ca_cert=has_ca_cert,
             token_id=token_id,
             ip_ranges=ip_ranges,
             vxlan_ranges=vxlan_ranges,

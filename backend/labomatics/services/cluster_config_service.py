@@ -268,6 +268,7 @@ class ClusterConfigService:
                         ClusterCredentialWriteDTO(
                             token_id=cluster_entry.token_id,
                             token_secret=cluster_entry.token_secret,
+                            ca_cert=cluster_entry.ca_cert,
                         ),
                     )
 
