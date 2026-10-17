@@ -17,7 +17,7 @@ START_APP = (
 
 
 class BackendTask(InstallTask):
-    """Prépare la configuration du backend puis démarre l'API, le worker et le frontend."""
+    """Prépare la configuration du backend puis démarre l'API, le worker, beat et le frontend."""
 
     name = "backend"
     label = "YAML d'init du backend"
@@ -25,9 +25,10 @@ class BackendTask(InstallTask):
     def run(self, ctx: InstallContext) -> None:
         """Crée le jeton, dépose le YAML et le `backend.env`, puis lance l'application.
 
-        Premier démarrage de `api`, `worker` et `frontend` : ils ont besoin du realm,
-        du secret du client Keycloak et du clusterconfig.yaml. Ils sont recréés (et non
-        redémarrés) aux passages suivants : `restart` ne relit pas `env_file`.
+        Premier démarrage de `api`, `worker`, `beat` et `frontend` : ils ont besoin
+        du realm, du secret du client Keycloak et du clusterconfig.yaml. Ils sont
+        recréés (et non redémarrés) aux passages suivants : `restart` ne relit pas
+        `env_file`.
 
         Args:
             ctx: Contexte d'installation.
@@ -49,10 +50,11 @@ class BackendTask(InstallTask):
         ctx.log("backend.env réécrit avec le secret Keycloak", "ok")
 
         ctx.log(
-            "Démarrage de l'API, du worker et du frontend (téléchargement des images)"
+            "Démarrage de l'API, du worker, de beat et du frontend "
+            "(téléchargement des images)"
         )
         ssh.run(START_APP, timeout=1800)
-        ctx.log("API, worker et frontend démarrés", "ok")
+        ctx.log("API, worker, beat et frontend démarrés", "ok")
 
     def _proxmox_ca(self, ctx: InstallContext) -> str | None:
         """Récupère la CA du cluster Proxmox pour que le backend vérifie son TLS.

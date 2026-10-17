@@ -120,7 +120,7 @@ services:
       retries: 5
 
   api:
-    image: ghcr.io/simonlou-dev/labomatics/labomatics-backend:latest-rc
+    image: ghcr.io/simonlou-dev/labomatics/labomatics-backend:latest
     pull_policy: always
     env_file: backend.env
     container_name: labomatics-api
@@ -151,7 +151,7 @@ services:
       retries: 5
 
   worker:
-    image: ghcr.io/simonlou-dev/labomatics/labomatics-worker:latest-rc
+    image: ghcr.io/simonlou-dev/labomatics/labomatics-worker:latest
     pull_policy: always
     env_file: backend.env
     container_name: labomatics-worker
@@ -167,8 +167,26 @@ services:
       - labomatics
     restart: unless-stopped
 
+  beat:
+    image: ghcr.io/simonlou-dev/labomatics/labomatics-worker:latest
+    pull_policy: always
+    command: ["poetry", "run", "python", "-m", "labomatics.worker", "beat"]
+    env_file: backend.env
+    container_name: labomatics-beat
+    volumes:
+      - ./clusterconfig.yaml:/etc/labomatics/clusterconfig.yaml:ro
+      - ./certs/ca.crt:/etc/labomatics/certs/ca.crt:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - labomatics
+    restart: unless-stopped
+
   frontend:
-    image: ghcr.io/simonlou-dev/labomatics/labomatics-frontend:latest-rc
+    image: ghcr.io/simonlou-dev/labomatics/labomatics-frontend:latest
     pull_policy: always
     env_file: frontend.env
     container_name: labomatics-frontend
