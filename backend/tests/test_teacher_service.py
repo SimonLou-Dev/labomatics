@@ -63,7 +63,15 @@ class _FakeMailService:
 @pytest.fixture
 async def seeded_cohort():
     repo = CohortRepository()
-    cohort = await repo.add(Cohort(name=f"teacher-test-{_suffix()}", year=2026))
+    now = datetime.now(UTC).replace(tzinfo=None)
+    cohort = await repo.add(
+        Cohort(
+            name=f"teacher-test-{_suffix()}",
+            year=2026,
+            start_date=now - timedelta(days=1),
+            end_date=now + timedelta(days=300),
+        )
+    )
     yield cohort
 
 
@@ -195,13 +203,18 @@ async def test_list_students_for_teacher_scopes_to_assigned_cohorts(seeded_cohor
         uuid.UUID(created.id), {"keycloak_user_id": teacher_keycloak_id}
     )
 
+    now = datetime.now(UTC).replace(tzinfo=None)
     other_cohort = await CohortRepository().add(
-        Cohort(name=f"teacher-test-outside-{_suffix()}", year=2026)
+        Cohort(
+            name=f"teacher-test-outside-{_suffix()}",
+            year=2026,
+            start_date=now - timedelta(days=1),
+            end_date=now + timedelta(days=300),
+        )
     )
 
     student_repo = StudentRepository()
     enrollment_repo = EnrollmentRepository()
-    now = datetime.now(UTC).replace(tzinfo=None)
 
     in_scope_student = await student_repo.add(
         Student(
@@ -214,12 +227,7 @@ async def test_list_students_for_teacher_scopes_to_assigned_cohorts(seeded_cohor
         )
     )
     await enrollment_repo.add(
-        Enrollment(
-            student_id=in_scope_student.id,
-            cohort_id=seeded_cohort.id,
-            start_date=now - timedelta(days=1),
-            end_date=now + timedelta(days=300),
-        )
+        Enrollment(student_id=in_scope_student.id, cohort_id=seeded_cohort.id)
     )
 
     outside_student = await student_repo.add(
@@ -233,12 +241,7 @@ async def test_list_students_for_teacher_scopes_to_assigned_cohorts(seeded_cohor
         )
     )
     await enrollment_repo.add(
-        Enrollment(
-            student_id=outside_student.id,
-            cohort_id=other_cohort.id,
-            start_date=now - timedelta(days=1),
-            end_date=now + timedelta(days=300),
-        )
+        Enrollment(student_id=outside_student.id, cohort_id=other_cohort.id)
     )
 
     page = await service.list_students_for_teacher(teacher_keycloak_id)

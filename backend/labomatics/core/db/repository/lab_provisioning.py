@@ -10,6 +10,7 @@ from sqlalchemy.orm import selectinload
 
 from labomatics.core.db.models import LabProvisioning
 from labomatics.core.db.models.cluster import Cluster
+from labomatics.core.db.models.cohort import Cohort
 from labomatics.core.db.models.enrollment import Enrollment
 from labomatics.core.db.models.student import Student
 from labomatics.core.db.repository.base import BaseRepository
@@ -63,7 +64,10 @@ class LabProvisioningRepository(BaseRepository[LabProvisioning]):
         """Vérifie si un étudiant de la cohort a un lab provisioning/actif sur ce cluster.
 
         Utilisé pour verrouiller le retrait d'un cluster assigné à une cohort
-        tant que des étudiants l'utilisent encore (#53).
+        tant que des étudiants l'utilisent encore (#53). La cohort doit être
+        dans sa fenêtre de dates actuelle (`Cohort.start_date`/`end_date`) —
+        une cohort dont l'année scolaire est terminée ne bloque plus le
+        retrait, même si une ligne `LabProvisioning` reste encore active.
         """
         async with async_session_local() as session:
             now = datetime.now()
@@ -71,10 +75,11 @@ class LabProvisioningRepository(BaseRepository[LabProvisioning]):
                 select(self.model.id)
                 .join(Student, self.model.student_id == Student.id)
                 .join(Enrollment, Enrollment.student_id == Student.id)
+                .join(Cohort, Enrollment.cohort_id == Cohort.id)
                 .where(
                     Enrollment.cohort_id == cohort_id,
-                    Enrollment.start_date <= now,
-                    (Enrollment.end_date.is_(None)) | (Enrollment.end_date >= now),
+                    Cohort.start_date <= now,
+                    Cohort.end_date >= now,
                     self.model.cluster_id == cluster_id,
                     self.model.status.in_(_ACTIVE_STATUSES),
                 )

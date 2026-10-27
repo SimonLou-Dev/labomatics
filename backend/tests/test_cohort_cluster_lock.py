@@ -33,8 +33,13 @@ def _csrf_headers(resp) -> dict[str, str]:
     return {"x-csrf-token": resp.headers["x-csrf-token"]}
 
 
-async def _seed_cohort_cluster_student(*, enrollment_end_offset_days: int | None = 1):
-    """Cohort + cluster assigné + étudiant inscrit (enrollment actif par défaut)."""
+async def _seed_cohort_cluster_student(*, cohort_end_offset_days: int = 300):
+    """Cohort (avec fenêtre de dates) + cluster assigné + étudiant inscrit.
+
+    La durée est désormais portée par la Cohort, pas par l'Enrollment (#53) :
+    `cohort_end_offset_days` négatif simule une cohort dont l'année scolaire
+    est déjà terminée.
+    """
     suffix = _suffix()
     cohort_repo = CohortRepository()
     cluster_repo = ClusterRepository()
@@ -42,7 +47,15 @@ async def _seed_cohort_cluster_student(*, enrollment_end_offset_days: int | None
     enrollment_repo = EnrollmentRepository()
     cohort_cluster_repo = CohortClusterRepository()
 
-    cohort = await cohort_repo.add(Cohort(name=f"lock-test-{suffix}", year=2026))
+    now = datetime.now(UTC).replace(tzinfo=None)
+    cohort = await cohort_repo.add(
+        Cohort(
+            name=f"lock-test-{suffix}",
+            year=2026,
+            start_date=now - timedelta(days=1),
+            end_date=now + timedelta(days=cohort_end_offset_days),
+        )
+    )
     cluster = await cluster_repo.add(
         Cluster(
             name=f"lock-test-cluster-{suffix}",
@@ -64,20 +77,7 @@ async def _seed_cohort_cluster_student(*, enrollment_end_offset_days: int | None
             keycloak_user_id=uuid.uuid4(),
         )
     )
-    now = datetime.now(UTC).replace(tzinfo=None)
-    end_date = (
-        now + timedelta(days=enrollment_end_offset_days)
-        if enrollment_end_offset_days is not None
-        else None
-    )
-    await enrollment_repo.add(
-        Enrollment(
-            student_id=student.id,
-            cohort_id=cohort.id,
-            start_date=now - timedelta(days=1),
-            end_date=end_date,
-        )
-    )
+    await enrollment_repo.add(Enrollment(student_id=student.id, cohort_id=cohort.id))
     return cohort, cluster, student
 
 
@@ -120,9 +120,9 @@ async def test_remove_cluster_allowed_when_no_active_lab(client, override_user):
     assert resp.status_code == 200
 
 
-async def test_remove_cluster_allowed_when_enrollment_expired(client, override_user):
+async def test_remove_cluster_allowed_when_cohort_expired(client, override_user):
     cohort, cluster, student = await _seed_cohort_cluster_student(
-        enrollment_end_offset_days=-1
+        cohort_end_offset_days=-1
     )
     await _seed_lab_provisioning(student, cluster, status="active")
 

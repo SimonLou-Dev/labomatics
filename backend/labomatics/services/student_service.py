@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime
 from uuid import UUID
 
 from labomatics.api.dto.lab import LabDataDTO, LabOwnerDTO, LabVmDTO
@@ -83,16 +82,10 @@ class StudentService:
         )
 
         items = []
-        now = datetime.now()
         for student in students:
-            # Trouver enrollment actif (start_date <= now <= end_date)
+            # Enrollment actif = dont la cohort est dans sa fenêtre de dates (#53)
             active_enrollment = next(
-                (
-                    e
-                    for e in student.enrollments
-                    if e.start_date <= now and (e.end_date is None or e.end_date >= now)
-                ),
-                None,
+                (e for e in student.enrollments if e.is_active()), None
             )
             cohort_name = active_enrollment.cohort.name if active_enrollment else "—"
 
@@ -140,11 +133,9 @@ class StudentService:
         if not student:
             return None
 
-        # Récupère le cohort_name depuis l'enrollment actif (dates valides)
-        now = datetime.now()
+        # Enrollment actif = dont la cohort est dans sa fenêtre de dates (#53)
         active_enrollment = next(
-            (e for e in student.enrollments if e.start_date <= now <= e.end_date),
-            None,
+            (e for e in student.enrollments if e.is_active()), None
         )
         cohort_name = active_enrollment.cohort.name if active_enrollment else "—"
 
@@ -244,7 +235,7 @@ class StudentService:
                     self.cohort_repo = CohortRepository()
 
                 # Get school year (year, start_date, end_date)
-                school_year, _, _ = get_school_year()
+                school_year, auto_start_date, auto_end_date = get_school_year()
 
                 # Get or create cohort by name + year (idempotent)
                 cohort = await self.cohort_repo.update_or_create(
@@ -252,6 +243,15 @@ class StudentService:
                     defaults={"is_active": True},
                 )
                 logger.info(f"Cohort trouvé/créé: {data.cohort_name} ({school_year})")
+
+                # Dates portées par la Cohort elle-même désormais (#53) : ne
+                # backfill que si elles ne sont pas déjà définies, pour ne pas
+                # écraser une édition manuelle faite depuis l'UI admin.
+                if cohort.start_date is None or cohort.end_date is None:
+                    cohort = await self.cohort_repo.update(
+                        cohort.id,
+                        {"start_date": auto_start_date, "end_date": auto_end_date},
+                    )
 
                 # Assigner le cohort au cluster par défaut
                 from labomatics.core.db.repository.cluster import ClusterRepository
@@ -292,17 +292,12 @@ class StudentService:
 
                     self.enrollment_repo = EnrollmentRepository()
 
-                _, start_date, end_date = get_school_year()
-
                 await self.enrollment_repo.update_or_create(
                     filters={
                         "student_id": student.id,
                         "cohort_id": cohort.id,
                     },
-                    defaults={
-                        "start_date": start_date,
-                        "end_date": end_date,
-                    },
+                    defaults={},
                 )
                 logger.info(f"Enrollment créé/trouvé: {login} -> {data.cohort_name}")
             except Exception as e:

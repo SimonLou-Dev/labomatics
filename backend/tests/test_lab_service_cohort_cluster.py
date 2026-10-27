@@ -34,7 +34,15 @@ async def student_in_cohort_with_one_allowed_cluster():
     enrollment_repo = EnrollmentRepository()
     cohort_cluster_repo = CohortClusterRepository()
 
-    cohort = await cohort_repo.add(Cohort(name=f"lab-test-{suffix}", year=2026))
+    now = datetime.now(UTC).replace(tzinfo=None)
+    cohort = await cohort_repo.add(
+        Cohort(
+            name=f"lab-test-{suffix}",
+            year=2026,
+            start_date=now - timedelta(days=1),
+            end_date=now + timedelta(days=300),
+        )
+    )
     allowed_cluster = await cluster_repo.add(
         Cluster(
             name=f"lab-test-allowed-{suffix}",
@@ -61,15 +69,7 @@ async def student_in_cohort_with_one_allowed_cluster():
             keycloak_user_id=uuid.uuid4(),
         )
     )
-    now = datetime.now(UTC).replace(tzinfo=None)
-    await enrollment_repo.add(
-        Enrollment(
-            student_id=student.id,
-            cohort_id=cohort.id,
-            start_date=now - timedelta(days=1),
-            end_date=now + timedelta(days=300),
-        )
-    )
+    await enrollment_repo.add(Enrollment(student_id=student.id, cohort_id=cohort.id))
     await cohort_cluster_repo.add(
         CohortCluster(cohort_id=cohort.id, cluster_id=allowed_cluster.id)
     )

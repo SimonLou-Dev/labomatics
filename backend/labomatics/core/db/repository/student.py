@@ -62,8 +62,10 @@ class StudentRepository(BaseRepository[Student]):
         """Liste les étudiants avec pagination, recherche textuelle et filtre cohort.
 
         `cohort_ids`, s'il est fourni, filtre sur les étudiants ayant un
-        enrollment actif (dates courantes) dans l'une de ces cohorts. Le
-        filtre est appliqué en SQL (avant la pagination et dans le count),
+        enrollment dans l'une de ces cohorts, et dont la cohort est
+        actuellement dans sa fenêtre de dates (`Cohort.start_date`/`end_date`,
+        #53 — la date n'est plus portée par l'enrollment lui-même). Le filtre
+        est appliqué en SQL (avant la pagination et dans le count),
         contrairement à l'ancien filtre `cohort` appliqué en Python par
         `StudentService.list_students` *après* le LIMIT/OFFSET — ce qui
         rendait `total_count` et le nombre d'items par page incohérents dès
@@ -78,6 +80,7 @@ class StudentRepository(BaseRepository[Student]):
             Enrollment,
             LabProvisioning,
         )
+        from labomatics.core.db.models.cohort import Cohort
 
         async with async_session_local() as session:
 
@@ -94,12 +97,14 @@ class StudentRepository(BaseRepository[Student]):
                     )
                 if cohort_ids:
                     now = datetime.now()
-                    s = s.join(
-                        Enrollment, Enrollment.student_id == self.model.id
-                    ).where(
-                        Enrollment.cohort_id.in_(cohort_ids),
-                        Enrollment.start_date <= now,
-                        (Enrollment.end_date.is_(None)) | (Enrollment.end_date >= now),
+                    s = (
+                        s.join(Enrollment, Enrollment.student_id == self.model.id)
+                        .join(Cohort, Enrollment.cohort_id == Cohort.id)
+                        .where(
+                            Enrollment.cohort_id.in_(cohort_ids),
+                            Cohort.start_date <= now,
+                            Cohort.end_date >= now,
+                        )
                     )
                 return s
 

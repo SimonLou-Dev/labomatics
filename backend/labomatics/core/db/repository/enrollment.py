@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 from labomatics.core.db.models import Enrollment
+from labomatics.core.db.models.cohort import Cohort
 from labomatics.core.db.repository.base import BaseRepository
 from labomatics.core.db.session import async_session_local
 
@@ -18,13 +21,20 @@ class EnrollmentRepository(BaseRepository[Enrollment]):
         super().__init__(Enrollment)
 
     async def get_active_for_student(self, student_id: UUID) -> Enrollment | None:
-        """Récupère l'affectation active d'un étudiant (end_date IS NULL)."""
+        """Récupère l'affectation active d'un étudiant (dont la cohort est dans sa fenêtre de dates)."""
         async with async_session_local() as session:
-            stmt = select(self.model).where(
-                (self.model.student_id == student_id) & (self.model.end_date is None)
+            now = datetime.now()
+            stmt = (
+                select(self.model)
+                .join(Cohort, self.model.cohort_id == Cohort.id)
+                .where(
+                    self.model.student_id == student_id,
+                    Cohort.start_date <= now,
+                    Cohort.end_date >= now,
+                )
             )
             result = await session.execute(stmt)
-            return result.scalar_one_or_none()
+            return result.scalars().first()
 
     async def list_by_student(self, student_id: UUID) -> list[Enrollment]:
         """Liste l'historique d'affectations d'un étudiant."""
@@ -32,7 +42,8 @@ class EnrollmentRepository(BaseRepository[Enrollment]):
             stmt = (
                 select(self.model)
                 .where(self.model.student_id == student_id)
-                .order_by(self.model.start_date.desc())
+                .options(selectinload(self.model.cohort))
+                .order_by(self.model.created_at.desc())
             )
             result = await session.execute(stmt)
             return result.scalars().all()

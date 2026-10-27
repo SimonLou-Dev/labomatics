@@ -41,27 +41,30 @@ async def _create_student_in_cohort(cohort_id, suffix: str) -> Student:
             keycloak_user_id=uuid.uuid4(),
         )
     )
-    now = datetime.now(UTC).replace(tzinfo=None)
-    await enrollment_repo.add(
-        Enrollment(
-            student_id=student.id,
-            cohort_id=cohort_id,
-            start_date=now - timedelta(days=1),
-            end_date=now + timedelta(days=300),
-        )
-    )
+    await enrollment_repo.add(Enrollment(student_id=student.id, cohort_id=cohort_id))
     return student
 
 
 async def test_cohort_filter_total_count_matches_filtered_items():
     cohort_repo = CohortRepository()
     suffix = _suffix()
+    now = datetime.now(UTC).replace(tzinfo=None)
 
     target_cohort = await cohort_repo.add(
-        Cohort(name=f"pagination-target-{suffix}", year=2026)
+        Cohort(
+            name=f"pagination-target-{suffix}",
+            year=2026,
+            start_date=now - timedelta(days=1),
+            end_date=now + timedelta(days=300),
+        )
     )
     other_cohort = await cohort_repo.add(
-        Cohort(name=f"pagination-other-{suffix}", year=2026)
+        Cohort(
+            name=f"pagination-other-{suffix}",
+            year=2026,
+            start_date=now - timedelta(days=1),
+            end_date=now + timedelta(days=300),
+        )
     )
 
     # Plus d'étudiants dans la cohort cible que la taille de page demandée,

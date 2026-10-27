@@ -83,11 +83,9 @@ async def _create_lab(
             if not student or not student.enrollments:
                 raise ValueError(f"Student {student_id} has no active enrollment")
 
-            # Trouver l'enrollment actif
-            now = datetime.now()
+            # Trouver l'enrollment actif (cohort dans sa fenêtre de dates, #53)
             active_enroll = next(
-                (e for e in student.enrollments if e.start_date <= now <= e.end_date),
-                None,
+                (e for e in student.enrollments if e.is_active()), None
             )
             if not active_enroll:
                 raise ValueError(f"Student {student_id} has no active enrollment")

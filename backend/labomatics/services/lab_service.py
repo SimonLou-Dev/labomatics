@@ -6,7 +6,6 @@ Orchestration de la création de labs pour students/teachers/admins.
 from __future__ import annotations
 
 import logging
-from datetime import datetime
 from uuid import UUID
 
 from fastapi import HTTPException, status
@@ -87,7 +86,6 @@ class LabService:
         student_with_enrollments = await student_repo.get_by_id_with_enrollments(
             student.id
         )
-        now = datetime.now()
         active_enroll = next(
             (
                 e
@@ -96,7 +94,7 @@ class LabService:
                     if student_with_enrollments
                     else []
                 )
-                if e.start_date <= now <= e.end_date
+                if e.is_active()
             ),
             None,
         )
