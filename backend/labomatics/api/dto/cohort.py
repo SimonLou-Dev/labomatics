@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import datetime
+
 from pydantic import BaseModel, Field
 
 
@@ -11,6 +13,7 @@ class ClusterRefDTO(BaseModel):
     id: str
     name: str
     is_default: bool
+    has_active_lab: bool = False
 
 
 class CohortDTO(BaseModel):
@@ -19,8 +22,18 @@ class CohortDTO(BaseModel):
     id: str
     name: str
     year: int
+    school_year: str
     is_active: bool
+    start_date: datetime | None = None
+    end_date: datetime | None = None
     clusters: list[ClusterRefDTO] = []
+
+
+class CohortUpdateDTO(BaseModel):
+    """Champs modifiables d'une cohort (dates uniquement)."""
+
+    start_date: datetime | None = None
+    end_date: datetime | None = None
 
 
 class CohortListResponseDTO(BaseModel):
