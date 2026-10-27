@@ -93,6 +93,21 @@ class KeycloakService:
             logger.error(f"Failed to set password for Keycloak user {login}: {e}")
             raise
 
+    async def get_user_by_login(self, login: str) -> dict | None:
+        """Récupère le profil Keycloak d'un user existant par son login.
+
+        Utilisé pour rattacher un compte Keycloak déjà existant (ex: un admin
+        qui est aussi prof) à un `Teacher`, sans en créer un nouveau (#58).
+        """
+        try:
+            user_id = self.admin_client.get_user_id(login)
+            if not user_id:
+                return None
+            return self.admin_client.get_user(user_id)
+        except KeycloakError as e:
+            logger.error(f"Failed to fetch Keycloak user {login}: {e}")
+            raise
+
     async def add_user_to_group(self, login: str, group_name: str) -> bool:
         """Ajoute un user à un groupe."""
         try:

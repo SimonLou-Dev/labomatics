@@ -9,6 +9,7 @@ from fastapi import APIRouter, Query
 from labomatics.api.deps.auth import RequireManageUser, RequireTeacher
 from labomatics.api.dto.student import StudentListResponseDTO
 from labomatics.api.dto.teacher import (
+    KeycloakUserLookupDTO,
     TeacherCreateDTO,
     TeacherListItemDTO,
     TeacherListResponseDTO,
@@ -29,6 +30,16 @@ async def list_teachers(
 ) -> TeacherListResponseDTO:
     """Liste les professeurs (paginé, recherche nom/prénom/email/login)."""
     return await service.list_teachers(page, size, search=search)
+
+
+@router.get("/lookup-keycloak-user", response_model=KeycloakUserLookupDTO)
+async def lookup_keycloak_user(
+    _user: RequireManageUser,
+    service: TeacherServiceDep,
+    login: str = Query(..., min_length=1),
+) -> KeycloakUserLookupDTO:
+    """Récupère le profil d'un compte Keycloak existant à rattacher comme prof."""
+    return await service.lookup_keycloak_user(login)
 
 
 @router.post("", response_model=TeacherListItemDTO)

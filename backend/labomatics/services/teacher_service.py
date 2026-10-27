@@ -9,6 +9,7 @@ from fastapi import HTTPException
 
 from labomatics.api.dto.student import StudentListResponseDTO
 from labomatics.api.dto.teacher import (
+    KeycloakUserLookupDTO,
     TeacherCreateDTO,
     TeacherListItemDTO,
     TeacherListResponseDTO,
@@ -93,12 +94,70 @@ class TeacherService:
             total_pages=total_pages,
         )
 
+    async def lookup_keycloak_user(self, login: str) -> KeycloakUserLookupDTO:
+        """Récupère le profil d'un compte Keycloak existant (pour le rattacher)."""
+        from labomatics.services.keycloak_service import KeycloakService
+
+        keycloak_svc = self.keycloak_service or KeycloakService()
+        kc_user = await keycloak_svc.get_user_by_login(login)
+        if not kc_user:
+            raise HTTPException(404, f"Compte Keycloak '{login}' introuvable")
+
+        return KeycloakUserLookupDTO(
+            login=kc_user.get("username", login),
+            email=kc_user.get("email") or "",
+            first_name=kc_user.get("firstName") or "",
+            last_name=kc_user.get("lastName") or "",
+        )
+
     async def create_teacher(self, data: TeacherCreateDTO) -> TeacherListItemDTO:
-        """Crée un professeur: DB + classes assignées + Keycloak + mail."""
+        """Crée un professeur: DB + classes assignées + Keycloak + mail.
+
+        Si `data.keycloak_login` est fourni, rattache ce compte Keycloak déjà
+        existant au lieu d'en créer un nouveau (ex: un admin qui est aussi
+        prof, #58) : pas de mot de passe, pas de mail de bienvenue.
+        """
         from labomatics.services.keycloak_service import KeycloakService
         from labomatics.services.mail_service import MailService
 
         cohort_ids = await self._ensure_cohorts_exist(data.cohort_ids)
+        keycloak_svc = self.keycloak_service or KeycloakService()
+
+        if data.keycloak_login:
+            kc_user = await keycloak_svc.get_user_by_login(data.keycloak_login)
+            if not kc_user:
+                raise HTTPException(
+                    404, f"Compte Keycloak '{data.keycloak_login}' introuvable"
+                )
+
+            keycloak_user_id = UUID(kc_user["id"])
+            if await self.repo.get_by_keycloak_id(keycloak_user_id):
+                raise HTTPException(409, "Ce compte est déjà un professeur")
+
+            teacher = Teacher(
+                login=kc_user.get("username", data.keycloak_login),
+                first_name=data.first_name,
+                last_name=data.last_name,
+                email=data.email,
+                is_active=True,
+                keycloak_user_id=keycloak_user_id,
+            )
+            teacher = await self.repo.add(teacher)
+            logger.info(
+                f"Teacher rattaché à un compte Keycloak existant: {teacher.login}"
+            )
+
+            for cohort_id in cohort_ids:
+                await self.teacher_cohort_repo.add(
+                    TeacherCohort(teacher_id=teacher.id, cohort_id=cohort_id)
+                )
+
+            # Le compte existe déjà et fonctionne : on ajoute juste le rôle
+            # applicatif "teacher" (groupe Keycloak "prof"), sans y toucher
+            # autrement (pas de mot de passe, pas de mail).
+            await keycloak_svc.add_user_to_group(login=teacher.login, group_name="prof")
+
+            return await self._to_list_item(teacher)
 
         login = generate_login(data.first_name, data.last_name)
         teacher = Teacher(
@@ -119,7 +178,6 @@ class TeacherService:
         # Contrairement à `StudentService.create_student`, on NE PAS avale
         # l'exception Keycloak ici : il n'existe pas de réimport périodique
         # qui réconcilierait un prof orphelin sans compte fonctionnel.
-        keycloak_svc = self.keycloak_service or KeycloakService()
         await keycloak_svc.create_user(
             login=login,
             email=data.email,

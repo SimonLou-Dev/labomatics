@@ -30,6 +30,22 @@ async def test_list_teachers_ok_for_manage_user(client, override_user):
     assert resp.status_code == 200
 
 
+async def test_lookup_keycloak_user_forbidden_for_student(client, override_user):
+    override_user(STUDENT)
+    resp = await client.get("/v1/teachers/lookup-keycloak-user", params={"login": "x"})
+    assert resp.status_code == 403
+
+
+async def test_lookup_keycloak_user_passes_rbac_for_manage_user(client, override_user):
+    # Pas de Keycloak réel dans l'environnement de test : on vérifie juste
+    # que la vérification de rôle est dépassée (plus jamais 403).
+    override_user(MANAGE_USER)
+    resp = await client.get(
+        "/v1/teachers/lookup-keycloak-user", params={"login": "unknown-login"}
+    )
+    assert resp.status_code != 403
+
+
 async def test_create_teacher_forbidden_for_student(client, override_user):
     override_user(STUDENT)
     resp = await client.post(
