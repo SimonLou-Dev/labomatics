@@ -1,0 +1,78 @@
+name: Test
+
+on:
+  workflow_call:
+
+jobs:
+  test-backend:
+    name: Test backend (pytest)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: labomatics
+          POSTGRES_PASSWORD: labomatics
+          POSTGRES_DB: labomatics
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U labomatics"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      # Postgres/Redis : doivent correspondre aux services ci-dessus.
+      DATABASE_HOST: localhost
+      DATABASE_PORT: 5432
+      DATABASE_USER: labomatics
+      DATABASE_PASSWORD: labomatics
+      DATABASE_NAME: labomatics
+      REDIS_HOST: localhost
+      REDIS_PORT: 6379
+      # Keycloak : jamais appelé en réel dans les tests (entièrement mocké),
+      # seules des valeurs factices sont nécessaires pour satisfaire Settings.
+      KEYCLOAK_URL: http://keycloak.invalid/
+      KEYCLOAK_REALM: labomatics
+      KEYCLOAK_CLIENT_ID: labomatics
+      KEYCLOAK_CLIENT_SECRET: test-secret
+      KEYCLOAK_ADMIN_USERNAME: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin-password
+      # "development" : évite la validation stricte CA_BUNDLE réservée à la prod.
+      ENVIRONMENT: development
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install poetry
+        run: pip install poetry
+
+      - name: Install dependencies
+        working-directory: backend
+        run: poetry install
+
+      - name: Run DB migrations
+        working-directory: backend
+        run: poetry run alembic upgrade head
+
+      - name: pytest
+        working-directory: backend
+        run: poetry run pytest

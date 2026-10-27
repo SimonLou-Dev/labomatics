@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import UUID
 
 from sqlalchemy import ForeignKey, Index, UniqueConstraint, text
@@ -20,7 +20,7 @@ class CohortCluster(Base, UUIDPkMixin, TimestampMixin):
         ForeignKey("cluster.id", ondelete="RESTRICT"),
     )
     added_at: Mapped[datetime] = mapped_column(
-        default=lambda: datetime.utcnow().replace(tzinfo=None),
+        default=lambda: datetime.now(UTC).replace(tzinfo=None),
     )
     is_default: Mapped[bool] = mapped_column(default=False)
 

@@ -27,10 +27,12 @@ class ClusterEntryDTO(BaseModel):
     url: str
     sdn_zone: str
     default_storage: str | None = None
+    wan_bridge: str = "vmbr0"
     wan_configs: list[WanConfigDTO]
     vnet_config: VnetConfigDTO | None = None
     token_id: str | None
     token_secret: str | None
+    ca_cert: str | None = None
 
 
 class GlobalWanConfigDTO(BaseModel):

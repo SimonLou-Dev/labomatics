@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 from ipaddress import IPv4Address, IPv4Network
 from uuid import UUID
 
@@ -20,8 +20,13 @@ from labomatics.core.db.repository.lab_provisioning import LabProvisioningReposi
 from labomatics.core.db.repository.lab_vm import LabVmRepository
 from labomatics.core.db.repository.student import StudentRepository
 from labomatics.core.db.repository.vxlan_allocation import VxlanAllocationRepository
-from labomatics.helpers.proxmox._root import LabomaticsProxmoxClient
+from labomatics.helpers.proxmox._root import (
+    SYSTEM_POOL_NAME,
+    LabomaticsProxmoxClient,
+    sanitize_pool_name,
+)
 from labomatics.helpers.proxmox.api.types import CloudInitConfigDTO
+from labomatics.helpers.proxmox.router_security import apply_router_security
 from labomatics.services.audit_service import AuditService
 from labomatics.services.ip_range_service import IpRangeService
 from labomatics.services.network_range_service import NetworkRangeService
@@ -130,12 +135,12 @@ async def _create_lab(
                     if existing_lab.ip_allocation_id:
                         await IpAllocationRepository().update(
                             existing_lab.ip_allocation_id,
-                            {"released_at": datetime.utcnow()},
+                            {"released_at": datetime.now(UTC).replace(tzinfo=None)},
                         )
                     if existing_lab.vxlan_allocation_id:
                         await VxlanAllocationRepository().update(
                             existing_lab.vxlan_allocation_id,
-                            {"released_at": datetime.utcnow()},
+                            {"released_at": datetime.now(UTC).replace(tzinfo=None)},
                         )
                     await lab_prov_repo.delete(existing_lab.id)
                     logger.info(
@@ -306,6 +311,14 @@ async def _create_lab(
         await emit(job_id, "step_done", step="proxmox_user_created", task_id=task_id)
 
         # 9. Clone la VM OpenWRT (ou récupérer si elle existe déjà)
+        # Le routeur vit dans le pool système partagé, pas dans le pool de
+        # l'étudiant : il échappe ainsi au PVEVMAdmin donné sur ce dernier
+        # (issue #78 — l'étudiant ne doit pas pouvoir modifier net0/firewall).
+        await proxmox.pool.ensure_exists(
+            SYSTEM_POOL_NAME,
+            comment="Routeurs étudiants + VM plateforme (labomatics)",
+        )
+
         vm_name = f"router-{user_name}"
         # Chercher si la VM existe déjà
         existing_node = await proxmox.vm.find_node_by_name(vm_name)
@@ -320,7 +333,7 @@ async def _create_lab(
                 vm_name=vm_name,
                 vm_storage=cluster.default_storage,
                 source_id=OPENWRT_TEMPLATE_ID,
-                pool=user_name,
+                pool=SYSTEM_POOL_NAME,
                 full_clone=True,
             )
         await emit(
@@ -356,6 +369,18 @@ async def _create_lab(
 
         await proxmox.vm.config(dest_node, vmid, **cloud_init_cfg.to_proxmox_args())
         await emit(job_id, "step_done", step="vm_configured", task_id=task_id)
+
+        # 10b. Anti-spoofing WAN : firewall VM + IPSet limité à l'IP allouée,
+        # et accès restreint de l'étudiant à cette VM (lecture/console, pas Admin).
+        router_user_id = f"{sanitize_pool_name(user_name)}@{settings.keycloak_realm}"
+        await apply_router_security(
+            proxmox,
+            node=dest_node,
+            vmid=vmid,
+            user_id=router_user_id,
+            wan_ip=str(wan_ip),
+        )
+        await emit(job_id, "step_done", step="router_secured", task_id=task_id)
 
         await audit_svc.log(
             actor_keycloak_id=owner_keycloak_id,
@@ -410,7 +435,7 @@ async def _create_lab(
             lab_provisioning.id,
             {
                 "status": "active",
-                "proxmox_pool": user_name,
+                "proxmox_pool": SYSTEM_POOL_NAME,
                 "proxmox_vm_id": vmid,
                 "proxmox_vnet": vnet_name,
                 "last_checked_at": datetime.now(),

@@ -6,11 +6,15 @@ Orchestration de la création de labs pour students/teachers/admins.
 from __future__ import annotations
 
 import logging
+from datetime import datetime
 from uuid import UUID
+
+from fastapi import HTTPException, status
 
 from labomatics.api.dto.auth import AuthUser
 from labomatics.api.dto.notification import JobDTO
 from labomatics.constants.enums import EventType, OwnerRole
+from labomatics.core.db.repository.cohort_cluster import CohortClusterRepository
 from labomatics.core.db.repository.student import StudentRepository
 from labomatics.core.db.repository.teacher_cohort import TeacherCohortRepository
 from labomatics.services.audit_service import AuditService
@@ -62,6 +66,53 @@ class LabService:
         logger.info(f"User {user.username} resolved as ADMIN")
         return OwnerRole.ADMIN, None
 
+    async def _ensure_cluster_allowed_for_student(
+        self, student: object, cluster_id: UUID
+    ) -> None:
+        """Vérifie que le cluster demandé fait partie de la promo de l'étudiant.
+
+        Args:
+            student: Étudiant résolu (objet Student).
+            cluster_id: Cluster explicitement demandé par l'appelant.
+
+        Raises:
+            HTTPException 403: Si l'étudiant n'a pas d'enrollment actif, ou si le
+                cluster n'est pas assigné à la promo de cet enrollment.
+        """
+        student_repo = StudentRepository()
+        student_with_enrollments = await student_repo.get_by_id_with_enrollments(
+            student.id
+        )
+        now = datetime.now()
+        active_enroll = next(
+            (
+                e
+                for e in (
+                    student_with_enrollments.enrollments
+                    if student_with_enrollments
+                    else []
+                )
+                if e.start_date <= now <= e.end_date
+            ),
+            None,
+        )
+        if not active_enroll:
+            raise HTTPException(
+                status.HTTP_403_FORBIDDEN,
+                "Aucun enrollment actif pour cet étudiant",
+            )
+
+        cohort_cluster_repo = CohortClusterRepository()
+        cohort_clusters = await cohort_cluster_repo.list_by_cohort(
+            active_enroll.cohort.id
+        )
+        allowed_cluster_ids = {cc.cluster_id for cc in cohort_clusters}
+        if cluster_id not in allowed_cluster_ids:
+            raise HTTPException(
+                status.HTTP_403_FORBIDDEN,
+                "Ce cluster n'est pas assigné à la promotion de l'étudiant",
+            )
+
     async def create(
         self,
         user: AuthUser,
@@ -79,9 +130,14 @@ class LabService:
             JobDTO avec le jobId pour suivre l'exécution.
 
         Raises:
-            Aucune exception levée (best-effort enqueue).
+            HTTPException 403: Si un étudiant demande un cluster hors de sa promo.
         """
         owner_role, student = await self._resolve_owner(user)
+
+        if owner_role == OwnerRole.STUDENT and cluster_id:
+            await self._ensure_cluster_allowed_for_student(
+                student, UUID(str(cluster_id))
+            )
 
         # Convertir cluster_id en string si UUID
         cluster_id_str = str(cluster_id) if cluster_id else None

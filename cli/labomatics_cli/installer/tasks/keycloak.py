@@ -175,6 +175,7 @@ class KeycloakTask(InstallTask):
                 "serviceAccountsEnabled": True,
             },
         )
+        api.ensure_audience_mapper(REALM, client_uuid, CLIENT_ID)
         service_id = api.service_account_user(REALM, client_uuid)
         api.assign_client_roles(REALM, service_id, "realm-management", SERVICE_ROLES)
         descriptions = {name: text for name, text, _ in REALM_ROLES}

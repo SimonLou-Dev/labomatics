@@ -26,7 +26,7 @@ class KeycloakService:
             realm_name=settings.keycloak_realm,
             client_id=settings.keycloak_client_id,
             client_secret_key=settings.keycloak_client_secret,
-            verify=False,
+            verify=settings.tls_verify,
         )
 
     async def create_user(

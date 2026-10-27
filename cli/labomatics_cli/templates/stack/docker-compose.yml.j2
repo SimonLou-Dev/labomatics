@@ -110,8 +110,6 @@ services:
   redis:
     image: redis:7-alpine
     container_name: labomatics-redis
-    ports:
-      - "6379:6379"
     networks:
       - labomatics
     restart: unless-stopped
@@ -122,13 +120,14 @@ services:
       retries: 5
 
   api:
-    image: ghcr.io/simonlou-dev/labomatics/labomatics-backend:latest-rc
+    image: ghcr.io/simonlou-dev/labomatics/labomatics-backend:latest
     pull_policy: always
     env_file: backend.env
     container_name: labomatics-api
     volumes:
       - ./init-backend.sh:/app/init-backend.sh:ro
       - ./clusterconfig.yaml:/etc/labomatics/clusterconfig.yaml:ro
+      - ./certs/ca.crt:/etc/labomatics/certs/ca.crt:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -152,12 +151,31 @@ services:
       retries: 5
 
   worker:
-    image: ghcr.io/simonlou-dev/labomatics/labomatics-worker:latest-rc
+    image: ghcr.io/simonlou-dev/labomatics/labomatics-worker:latest
     pull_policy: always
     env_file: backend.env
     container_name: labomatics-worker
     volumes:
       - ./clusterconfig.yaml:/etc/labomatics/clusterconfig.yaml:ro
+      - ./certs/ca.crt:/etc/labomatics/certs/ca.crt:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - labomatics
+    restart: unless-stopped
+
+  beat:
+    image: ghcr.io/simonlou-dev/labomatics/labomatics-worker:latest
+    pull_policy: always
+    command: ["poetry", "run", "python", "-m", "labomatics.worker", "beat"]
+    env_file: backend.env
+    container_name: labomatics-beat
+    volumes:
+      - ./clusterconfig.yaml:/etc/labomatics/clusterconfig.yaml:ro
+      - ./certs/ca.crt:/etc/labomatics/certs/ca.crt:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -168,7 +186,7 @@ services:
     restart: unless-stopped
 
   frontend:
-    image: ghcr.io/simonlou-dev/labomatics/labomatics-frontend:latest-rc
+    image: ghcr.io/simonlou-dev/labomatics/labomatics-frontend:latest
     pull_policy: always
     env_file: frontend.env
     container_name: labomatics-frontend

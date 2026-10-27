@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 
 from labomatics.core.db.models import AuditLog
 from labomatics.core.db.repository.base import BaseRepository
@@ -39,6 +40,24 @@ class AuditLogRepository(BaseRepository[AuditLog]):
             stmt = stmt.order_by(self.model.created_at.desc())
             result = await session.execute(stmt)
             return result.scalars().all()
+
+    async def delete_older_than(self, cutoff: datetime) -> int:
+        """Supprime les entrées d'audit antérieures à `cutoff`.
+
+        Utilisé par la tâche quotidienne (#61) pour ne garder qu'environ un
+        mois d'historique.
+
+        Args:
+            cutoff: Date limite (exclue) ; les lignes plus anciennes sont supprimées.
+
+        Returns:
+            Nombre de lignes supprimées.
+        """
+        async with async_session_local() as session:
+            stmt = delete(self.model).where(self.model.created_at < cutoff)
+            result = await session.execute(stmt)
+            await session.commit()
+            return result.rowcount or 0
 
     async def list_by_action(self, action: str) -> list[AuditLog]:
         """Liste les actions d'un certain type."""

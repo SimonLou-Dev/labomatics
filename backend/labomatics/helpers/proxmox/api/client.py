@@ -7,6 +7,8 @@ from typing import Any, TypeVar
 import httpx
 from cachetools import TTLCache
 
+from labomatics.core.security.tls import resolve_verify
+
 from .errors import (
     ProxmoxAPIError,
     ProxmoxAuthError,
@@ -33,6 +35,7 @@ class AsyncProxmoxClient:
         cache_ttl: int = 300,
         max_connections: int = 50,
         max_keepalive: int = 20,
+        ca_cert: str | None = None,
     ) -> None:
         """Initialise le client Proxmox.
 
@@ -44,6 +47,7 @@ class AsyncProxmoxClient:
             cache_ttl: TTL du cache en secondes.
             max_connections: Nombre max de connexions HTTP.
             max_keepalive: Nombre max de connexions keepalive.
+            ca_cert: CA (PEM) propre au cluster Proxmox, sinon `CA_BUNDLE` global.
 
         Raises:
             ValueError: Si les paramètres sont invalides.
@@ -71,7 +75,7 @@ class AsyncProxmoxClient:
                 max_connections=max_connections,
                 max_keepalive_connections=max_keepalive,
             ),
-            verify=False,  # noqa: S501
+            verify=resolve_verify(ca_cert),
         )
 
     async def get(
@@ -316,6 +320,7 @@ class ProxmoxClientPool:
         cache_ttl: int = 300,
         max_connections: int = 50,
         max_keepalive: int = 20,
+        ca_cert: str | None = None,
     ) -> None:
         """Initialise le pool de connexions Proxmox.
 
@@ -329,6 +334,7 @@ class ProxmoxClientPool:
             cache_ttl: TTL du cache en secondes.
             max_connections: Nombre max de connexions HTTP.
             max_keepalive: Nombre max de connexions keepalive.
+            ca_cert: CA (PEM) propre au cluster Proxmox, sinon `CA_BUNDLE` global.
 
         Raises:
             ValueError: Si les paramètres sont invalides.
@@ -347,6 +353,7 @@ class ProxmoxClientPool:
             token_secret=secret,
             timeout=timeout,
             cache_ttl=cache_ttl,
+            ca_cert=ca_cert,
             max_connections=max_connections,
             max_keepalive=max_keepalive,
         )

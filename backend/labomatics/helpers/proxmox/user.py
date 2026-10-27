@@ -64,6 +64,40 @@ class ProxmoxUserClient:
             except ProxmoxServerError as e:
                 raise RuntimeError(f"Failed to create user {userid}: {e}") from e
 
+    async def ensure_in_group(self, userid: str, group_id: str) -> None:
+        """Ajoute l'utilisateur au groupe s'il n'en est pas déjà membre.
+
+        `PUT /access/users/{userid}` remplace la liste `groups` entière : on lit
+        l'appartenance actuelle pour ajouter sans écraser un autre groupe.
+
+        Args:
+            userid: ID utilisateur au format user@realm.
+            group_id: Nom du groupe (ex: `labomatics.helpers.proxmox.acl.STUDENT_GROUP`).
+
+        Raises:
+            RuntimeError: Problème API.
+        """
+        async with self._proxmox_client.get_context_manager() as client:
+            try:
+                resp = await client.get(urls.access_user(userid), cache=False)
+                raw_groups = resp.get("data", {}).get("groups") or []
+                current = (
+                    {g for g in raw_groups.split(",") if g}
+                    if isinstance(raw_groups, str)
+                    else set(raw_groups)
+                )
+                if group_id in current:
+                    return
+                current.add(group_id)
+                await client.put(
+                    urls.access_user(userid),
+                    data={"groups": ",".join(sorted(current))},
+                )
+            except ProxmoxServerError as e:
+                raise RuntimeError(
+                    f"Failed to add {userid} to group {group_id}: {e}"
+                ) from e
+
     async def delete(self, userid: str) -> None:
         """Supprime un utilisateur Proxmox.
 

@@ -9,6 +9,7 @@ from labomatics_cli.installer.tasks.base import InstallTask
 from labomatics_cli.installer.tasks.token import USER_ID
 
 BACKEND_TOKEN = "backend"
+PVE_ROOT_CA = "/etc/pve/pve-root-ca.pem"
 START_APP = (
     f"cd {STACK_ROOT} && sudo docker compose up -d --force-recreate "
     + " ".join(APP_SERVICES)
@@ -16,7 +17,7 @@ START_APP = (
 
 
 class BackendTask(InstallTask):
-    """Prépare la configuration du backend puis démarre l'API, le worker et le frontend."""
+    """Prépare la configuration du backend puis démarre l'API, le worker, beat et le frontend."""
 
     name = "backend"
     label = "YAML d'init du backend"
@@ -24,19 +25,21 @@ class BackendTask(InstallTask):
     def run(self, ctx: InstallContext) -> None:
         """Crée le jeton, dépose le YAML et le `backend.env`, puis lance l'application.
 
-        Premier démarrage de `api`, `worker` et `frontend` : ils ont besoin du realm,
-        du secret du client Keycloak et du clusterconfig.yaml. Ils sont recréés (et non
-        redémarrés) aux passages suivants : `restart` ne relit pas `env_file`.
+        Premier démarrage de `api`, `worker`, `beat` et `frontend` : ils ont besoin
+        du realm, du secret du client Keycloak et du clusterconfig.yaml. Ils sont
+        recréés (et non redémarrés) aux passages suivants : `restart` ne relit pas
+        `env_file`.
 
         Args:
             ctx: Contexte d'installation.
         """
         secret = self._token(ctx)
         ssh = ctx.vm_ssh
+        ca_cert = self._proxmox_ca(ctx)
         builder = ClusterConfigBuilder(ctx.config)
         ssh.put_text(
             f"{STACK_ROOT}/clusterconfig.yaml",
-            builder.render(f"{USER_ID}!{BACKEND_TOKEN}", secret),
+            builder.render(f"{USER_ID}!{BACKEND_TOKEN}", secret, ca_cert),
             0o600,
         )
         ctx.log("clusterconfig.yaml déposé", "ok")
@@ -47,10 +50,37 @@ class BackendTask(InstallTask):
         ctx.log("backend.env réécrit avec le secret Keycloak", "ok")
 
         ctx.log(
-            "Démarrage de l'API, du worker et du frontend (téléchargement des images)"
+            "Démarrage de l'API, du worker, de beat et du frontend "
+            "(téléchargement des images)"
         )
         ssh.run(START_APP, timeout=1800)
-        ctx.log("API, worker et frontend démarrés", "ok")
+        ctx.log("API, worker, beat et frontend démarrés", "ok")
+
+    def _proxmox_ca(self, ctx: InstallContext) -> str | None:
+        """Récupère la CA du cluster Proxmox pour que le backend vérifie son TLS.
+
+        `/etc/pve/` est partagé entre tous les nœuds d'un même cluster (pmxcfs) :
+        un seul nœud suffit à obtenir la CA, commune à tout le cluster.
+
+        Args:
+            ctx: Contexte d'installation.
+
+        Returns:
+            Le PEM de la CA, ou `None` si elle n'a pas pu être lue (log en warning).
+        """
+        node = next(iter(ctx.config.nodes), None)
+        if node is None:
+            ctx.log("Aucun nœud Proxmox configuré : CA non récupérée", "warn")
+            return None
+        result = ctx.node_ssh(node).run(f"cat {PVE_ROOT_CA}", check=False)
+        if not result.ok or not result.stdout.strip():
+            ctx.log(
+                f"CA Proxmox introuvable sur {node} : vérif TLS backend dégradée",
+                "warn",
+            )
+            return None
+        ctx.log("CA Proxmox récupérée", "ok")
+        return result.stdout
 
     def _token(self, ctx: InstallContext) -> str:
         """Garantit le jeton `labomatics@pve!backend` et renvoie son secret.

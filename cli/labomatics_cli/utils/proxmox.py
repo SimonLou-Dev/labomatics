@@ -148,6 +148,7 @@ class ProxmoxClient:
         boot_image: Optional[str] = None,
         sshkeys: Optional[str] = None,
         cpu: Optional[str] = None,
+        wan_bridge: str = "vmbr0",
     ) -> str:
         """Créer une VM vide et retourner le UPID."""
         # Vérifier que la VM n'existe pas déjà
@@ -164,7 +165,7 @@ class ProxmoxClient:
             "bios": "ovmf",
             "efidisk0": f"{storage}:1",
             "scsihw": "virtio-scsi-pci",
-            "net0": "virtio,bridge=vmbr0",
+            "net0": f"virtio,bridge={wan_bridge},firewall=1",
             "vga": "qxl",
             "citype": "nocloud",
             "ide2": f"{storage}:cloudinit",

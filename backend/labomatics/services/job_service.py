@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 
 from labomatics.api.dto.notification import JobDTO
 from labomatics.api.dto.student import StudentImportDiffDTO
@@ -21,7 +21,7 @@ class JobService:
         try:
             task_service = TaskTrackingService()
             # Appel synchrone seulement avec des valeurs non-None
-            now = datetime.utcnow().isoformat()
+            now = datetime.now(UTC).replace(tzinfo=None).isoformat()
             task_service.redis.hset(
                 f"task:{task_id}",
                 mapping={

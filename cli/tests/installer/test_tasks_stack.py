@@ -40,7 +40,7 @@ def test_stack_writes_files_generates_certs_and_starts(tmp_path):
     assert "/etc/labomatics/ldap/bootstrap.ldif" in ssh.files
     assert "CN = *.lab.fr" in ssh.files["/tmp/labomatics-generate-certs.sh"]
     up = next(c for c in ssh.commands if "docker compose up -d" in c)
-    assert "grep -vxE 'api|worker|frontend'" in up
+    assert "grep -vxE 'api|worker|beat|frontend'" in up
     assert "keycloak.lab.fr" in ssh.files["/tmp/labomatics-wait-ready.sh"]
     assert any("clusters: []" in c for c in ssh.commands)
 
@@ -251,7 +251,7 @@ def test_backend_writes_config_env_and_recreates(tmp_path):
     assert (
         "KEYCLOAK_CLIENT_SECRET=kc-secret" in ssh.files["/etc/labomatics/backend.env"]
     )
-    assert "--force-recreate api worker frontend" in ssh.commands[-1]
+    assert "--force-recreate api worker beat frontend" in ssh.commands[-1]
     api.calls.clear()
     BackendTask().run(ctx)
     assert "create_token" not in api.names() and "delete_token" not in api.names()

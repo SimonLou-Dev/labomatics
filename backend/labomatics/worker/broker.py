@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from celery import Celery
+from celery.schedules import crontab
 
 from labomatics.core.config.settings import settings
 
@@ -13,6 +14,7 @@ celery_app = Celery(
     include=[
         "labomatics.tasks.students",
         "labomatics.tasks.lab",
+        "labomatics.tasks.security_check",
     ],
 )
 
@@ -25,5 +27,11 @@ celery_app.conf.update(
     task_acks_late=True,
     task_reject_on_worker_lost=True,
     timezone=settings.time_zone,
-    beat_schedule={},
+    beat_schedule={
+        "daily-security-check": {
+            "task": "labomatics.daily_security_check",
+            # Heure creuse ; nécessite un processus `celery beat` en déploiement.
+            "schedule": crontab(hour=3, minute=0),
+        },
+    },
 )

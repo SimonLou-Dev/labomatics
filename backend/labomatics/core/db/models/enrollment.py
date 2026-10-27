@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import UUID
 
 from sqlalchemy import ForeignKey, Index, text
@@ -20,11 +20,11 @@ class Enrollment(Base, UUIDPkMixin):
         ForeignKey("cohort.id", ondelete="RESTRICT"),
     )
     start_date: Mapped[datetime] = mapped_column(
-        default=lambda: datetime.utcnow().replace(tzinfo=None),
+        default=lambda: datetime.now(UTC).replace(tzinfo=None),
     )
     end_date: Mapped[datetime | None] = None
     created_at: Mapped[datetime] = mapped_column(
-        default=lambda: datetime.utcnow().replace(tzinfo=None),
+        default=lambda: datetime.now(UTC).replace(tzinfo=None),
     )
 
     # Relationships

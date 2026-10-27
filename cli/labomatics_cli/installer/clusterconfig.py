@@ -22,12 +22,16 @@ class ClusterConfigBuilder:
         assert config.proxmox and config.wan and config.vxlan
         self.config = config
 
-    def data(self, token_id: str, token_secret: str) -> dict[str, Any]:
+    def data(
+        self, token_id: str, token_secret: str, ca_cert: str | None = None
+    ) -> dict[str, Any]:
         """Structure de la configuration.
 
         Args:
             token_id: Identifiant complet du jeton du backend (`user@realm!nom`).
             token_secret: Secret du jeton.
+            ca_cert: CA (PEM) du cluster Proxmox (`/etc/pve/pve-root-ca.pem`), pour que
+                le backend puisse vérifier son certificat TLS (propre à chaque cluster).
 
         Returns:
             Les clusters, réseaux WAN et VNets ; les listes d'exclusions vides sont omises.
@@ -51,19 +55,20 @@ class ClusterConfigBuilder:
         }
         if vxlan.vni_exclusions:
             vnet_entry["exclusions"] = vxlan.vni_exclusions
+        cluster_entry: dict[str, Any] = {
+            "name": proxmox.cluster_name,
+            "url": proxmox.url,
+            "sdn_zone": vxlan.zone,
+            "default_storage": vxlan.storage,
+            "wan_configs": [{"name": wan.name}],
+            "vnet_config": {"name": vxlan.vnet_name},
+            "token_id": token_id,
+            "token_secret": token_secret,
+        }
+        if ca_cert:
+            cluster_entry["ca_cert"] = ca_cert
         return {
-            "clusters": [
-                {
-                    "name": proxmox.cluster_name,
-                    "url": proxmox.url,
-                    "sdn_zone": vxlan.zone,
-                    "default_storage": vxlan.storage,
-                    "wan_configs": [{"name": wan.name}],
-                    "vnet_config": {"name": vxlan.vnet_name},
-                    "token_id": token_id,
-                    "token_secret": token_secret,
-                }
-            ],
+            "clusters": [cluster_entry],
             "wan": [wan_entry],
             "vnets": [vnet_entry],
         }
@@ -95,16 +100,21 @@ class ClusterConfigBuilder:
                     reserved.append(text)
         return reserved
 
-    def render(self, token_id: str, token_secret: str) -> str:
+    def render(
+        self, token_id: str, token_secret: str, ca_cert: str | None = None
+    ) -> str:
         """Sérialise la configuration en YAML.
 
         Args:
             token_id: Identifiant complet du jeton du backend.
             token_secret: Secret du jeton.
+            ca_cert: CA (PEM) du cluster Proxmox, voir `data`.
 
         Returns:
             Le texte YAML.
         """
         return yaml.safe_dump(
-            self.data(token_id, token_secret), sort_keys=False, allow_unicode=True
+            self.data(token_id, token_secret, ca_cert),
+            sort_keys=False,
+            allow_unicode=True,
         )

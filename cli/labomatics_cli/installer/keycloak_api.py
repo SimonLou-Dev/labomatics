@@ -445,6 +445,36 @@ class KeycloakApi:
             ok=(409,),
         )
 
+    def ensure_audience_mapper(
+        self, realm: str, client_uuid: str, audience: str
+    ) -> None:
+        """Ajoute au client un mapper qui met `audience` dans `aud` de ses tokens.
+
+        Sans ce mapper, Keycloak laisse `aud` à `account` par défaut : le backend
+        (qui vérifie `aud == client_id`) rejetterait alors tous les tokens de ce
+        client avec `InvalidAudienceError`.
+
+        Args:
+            realm: Nom du realm.
+            client_uuid: Identifiant interne du client.
+            audience: Valeur à ajouter à `aud` (le `clientId` du client lui-même).
+        """
+        self._request(
+            "POST",
+            f"/{realm}/clients/{client_uuid}/protocol-mappers/models",
+            json={
+                "name": "aud-" + audience,
+                "protocol": "openid-connect",
+                "protocolMapper": "oidc-audience-mapper",
+                "config": {
+                    "included.client.audience": audience,
+                    "id.token.claim": "false",
+                    "access.token.claim": "true",
+                },
+            },
+            ok=(409,),
+        )
+
     def assign_client_roles(
         self, realm: str, user_id: str, client_id: str, roles: list[str]
     ) -> None:

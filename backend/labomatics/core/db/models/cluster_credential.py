@@ -29,6 +29,11 @@ class ClusterCredential(Base, UUIDPkMixin, TimestampMixin):
         JSON,
         nullable=True,
     )
+    # CA (PEM) du cluster Proxmox (`/etc/pve/pve-root-ca.pem`), propre à ce cluster
+    # (chaque cluster a sa propre CA auto-signée) ; donnée publique, non chiffrée.
+    ca_cert: Mapped[str | None] = mapped_column(
+        nullable=True,
+    )
 
     # Relationships
     cluster: Mapped["Cluster"] = relationship(  # type: ignore

@@ -7,13 +7,14 @@ import unicodedata
 
 from labomatics.core.db.models.cluster import Cluster
 from labomatics.core.security.crypto import decrypt_secret
-from labomatics.helpers.proxmox.acl import ProxmoxAclClient
+from labomatics.helpers.proxmox.acl import STUDENT_GROUP, ProxmoxAclClient
 from labomatics.helpers.proxmox.api import (
     ProxmoxClientPool,
     ProxmoxNotFoundError,
     ProxmoxServerError,
     urls,
 )
+from labomatics.helpers.proxmox.firewall import ProxmoxVmFirewallClient
 from labomatics.helpers.proxmox.pool import ProxmoxPoolClient
 from labomatics.helpers.proxmox.sdn import ProxmoxSDNClient
 from labomatics.helpers.proxmox.token import ProxmoxTokenClient
@@ -25,6 +26,11 @@ def sanitize_pool_name(name: str) -> str:
     """Sanitize pool name for Proxmox (remove accents and special chars)."""
     name = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode("ascii")
     return re.sub(r"[^a-zA-Z0-9._-]", "", name)
+
+
+# Pool système partagé : routeurs étudiants + VM plateforme, hors du pool
+# personnel de l'étudiant (issue #78 — anti-spoofing / durcissement réseau).
+SYSTEM_POOL_NAME = "labomatics-system"
 
 
 class LabomaticsProxmoxClient:
@@ -55,6 +61,7 @@ class LabomaticsProxmoxClient:
             token_id=cred.token_id,
             token_secret=cred.encrypted_token_secret,
             decrypt_fn=decrypt_secret,
+            ca_cert=cred.ca_cert,
         )
 
         self.acl = ProxmoxAclClient(proxmox_client=self._proxmox_client)
@@ -62,9 +69,21 @@ class LabomaticsProxmoxClient:
         self.token = ProxmoxTokenClient(proxmox_client=self._proxmox_client)
         self.pool = ProxmoxPoolClient(proxmox_client=self._proxmox_client)
         self.sdn = ProxmoxSDNClient(proxmox_client=self._proxmox_client)
+        self.firewall = ProxmoxVmFirewallClient(proxmox_client=self._proxmox_client)
         self.vm = ProxmoxVMClient(
             proxmox_client=self._proxmox_client, wait_for_task_fn=self._wait_for_task
         )
+
+    async def ensure_student_baseline(self) -> None:
+        """Bootstrap idempotent du rôle et du groupe partagés par les étudiants.
+
+        À appeler une fois par cluster (pas par étudiant, voir
+        `ProxmoxAclClient.ensure_student_defaults`).
+
+        Raises:
+            RuntimeError: Problème API.
+        """
+        await self.acl.ensure_student_defaults(SYSTEM_POOL_NAME)
 
     async def create_user_with_deps(
         self,
@@ -95,12 +114,22 @@ class LabomaticsProxmoxClient:
         user_id = f"{sanitized_username}@{realm}"
         vnet = f"vn{tag}"
 
+        # 0. Rôle + groupe partagés par les étudiants (idempotent, une fois par
+        # cluster suffirait, mais pas cher à revérifier à chaque création)
+        await self.ensure_student_baseline()
+
         # 1. Créer l'utilisateur s'il n'existe pas
         if not await self.user.exists(user_id):
             try:
                 await self.user.create(userid=user_id)
             except RuntimeError as e:
                 raise RuntimeError(f"Failed to create user: {e}") from e
+
+        # 1b. Rejoindre le groupe étudiant (droits pool système/templates/stockage)
+        try:
+            await self.user.ensure_in_group(user_id, STUDENT_GROUP)
+        except RuntimeError as e:
+            raise RuntimeError(f"Failed to add user to student group: {e}") from e
 
         # 2. S'assurer que le pool existe (créer s'il n'existe pas)
         pool_name = sanitize_pool_name(user_name)

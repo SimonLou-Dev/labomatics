@@ -8,7 +8,9 @@ if [ -f ca.crt ] && [ -f ca.key ]; then
   echo "CA existante conservée"
 else
   openssl genrsa -out ca.key 2048 2>/dev/null
-  openssl req -new -x509 -days 3650 -key ca.key -out ca.crt -subj '/CN=labomatics-ca' 2>/dev/null
+  openssl req -new -x509 -days 3650 -key ca.key -out ca.crt -subj '/CN=labomatics-ca' \
+    -addext 'basicConstraints=critical,CA:TRUE' \
+    -addext 'keyUsage=critical,keyCertSign,cRLSign' 2>/dev/null
   echo "CA générée"
 fi
 

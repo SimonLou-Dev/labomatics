@@ -8,6 +8,7 @@ import warnings
 from rich.console import Console
 
 from .commands.templates import cmd_templates
+from .commands.templates.build_openwrt import DEFAULT_VMID, run_build
 from .installer.app import InstallerApp
 
 # Suppress SSL warnings for self-signed certs (Proxmox, etc)
@@ -51,7 +52,59 @@ def main() -> int:
         help="Nom du cluster à installer, reprendre ou modifier",
     )
     install_parser.set_defaults(func=cmd_install)
+    tempaltes_parser.add_argument(
+        "--cluster", help="Nom d'un cluster déjà configuré par `labomatics install`"
+    )
+    tempaltes_parser.add_argument(
+        "--cluster-url", help="URL Proxmox (ex: https://10.0.0.1:8006)"
+    )
+    tempaltes_parser.add_argument("--user", help="User Proxmox (ex: root@pam)")
+    tempaltes_parser.add_argument("--token-id", help="Token ID API Proxmox")
+    tempaltes_parser.add_argument("--token-secret", help="Token secret API Proxmox")
+    tempaltes_parser.add_argument(
+        "--node", help="Nœud Proxmox cible (sinon sélection interactive)"
+    )
+    tempaltes_parser.add_argument(
+        "--ssh-host", help="Hôte/IP SSH du nœud cible (sinon résolu via l'API)"
+    )
     tempaltes_parser.set_defaults(func=cmd_templates)
+
+    template_subparsers = tempaltes_parser.add_subparsers(dest="template_action")
+    build_openwrt_parser = template_subparsers.add_parser(
+        "build-openwrt",
+        help=(
+            "Builder la template OpenWrt à distance sur un cluster choisi "
+            "(aucun accès local au nœud Proxmox requis, seulement SSH root)"
+        ),
+    )
+    build_openwrt_parser.add_argument(
+        "--cluster", help="Nom d'un cluster déjà configuré par `labomatics install`"
+    )
+    build_openwrt_parser.add_argument(
+        "--cluster-url", help="URL Proxmox (ex: https://10.0.0.1:8006)"
+    )
+    build_openwrt_parser.add_argument("--user", help="User Proxmox (ex: root@pam)")
+    build_openwrt_parser.add_argument("--token-id", help="Token ID API Proxmox")
+    build_openwrt_parser.add_argument("--token-secret", help="Token secret API Proxmox")
+    build_openwrt_parser.add_argument(
+        "--node", help="Nœud Proxmox cible (sinon sélection interactive)"
+    )
+    build_openwrt_parser.add_argument(
+        "--ssh-host", help="Hôte/IP SSH du nœud cible (sinon résolu via l'API)"
+    )
+    build_openwrt_parser.add_argument(
+        "--storage", help="Storage de destination (défaut: local)"
+    )
+    build_openwrt_parser.add_argument(
+        "--version", help="Version OpenWrt (défaut: dernière stable)"
+    )
+    build_openwrt_parser.add_argument(
+        "--vmid", type=int, help=f"VMID de la template (défaut: {DEFAULT_VMID})"
+    )
+    build_openwrt_parser.add_argument(
+        "--password", help="Mot de passe root de la template"
+    )
+    build_openwrt_parser.set_defaults(func=run_build)
 
     args = parser.parse_args()
 

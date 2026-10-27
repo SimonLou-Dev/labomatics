@@ -21,6 +21,7 @@ class ClusterCredentialWriteDTO(BaseModel):
 
     token_id: str
     token_secret: str
+    ca_cert: str | None = None
 
     def get_user_and_token_id(self) -> tuple[str, str]:
         """Extrait le user et token_id du format Proxmox."""
@@ -45,6 +46,7 @@ class ClusterDTO(BaseModel):
     is_active: bool
     is_default_for_new_cohorts: bool
     has_credential: bool
+    has_ca_cert: bool
     token_id: str | None = None
     ip_ranges: list[RangeRef] = []
     vxlan_ranges: list[RangeRef] = []

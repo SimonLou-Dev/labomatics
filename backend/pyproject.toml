@@ -17,7 +17,6 @@ fastapi = "^0.115"
 uvicorn = { version = "^0.31", extras = ["standard"] }
 
 # Auth / Keycloak
-python-jose = "^3.5"
 authlib = "^1.3"
 python-keycloak = "^4.0"
 
@@ -54,21 +53,33 @@ aiomqtt = "^2.5"
 cachetools = "^7.1.8"
 brevo-python = "^5.0.2"
 jinja2 = "^3.0"
+pyjwt = {version = "^2.9", extras = ["crypto"]}
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3"
-pytest-asyncio = "^0.24"
+pytest-asyncio = "^1.0"
 httpx = "^0.28"
 ruff = "^0.8"
 aiosqlite = "^0.20"
 wheel = "^0.44"
 mypy = "^1.14"
 poetry-plugin-export = "^1.8"
+responses = "^0.26.3"
 
 [tool.poetry.scripts]
 api = "labomatics.api.main:run"
 api-dev = "labomatics.api.main:run_dev"
 worker = "labomatics.worker.__main__:run"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+filterwarnings = [
+    # Code tiers (FastAPI/async_property) utilisant encore asyncio.iscoroutinefunction,
+    # dépréciée côté Python 3.14+ ; rien à corriger côté labomatics, pas notre code.
+    "ignore:'asyncio.iscoroutinefunction' is deprecated:DeprecationWarning:fastapi.routing",
+    "ignore:'asyncio.iscoroutinefunction' is deprecated:DeprecationWarning:async_property.base",
+]
 
 # ============================================================================
 # RUFF CONFIGURATION
@@ -118,7 +129,7 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401", "F403"]
-"tests/*" = ["S101", "ARG001", "ARG002"]
+"tests/*" = ["S101", "S105", "ARG001", "ARG002"]
 "labomatics/worker/__main__.py" = ["S603", "S607"]
 
 [tool.ruff.lint.isort]

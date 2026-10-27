@@ -9,6 +9,7 @@ from proxmoxer import ProxmoxAPI
 
 from labomatics.core.db.repository.cluster import ClusterRepository
 from labomatics.core.security.crypto import decrypt_secret
+from labomatics.core.security.tls import resolve_verify
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +18,12 @@ class ProxmoxClientWrapper:
     """Wrapper du client Proxmox avec des méthodes custom."""
 
     def __init__(
-        self, cluster_id: UUID, token_id: str, token_secret: str, url: str
+        self,
+        cluster_id: UUID,
+        token_id: str,
+        token_secret: str,
+        url: str,
+        ca_cert: str | None = None,
     ) -> None:
         self.cluster_id = cluster_id
         self.token_id = token_id
@@ -28,7 +34,7 @@ class ProxmoxClientWrapper:
             user=self.token_id,
             token_name="token",  # noqa: S106
             token_value=self.token_secret,
-            verify_ssl=False,
+            verify_ssl=resolve_verify(ca_cert),
         )
 
     async def delete_user(self, login: str) -> bool:
@@ -65,4 +71,5 @@ class ProxmoxService:
             token_id=credential.token_id,
             token_secret=token_secret,
             url=cluster.url,
+            ca_cert=credential.ca_cert,
         )

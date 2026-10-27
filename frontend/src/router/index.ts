@@ -39,36 +39,43 @@ const routes = [
         path: 'admin/students',
         name: 'Students',
         component: StudentsAdminPage,
+        meta: { roles: ['manage_user'] },
       },
       {
         path: 'admin/cluster',
         name: 'Clusters',
         component: ClustersPage,
+        meta: { roles: ['manage_cluster'] },
       },
       {
         path: 'admin/wan',
         name: 'WanRanges',
         component: WanRangesPage,
+        meta: { roles: ['manage_cluster'] },
       },
       {
         path: 'admin/wan/:rangeId',
         name: 'WanRangeDetails',
         component: WanRangeDetailsPage,
+        meta: { roles: ['manage_cluster'] },
       },
       {
         path: 'admin/networks',
         name: 'NetworkRanges',
         component: NetworkRangesPage,
+        meta: { roles: ['manage_cluster'] },
       },
       {
         path: 'admin/networks/:rangeId',
         name: 'NetworkRangeDetails',
         component: NetworkRangeDetailsPage,
+        meta: { roles: ['manage_cluster'] },
       },
       {
         path: 'admin/cohorts',
         name: 'AdminCohorts',
         component: AdminCohortsPage,
+        meta: { roles: ['manage_cluster'] },
       },
       {
         path: 'lab/:userId?',
@@ -79,6 +86,7 @@ const routes = [
         path: 'cohorts',
         name: 'Cohorts',
         component: AdminCohortsPage,
+        meta: { roles: ['manage_cluster'] },
       },
       {
         path: 'labs',
@@ -106,11 +114,15 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   const auth = useAuthStore()
+  const requiredRoles = to.meta.roles as string[] | undefined
 
   if (to.meta.requiresAuth && !auth.user) {
     next('/login')
   } else if (to.path === '/login' && auth.user) {
     next('/')
+  } else if (requiredRoles && !requiredRoles.some((role) => auth.hasRole(role))) {
+    // Garde-fou côté UI uniquement : l'autorité reste le backend (403 sur les routes API).
+    next('/forbidden')
   } else {
     next()
   }

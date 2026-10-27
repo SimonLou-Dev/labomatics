@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+import contextlib
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import UUID
 
 from labomatics.core.config.settings import settings
@@ -36,7 +37,27 @@ async def _delete_lab(
         raise ValueError(f"Cluster {lab.cluster_id} not found")
     proxmox = LabomaticsProxmoxClient(cluster)
 
-    # 3. Récupérer et supprimer les VMs du pool
+    # 3. Supprimer le routeur étudiant, hors du pool étudiant depuis l'issue
+    # #78 (pool système partagé) : il ne serait plus jamais supprimé en ne
+    # parcourant que le pool ci-dessous.
+    if lab.proxmox_vm_id:
+        router_node = await proxmox.vm.find_node(lab.proxmox_vm_id)
+        if router_node:
+            router_user_id = f"{student.login}@{settings.keycloak_realm}"
+            with contextlib.suppress(Exception):
+                await proxmox.acl.revoke_vm_user(lab.proxmox_vm_id, router_user_id)
+            logger.info(f"Deleting router VM {lab.proxmox_vm_id} on node {router_node}")
+            try:
+                await proxmox.vm.delete(node=router_node, vmid=lab.proxmox_vm_id)
+            except Exception as e:
+                logger.error(f"Failed to delete router VM {lab.proxmox_vm_id}: {e}")
+                raise
+        else:
+            logger.warning(
+                f"Router VM {lab.proxmox_vm_id} not found, skipping deletion"
+            )
+
+    # 4. Récupérer et supprimer le reste des VMs du pool étudiant
     from labomatics.helpers.proxmox._root import sanitize_pool_name
 
     pool_name = sanitize_pool_name(student.login)
@@ -86,11 +107,13 @@ async def _delete_lab(
     logger.info(f"Cleaning up database records for student {student.login}")
     if lab.ip_allocation:
         await ip_alloc_repo.update(
-            lab.ip_allocation.id, {"released_at": datetime.utcnow()}
+            lab.ip_allocation.id,
+            {"released_at": datetime.now(UTC).replace(tzinfo=None)},
         )
     if lab.vxlan_allocation:
         await vxlan_alloc_repo.update(
-            lab.vxlan_allocation.id, {"released_at": datetime.utcnow()}
+            lab.vxlan_allocation.id,
+            {"released_at": datetime.now(UTC).replace(tzinfo=None)},
         )
 
     await lab_prov_repo.delete(lab.id)
