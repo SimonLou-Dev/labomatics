@@ -6,12 +6,13 @@ import logging
 from datetime import datetime
 from uuid import UUID
 
-from labomatics.api.dto.lab import LabDataDTO, LabVmDTO, StudentDTO
+from labomatics.api.dto.lab import LabDataDTO, LabOwnerDTO, LabVmDTO
 from labomatics.api.dto.student import (
     StudentImportItemDTO,
     StudentListItemDTO,
     StudentListResponseDTO,
 )
+from labomatics.constants.enums import OwnerRole
 from labomatics.core.config.settings import settings
 from labomatics.core.db.models import Student
 from labomatics.core.db.repository.student import StudentRepository
@@ -185,13 +186,13 @@ class StudentService:
             if active_provisioning.cluster:
                 proxmox_url = active_provisioning.cluster.url
 
-        # Construis le DTO StudentDTO
-        student_dto = StudentDTO(
+        owner_dto = LabOwnerDTO(
             id=str(student.id),
             login=student.login,
             first_name=student.first_name,
             last_name=student.last_name,
             email=student.email,
+            role=OwnerRole.STUDENT,
             cohort_name=cohort_name,
             created_at=student.created_at,
         )
@@ -202,7 +203,7 @@ class StudentService:
             openwrt_link = f"https://{wan_ip}:1337/cgi-bin/luci/"
 
         return LabDataDTO(
-            student=student_dto,
+            owner=owner_dto,
             vms=vms,
             wan_ip=wan_ip,
             vxlan_tag=vxlan_tag,
