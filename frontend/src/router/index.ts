@@ -11,6 +11,8 @@ import WanRangeDetailsPage from '@/pages/admin/WanRangeDetails.vue'
 import NetworkRangeDetailsPage from '@/pages/admin/NetworkRangeDetails.vue'
 import LabPage from '@/pages/Lab.vue'
 import AdminCohortsPage from '@/pages/admin/Cohorts.vue'
+import AdminTeachersPage from '@/pages/admin/Teachers.vue'
+import TeacherStudentsPage from '@/pages/TeacherStudents.vue'
 
 const routes = [
   {
@@ -76,6 +78,19 @@ const routes = [
         name: 'AdminCohorts',
         component: AdminCohortsPage,
         meta: { roles: ['manage_cluster'] },
+      },
+      {
+        path: 'admin/teachers',
+        name: 'AdminTeachers',
+        component: AdminTeachersPage,
+        meta: { roles: ['manage_user'] },
+      },
+      {
+        path: 'teacher/students',
+        name: 'TeacherStudents',
+        component: TeacherStudentsPage,
+        // Un admin est aussi un prof (#58) : même garde que le backend (RequireTeacher).
+        meta: { roles: ['teacher', 'admin'] },
       },
       {
         path: 'lab/:userId?',

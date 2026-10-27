@@ -178,7 +178,7 @@ import SidebarSpacer from 'primevue/sidebarspacer';
 import SidebarTrigger from 'primevue/sidebartrigger';
 import Breadcrumb from 'primevue/breadcrumb';
 
-import {Home, User, Users, Book, Pencil, Cog, Server, Sun, Moon, Palette, SignOut, Globe, Wrench, SlidersH}  from '@primeicons/vue'
+import {Home, User, Users, Book, Cog, Server, Sun, Moon, Palette, SignOut, Globe, Wrench, SlidersH, GraduationCap}  from '@primeicons/vue'
 import TaskBell from '@/components/TaskBell.vue'
 import type { MenuItemGroup } from '@/api/types'
 
@@ -239,6 +239,8 @@ const breadcrumbs = computed(() => {
     '/admin/settings': [{ label: 'Admin', to: '/' }, { label: 'Paramètres' }],
     '/admin/cohorts': [{ label: 'Admin', to: '/' }, { label: 'Classes' }],
     '/admin/quotas': [{ label: 'Admin', to: '/' }, { label: 'Quotas' }],
+    '/admin/teachers': [{ label: 'Admin', to: '/' }, { label: 'Professeurs' }],
+    '/teacher/students': [{ label: 'Mes élèves' }],
   }
 
   if (path.match(/^\/admin\/wan\/[^/]+$/)) {
@@ -302,19 +304,14 @@ const menuItems = computed(() => {
     })
   }
 
-  if (hasRole('teacher')) {
+  if (hasRole('teacher') || hasRole('admin')) {
     items.push({
       label: 'Professeur',
       items: [
         {
-          label: 'Travaux pratiques',
-          icon: Pencil,
-          command: () => router.push('/tps'),
-        },
-        {
-          label: 'Classes',
-          icon: Book,
-          command: () => router.push('/cohorts'),
+          label: 'Mes élèves',
+          icon: GraduationCap,
+          command: () => router.push('/teacher/students'),
         },
       ],
     })
@@ -328,6 +325,11 @@ const menuItems = computed(() => {
           label: 'Étudiants',
           icon: Users,
           command: () => router.push('/admin/students'),
+        },
+        {
+          label: 'Professeurs',
+          icon: GraduationCap,
+          command: () => router.push('/admin/teachers'),
         },
         {
           label: 'Paramètres',
