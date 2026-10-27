@@ -57,7 +57,9 @@ class LabService:
 
         # Chercher un Teacher (TeacherCohort)
         teacher_repo = TeacherCohortRepository()
-        teacher_cohorts = await teacher_repo.list_by_teacher(UUID(user.subject))
+        teacher_cohorts = await teacher_repo.list_by_teacher_keycloak_id(
+            UUID(user.subject)
+        )
         if teacher_cohorts:
             logger.info(f"User {user.username} resolved as TEACHER")
             return OwnerRole.TEACHER, None
@@ -137,6 +139,13 @@ class LabService:
         if owner_role == OwnerRole.STUDENT and cluster_id:
             await self._ensure_cluster_allowed_for_student(
                 student, UUID(str(cluster_id))
+            )
+        elif owner_role != OwnerRole.STUDENT and not cluster_id:
+            # tasks/lab.py::_create_lab lève sinon une ValueError *dans* le job
+            # Celery : l'utilisateur ne voit qu'un échec asynchrone opaque.
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_ENTITY,
+                f"cluster_id requis pour un {owner_role}",
             )
 
         # Convertir cluster_id en string si UUID
