@@ -1,6 +1,89 @@
 # CHANGELOG
 
 
+## v0.5.0-rc.2 (2026-10-27)
+
+### Bug Fixes
+
+- Ajoute RBAC manquant sur routes sensibles
+  ([`f91d215`](https://github.com/SimonLou-Dev/labomatics/commit/f91d215bb96960f83c24e0e841ccdfece1793540))
+
+- Redis stop exposing
+  ([`919bdde`](https://github.com/SimonLou-Dev/labomatics/commit/919bddeb5104d14e353bb9a7d51cac070be2b55c))
+
+- Remplace datetime.utcnow() dépréciée partout
+  ([`2a1be81`](https://github.com/SimonLou-Dev/labomatics/commit/2a1be81e5b97f2b7d23c55e23797be3d40375ad6))
+
+- Vérifie les certificats TLS et durcit la validation JWT
+  ([`6733f37`](https://github.com/SimonLou-Dev/labomatics/commit/6733f371d5c37391166f55100baf9fd70a944c82))
+
+- **backend**: Corrige is_default sur le cluster auto-assigné
+  ([`cf6506a`](https://github.com/SimonLou-Dev/labomatics/commit/cf6506a2e3053e4a70585fcf5885c3c09627edf9))
+
+- **backend**: Normalise les CIDR /32 des ipset avant comparaison
+  ([`fad823a`](https://github.com/SimonLou-Dev/labomatics/commit/fad823a8fa72e4d3ca08c0d44f6fc752860e7699))
+
+- **backend**: Renomme le rôle student (namespace PVE réservé)
+  ([`c5e964b`](https://github.com/SimonLou-Dev/labomatics/commit/c5e964b97ab392bf23cb076ab275da09926630f5))
+
+- **cli**: Ajoute keyUsage/basicConstraints à la CA générée
+  ([`efcba65`](https://github.com/SimonLou-Dev/labomatics/commit/efcba652c63bcffb595f78903d7c5e095001f6aa))
+
+- **cli**: Ajoute un mapper d'audience au client Keycloak
+  ([`9ccc97e`](https://github.com/SimonLou-Dev/labomatics/commit/9ccc97e9c66753d1f3f8cc7709be3c151fa232f8))
+
+- **cli**: Corrige l'extraction du volume ID OpenWrt
+  ([`934126f`](https://github.com/SimonLou-Dev/labomatics/commit/934126fe021fc44ce8c5742c73772c635f9c87f3))
+
+- **cli**: Monte la CA et active le TLS strict backend
+  ([`acdd0dd`](https://github.com/SimonLou-Dev/labomatics/commit/acdd0ddad8d250f30d3e67f5f6dc0ba75ce4e46c))
+
+- **cli**: Porte template vers le nouveau store par cluster
+  ([`77210be`](https://github.com/SimonLou-Dev/labomatics/commit/77210be938595860a5324fb4e43fe175e889c87d))
+
+- **cli**: Refuse proprement si état d'install absent
+  ([`f7507e4`](https://github.com/SimonLou-Dev/labomatics/commit/f7507e495527a920b4df04334a1ccd76c08032b1))
+
+### Documentation
+
+- Documente l'architecture TLS/CA/audience
+  ([`51efdb8`](https://github.com/SimonLou-Dev/labomatics/commit/51efdb8b084b9b75042a209ac3db06609abc17bd))
+
+### Features
+
+- Ajoute la tâche quotidienne de contrôle réseau
+  ([`7dea049`](https://github.com/SimonLou-Dev/labomatics/commit/7dea04964dd176d7e12a78f5fb4c41e97b7e6091))
+
+- Anti-spoofing WAN et pool système pour les routeurs
+  ([`3604e9b`](https://github.com/SimonLou-Dev/labomatics/commit/3604e9b95a66d88a132d5d820ca0b9e4ce262e6b))
+
+- **backend**: Ca TLS propre à chaque cluster Proxmox
+  ([`b33b8bd`](https://github.com/SimonLou-Dev/labomatics/commit/b33b8bd50c544d5acbe26a704348dc81024ce201))
+
+- **backend**: Groupe Proxmox student + rôle PVEVMAudit
+  ([`b53c2b8`](https://github.com/SimonLou-Dev/labomatics/commit/b53c2b839be66fe540279640de38a9c4d9a50645))
+
+- **backend**: Purge les ACL student legacy, ajoute PowerMgmt
+  ([`5029ff5`](https://github.com/SimonLou-Dev/labomatics/commit/5029ff576892fb3fa7417f6e5a1dc269492e437c))
+
+- **cli**: Ajoute le service celery beat, images en latest
+  ([`e47563a`](https://github.com/SimonLou-Dev/labomatics/commit/e47563a5c66ce66d7e6b3cd8fdbf2fc099328310))
+
+- **cli**: Ajoute template build-openwrt à distance
+  ([`63b0b8c`](https://github.com/SimonLou-Dev/labomatics/commit/63b0b8c17b9aab394eaad5659896bef916797b2a))
+
+- **cli**: Récupère la CA Proxmox pour le clusterconfig
+  ([`806bac8`](https://github.com/SimonLou-Dev/labomatics/commit/806bac88d6b5a0af56fd051ef647c9fc05088ccd))
+
+- **frontend**: Champ CA cluster dans le formulaire credential
+  ([`8ff6b90`](https://github.com/SimonLou-Dev/labomatics/commit/8ff6b90f28156ff85f9fe3b90acd0b5c5067e19e))
+
+### Testing
+
+- Ajoute la suite de tests backend et la CI associée
+  ([`bd9a85f`](https://github.com/SimonLou-Dev/labomatics/commit/bd9a85f4843a2f7dae85ce687b014e19e9a6005e))
+
+
 ## v0.5.0-rc.1 (2026-10-07)
 
 ### Bug Fixes
