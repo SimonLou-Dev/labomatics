@@ -52,10 +52,33 @@ class StudentService:
         size: int = 20,
         search: str | None = None,
         cohort: str | None = None,
+        cohort_ids: list[UUID] | None = None,
     ) -> StudentListResponseDTO:
-        """Liste les étudiants actifs avec pagination et filtres."""
+        """Liste les étudiants actifs avec pagination et filtres.
+
+        `cohort_ids`, s'il est fourni (même vide), prime sur `cohort` et est
+        utilisé tel quel — c'est le chemin pris par la recherche scopée d'un
+        teacher (`TeacherService.list_students_for_teacher`), qui doit
+        renvoyer une page vide si le teacher n'a aucune cohort assignée
+        plutôt que de considérer l'absence de filtre comme "voir tout le monde".
+        """
+        if cohort_ids is None and cohort:
+            if not self.cohort_repo:
+                from labomatics.core.db.repository.cohort import CohortRepository
+
+                self.cohort_repo = CohortRepository()
+            matching_cohorts = await self.cohort_repo.where({"name": cohort})
+            cohort_ids = [c.id for c in matching_cohorts]
+
+        if cohort_ids is not None and not cohort_ids:
+            # Filtre cohort actif mais aucune cohort correspondante/assignée :
+            # page vide plutôt qu'un filtre ignoré (qui renverrait tout le monde).
+            return StudentListResponseDTO(
+                items=[], total_count=0, page=page, size=size, total_pages=0
+            )
+
         students, total = await self.repo.list_with_pagination(
-            page, size, search=search
+            page, size, search=search, cohort_ids=cohort_ids
         )
 
         items = []
@@ -63,14 +86,14 @@ class StudentService:
         for student in students:
             # Trouver enrollment actif (start_date <= now <= end_date)
             active_enrollment = next(
-                (e for e in student.enrollments if e.start_date <= now <= e.end_date),
+                (
+                    e
+                    for e in student.enrollments
+                    if e.start_date <= now and (e.end_date is None or e.end_date >= now)
+                ),
                 None,
             )
             cohort_name = active_enrollment.cohort.name if active_enrollment else "—"
-
-            # Appliquer le filtre cohort
-            if cohort and cohort_name != cohort:
-                continue
 
             active_provisioning = next(
                 (p for p in student.lab_provisioning if p.status != "deleting"), None

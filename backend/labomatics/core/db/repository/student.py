@@ -53,9 +53,24 @@ class StudentRepository(BaseRepository[Student]):
             return result.scalars().all()
 
     async def list_with_pagination(
-        self, page: int = 1, size: int = 20, search: str | None = None
+        self,
+        page: int = 1,
+        size: int = 20,
+        search: str | None = None,
+        cohort_ids: list[UUID] | None = None,
     ) -> tuple[list[Student], int]:
-        """Liste les étudiants avec pagination et recherche textuelle."""
+        """Liste les étudiants avec pagination, recherche textuelle et filtre cohort.
+
+        `cohort_ids`, s'il est fourni, filtre sur les étudiants ayant un
+        enrollment actif (dates courantes) dans l'une de ces cohorts. Le
+        filtre est appliqué en SQL (avant la pagination et dans le count),
+        contrairement à l'ancien filtre `cohort` appliqué en Python par
+        `StudentService.list_students` *après* le LIMIT/OFFSET — ce qui
+        rendait `total_count` et le nombre d'items par page incohérents dès
+        qu'un filtre cohort était actif.
+        """
+        from datetime import datetime
+
         from sqlalchemy import func, or_
         from sqlalchemy.orm import selectinload
 
@@ -65,19 +80,30 @@ class StudentRepository(BaseRepository[Student]):
         )
 
         async with async_session_local() as session:
-            stmt = select(self.model).where(self.model.is_active)
 
-            if search:
-                search_lower = search.lower()
-                stmt = stmt.where(
-                    or_(
-                        self.model.first_name.ilike(f"%{search_lower}%"),
-                        self.model.last_name.ilike(f"%{search_lower}%"),
-                        self.model.email.ilike(f"%{search_lower}%"),
-                        self.model.login.ilike(f"%{search_lower}%"),
+            def _apply_filters(s):
+                if search:
+                    search_lower = search.lower()
+                    s = s.where(
+                        or_(
+                            self.model.first_name.ilike(f"%{search_lower}%"),
+                            self.model.last_name.ilike(f"%{search_lower}%"),
+                            self.model.email.ilike(f"%{search_lower}%"),
+                            self.model.login.ilike(f"%{search_lower}%"),
+                        )
                     )
-                )
+                if cohort_ids:
+                    now = datetime.now()
+                    s = s.join(
+                        Enrollment, Enrollment.student_id == self.model.id
+                    ).where(
+                        Enrollment.cohort_id.in_(cohort_ids),
+                        Enrollment.start_date <= now,
+                        (Enrollment.end_date.is_(None)) | (Enrollment.end_date >= now),
+                    )
+                return s
 
+            stmt = _apply_filters(select(self.model).where(self.model.is_active))
             stmt = (
                 stmt.options(
                     selectinload(self.model.enrollments).selectinload(
@@ -94,21 +120,17 @@ class StudentRepository(BaseRepository[Student]):
                 .offset((page - 1) * size)
                 .limit(size)
             )
+            if cohort_ids:
+                stmt = stmt.distinct()
 
             result = await session.execute(stmt)
             students = result.scalars().unique().all()
 
-            count_stmt = select(func.count(self.model.id)).where(self.model.is_active)
-            if search:
-                search_lower = search.lower()
-                count_stmt = count_stmt.where(
-                    or_(
-                        self.model.first_name.ilike(f"%{search_lower}%"),
-                        self.model.last_name.ilike(f"%{search_lower}%"),
-                        self.model.email.ilike(f"%{search_lower}%"),
-                        self.model.login.ilike(f"%{search_lower}%"),
-                    )
+            count_stmt = _apply_filters(
+                select(func.count(func.distinct(self.model.id))).where(
+                    self.model.is_active
                 )
+            )
             count_result = await session.execute(count_stmt)
             total = count_result.scalar() or 0
 
