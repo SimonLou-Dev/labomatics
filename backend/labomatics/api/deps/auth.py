@@ -38,6 +38,17 @@ def require_role(required_role: str):
     return Annotated[AuthUser, Depends(check_role)]
 
 
+def require_any_role(*allowed_roles: str):
+    """Factory pour vérifier qu'au moins un des rôles donnés est présent."""
+
+    def check_role(user: Annotated[AuthUser, Depends(current_user)]) -> AuthUser:
+        return AuthService.ensure_any_role(user, *allowed_roles)
+
+    return Annotated[AuthUser, Depends(check_role)]
+
+
 CurrentUser = Annotated[AuthUser, Depends(current_user)]
 RequireManageUser = require_role("manage_user")
 RequireManageCluster = require_role("manage_cluster")
+# Un admin a aussi les droits d'un prof (recherche de ses élèves, pool perso) — #58.
+RequireTeacher = require_any_role("teacher", "admin")

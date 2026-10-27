@@ -127,6 +127,16 @@ class AuthService:
         return user
 
     @staticmethod
+    def ensure_any_role(user: AuthUser, *allowed_roles: str) -> AuthUser:
+        """Lève 403 si l'utilisateur n'a aucun des rôles acceptés."""
+        if not any(role in user.roles for role in allowed_roles):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Un de ces rôles est requis: {', '.join(allowed_roles)}",
+            )
+        return user
+
+    @staticmethod
     def exchange_code_for_token(code: str, code_verifier: str | None = None) -> dict:
         """Échange le code OAuth2 (+ PKCE code_verifier) contre un access/refresh token."""
         token_url = (

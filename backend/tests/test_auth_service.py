@@ -16,6 +16,7 @@ import responses
 from cryptography.hazmat.primitives.asymmetric import rsa
 from fastapi import HTTPException
 
+from labomatics.api.dto.auth import AuthUser
 from labomatics.core.config.settings import settings
 from labomatics.services.auth_service import AuthService
 
@@ -310,3 +311,24 @@ def test_revoke_refresh_token_calls_keycloak_logout_endpoint(monkeypatch):
     assert captured["url"].endswith("/protocol/openid-connect/logout")
     assert captured["data"]["refresh_token"] == "a-refresh-token"
     assert captured["data"]["client_id"] == settings.keycloak_client_id
+
+
+def _user_with_roles(roles: list[str]) -> AuthUser:
+    return AuthUser(
+        subject="00000000-0000-0000-0000-000000000000",
+        username="tester",
+        email="tester@example.com",
+        roles=roles,
+    )
+
+
+def test_ensure_any_role_passes_with_one_matching_role():
+    user = _user_with_roles(["admin"])
+    assert AuthService.ensure_any_role(user, "teacher", "admin") is user
+
+
+def test_ensure_any_role_rejects_when_no_role_matches():
+    user = _user_with_roles(["student"])
+    with pytest.raises(HTTPException) as exc_info:
+        AuthService.ensure_any_role(user, "teacher", "admin")
+    assert exc_info.value.status_code == 403
