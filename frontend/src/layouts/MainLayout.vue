@@ -309,6 +309,11 @@ const menuItems = computed(() => {
       label: 'Professeur',
       items: [
         {
+          label: 'Créer mon lab',
+          icon: User,
+          command: () => router.push('/lab'),
+        },
+        {
           label: 'Mes élèves',
           icon: GraduationCap,
           command: () => router.push('/teacher/students'),

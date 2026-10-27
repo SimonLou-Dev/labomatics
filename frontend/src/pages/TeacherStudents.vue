@@ -4,6 +4,12 @@
       <h1 class="text-3xl font-bold">
         Mes élèves
       </h1>
+      <Button
+        label="Créer mon lab"
+        icon="pi pi-plus"
+        severity="success"
+        @click="router.push('/lab')"
+      />
     </div>
 
     <div class="mb-4 flex justify-end">
@@ -93,14 +99,16 @@
 
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
-import { DataTable, Column, Badge, IconField, InputIcon, InputText } from 'primevue'
+import { DataTable, Column, Badge, IconField, InputIcon, InputText, Button } from 'primevue'
 import { Search } from '@primeicons/vue'
 import type { StudentListItem } from '@/api/types/students'
 import type { DataTableSimplePageEvent } from '@/api/types'
 import * as teachersApi from '@/api/teachers'
 import { getCohortColor } from '@/utils/colors'
 
+const router = useRouter()
 const toast = useToast()
 
 const students = ref<StudentListItem[]>([])
