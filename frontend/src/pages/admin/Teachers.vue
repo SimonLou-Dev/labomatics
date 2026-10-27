@@ -146,6 +146,38 @@
       :style="{ width: '100vw', maxWidth: '500px' }"
     >
       <div class="space-y-4">
+        <div v-if="!editingTeacher">
+          <label class="block text-sm font-medium mb-2">Type de compte</label>
+          <SelectButton
+            v-model="accountMode"
+            :options="accountModeOptions"
+            option-label="label"
+            option-value="value"
+            :allow-empty="false"
+          />
+        </div>
+
+        <div v-if="!editingTeacher && accountMode === 'existing'">
+          <label class="block text-sm font-medium mb-2">Login Keycloak existant</label>
+          <div class="flex gap-2">
+            <InputText
+              v-model="existingLogin"
+              class="flex-1"
+              placeholder="ex: simon.admin"
+            />
+            <Button
+              label="Rechercher"
+              severity="secondary"
+              :loading="lookingUp"
+              @click="lookupExistingAccount"
+            />
+          </div>
+          <p class="text-xs text-surface-500 dark:text-surface-400 mt-2">
+            Rattache ce compte (ex: un admin) comme prof — aucun nouveau compte,
+            mot de passe ou mail n'est créé.
+          </p>
+        </div>
+
         <div>
           <label class="block text-sm font-medium mb-2">Prénom</label>
           <InputText
@@ -191,6 +223,7 @@
         <Button
           :label="editingTeacher ? 'Mettre à jour' : 'Créer'"
           :loading="formLoading"
+          :disabled="!editingTeacher && accountMode === 'existing' && !formData.keycloak_login"
           @click="saveTeacher"
         />
       </template>
@@ -212,6 +245,7 @@ import {
   MultiSelect,
   IconField,
   InputIcon,
+  SelectButton,
 } from 'primevue'
 import { Search } from '@primeicons/vue'
 import type { DataTableSimplePageEvent } from '@/api/types'
@@ -243,6 +277,44 @@ const formData = ref<TeacherCreatePayload>({
   cohort_ids: [],
 })
 
+const accountModeOptions = [
+  { label: 'Nouveau compte', value: 'new' },
+  { label: 'Compte existant', value: 'existing' },
+]
+const accountMode = ref<'new' | 'existing'>('new')
+const existingLogin = ref('')
+const lookingUp = ref(false)
+
+watch(existingLogin, () => {
+  // Invalide le dernier lookup réussi tant que le login n'a pas été reconfirmé.
+  formData.value.keycloak_login = undefined
+})
+
+watch(accountMode, (mode) => {
+  if (mode === 'new') {
+    existingLogin.value = ''
+    formData.value = { first_name: '', last_name: '', email: '', cohort_ids: formData.value.cohort_ids }
+  }
+})
+
+async function lookupExistingAccount() {
+  if (!existingLogin.value) return
+  lookingUp.value = true
+  try {
+    const profile = await teachersApi.lookupKeycloakUser(existingLogin.value)
+    formData.value.first_name = profile.first_name
+    formData.value.last_name = profile.last_name
+    formData.value.email = profile.email
+    formData.value.keycloak_login = profile.login
+    toast.add({ severity: 'success', summary: 'Trouvé', detail: `Compte ${profile.login} trouvé`, life: 3000 })
+  } catch (err) {
+    toast.add({ severity: 'error', summary: 'Erreur', detail: 'Compte Keycloak introuvable', life: 3000 })
+    console.error('Failed to lookup keycloak user:', err)
+  } finally {
+    lookingUp.value = false
+  }
+}
+
 async function fetchTeachers(page: number = 1) {
   loading.value = true
   try {
@@ -273,6 +345,8 @@ function onPageChange(event: DataTableSimplePageEvent) {
 
 function openCreateDialog() {
   editingTeacher.value = null
+  accountMode.value = 'new'
+  existingLogin.value = ''
   formData.value = { first_name: '', last_name: '', email: '', cohort_ids: [] }
   showFormDialog.value = true
 }
@@ -294,10 +368,12 @@ async function saveTeacher() {
   formLoading.value = true
   try {
     if (editingTeacher.value) {
-      await teachersApi.updateTeacher(editingTeacher.value.id, formData.value)
+      const { keycloak_login: _unused, ...updatePayload } = formData.value
+      await teachersApi.updateTeacher(editingTeacher.value.id, updatePayload)
       toast.add({ severity: 'success', summary: 'Succès', detail: 'Professeur mis à jour', life: 3000 })
     } else {
-      await teachersApi.createTeacher(formData.value)
+      const payload = accountMode.value === 'existing' ? formData.value : { ...formData.value, keycloak_login: undefined }
+      await teachersApi.createTeacher(payload)
       toast.add({ severity: 'success', summary: 'Succès', detail: 'Professeur créé', life: 3000 })
     }
     showFormDialog.value = false

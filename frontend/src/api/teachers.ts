@@ -4,7 +4,12 @@
 import http from './http'
 import type { PaginatedResponse } from './types/common'
 import type { StudentListItem } from './types/students'
-import type { TeacherCreatePayload, TeacherListItem, TeacherUpdatePayload } from './types/teacher'
+import type {
+  KeycloakUserLookup,
+  TeacherCreatePayload,
+  TeacherListItem,
+  TeacherUpdatePayload,
+} from './types/teacher'
 
 export async function listTeachers(
   page: number,
@@ -13,6 +18,13 @@ export async function listTeachers(
 ): Promise<PaginatedResponse<TeacherListItem>> {
   const res = await http.get<PaginatedResponse<TeacherListItem>>('/teachers', {
     params: { page, size, ...(search && { search }) },
+  })
+  return res.data
+}
+
+export async function lookupKeycloakUser(login: string): Promise<KeycloakUserLookup> {
+  const res = await http.get<KeycloakUserLookup>('/teachers/lookup-keycloak-user', {
+    params: { login },
   })
   return res.data
 }
