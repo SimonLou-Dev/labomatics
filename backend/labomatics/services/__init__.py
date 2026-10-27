@@ -19,6 +19,7 @@ from labomatics.services.network_range_service import NetworkRangeService
 from labomatics.services.proxmox_service import ProxmoxService
 from labomatics.services.student_import_service import StudentImportService
 from labomatics.services.student_service import StudentService
+from labomatics.services.teacher_service import TeacherService
 from labomatics.services.vxlan_range_service import VxlanRangeService
 
 __all__ = [
@@ -46,6 +47,8 @@ __all__ = [
     "StudentImportServiceDep",
     "StudentService",
     "StudentServiceDep",
+    "TeacherService",
+    "TeacherServiceDep",
     "VxlanRangeService",
     "VxlanRangeServiceDep",
 ]
@@ -111,6 +114,11 @@ def get_lab_service() -> LabService:
     return LabService()
 
 
+def get_teacher_service() -> TeacherService:
+    """Factory pour TeacherService."""
+    return TeacherService()
+
+
 def get_proxmox_service() -> ProxmoxService:
     """Factory pour ProxmoxService."""
     return ProxmoxService()
@@ -135,3 +143,4 @@ ClusterConfigServiceDep = Annotated[
 KeycloakServiceDep = Annotated[KeycloakService, Depends(get_keycloak_service)]
 LabServiceDep = Annotated[LabService, Depends(get_lab_service)]
 ProxmoxServiceDep = Annotated[ProxmoxService, Depends(get_proxmox_service)]
+TeacherServiceDep = Annotated[TeacherService, Depends(get_teacher_service)]

@@ -9,6 +9,7 @@ from labomatics.api.routes.v1.health import health_router_v1
 from labomatics.api.routes.v1.ip_ranges import router as ip_ranges_router
 from labomatics.api.routes.v1.labs import router as labs_router
 from labomatics.api.routes.v1.students import router as students_router
+from labomatics.api.routes.v1.teachers import router as teachers_router
 from labomatics.api.routes.v1.vxlan_ranges import router as vxlan_ranges_router
 from labomatics.api.routes.v1.ws_tasks import router as ws_tasks_router
 
@@ -18,6 +19,7 @@ router_v1 = APIRouter(prefix="/v1")
 router_v1.include_router(health_router_v1)
 router_v1.include_router(auth_router)
 router_v1.include_router(students_router)
+router_v1.include_router(teachers_router)
 router_v1.include_router(labs_router)
 router_v1.include_router(clusters_router)
 router_v1.include_router(cohorts_router)

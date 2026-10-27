@@ -13,6 +13,7 @@ class EmailType(StrEnum):
     """Types d'emails disponibles."""
 
     ENROLLMENT = "enrollment"
+    TEACHER_ENROLLMENT = "teacher_enrollment"
     LAB_PROVISIONED = "lab_provisioned"
     PASSWORD_RESET = "password_reset"  # noqa: S105
     ACCOUNT_CREATED = "account_created"
