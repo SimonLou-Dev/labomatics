@@ -1,6 +1,87 @@
 # CHANGELOG
 
 
+## v0.5.0-rc.3 (2026-10-28)
+
+### Bug Fixes
+
+- **backend**: Durée d'inscription basée sur les dates de la cohort
+  ([`a349471`](https://github.com/SimonLou-Dev/labomatics/commit/a34947188d3057170660d0ed8e51adc065f2173f))
+
+Supprime start_date/end_date de Enrollment (doublon de vérité avec Cohort depuis #53) et corrige
+  get_active_for_student qui ne filtrait jamais rien (comparaison d'identité au lieu d'un IS NULL
+  SQL).
+
+- **backend**: Filtre cohort appliqué en SQL avant pagination
+  ([`63e8aa3`](https://github.com/SimonLou-Dev/labomatics/commit/63e8aa33b64b2130081335c9ce908d5a3b716e3a))
+
+total_count et le nombre d'items par page étaient incohérents dès qu'un filtre cohort était actif
+  (filtre Python après LIMIT/OFFSET).
+
+- **backend**: Mock Keycloak dans le test RBAC lookup prof
+  ([`232f128`](https://github.com/SimonLou-Dev/labomatics/commit/232f1284824ed74892733d173132386aff99817f))
+
+- **backend**: Nom VM router DNS-invalide et mail manquant (teacher)
+  ([`7eea788`](https://github.com/SimonLou-Dev/labomatics/commit/7eea78844fcf694a63f899720d8408182ffb7f5b))
+
+Les underscores (issus de la sanitisation du username) ne sont pas des caractères DNS valides pour
+  Proxmox ; les points (ex: "simon.admin") étaient remplacés par erreur. Envoie aussi le mail de lab
+  prêt aux owners teacher/admin, pas seulement aux étudiants.
+
+### Features
+
+- **backend**: Crud profs et recherche élèves scopée
+  ([#58](https://github.com/SimonLou-Dev/labomatics/pull/58),
+  [`347a51e`](https://github.com/SimonLou-Dev/labomatics/commit/347a51e773fee23979d75f3b0d9262ed8bf2819c))
+
+Route GET /teachers/me/students accessible aux teacher et admin.
+
+- **backend**: Dates, année scolaire et verrou cluster sur cohort
+  ([`b82468f`](https://github.com/SimonLou-Dev/labomatics/commit/b82468ff13d790b79f675aa9149226a39f00833b))
+
+Corrige aussi le typage UUID des routes (500 -> 422 sur ID invalide).
+
+- **backend**: Entité Teacher et schéma teacher_cohort
+  ([`e2e830b`](https://github.com/SimonLou-Dev/labomatics/commit/e2e830b20aaee45695adf45538ccb87fe78e13e4))
+
+cluster_id devient obligatoire en amont pour un owner non-student, pour éviter un échec silencieux
+  dans le job Celery de création de lab.
+
+- **backend**: Get /labs/me fonctionne aussi pour teacher/admin
+  ([`41a04f5`](https://github.com/SimonLou-Dev/labomatics/commit/41a04f50efa39a5f4b6354a14fe637db7f51d7a3))
+
+Renomme LabDataDTO.student en owner (StudentDTO -> LabOwnerDTO).
+
+- **backend**: Rattacher un compte Keycloak existant comme prof
+  ([`741920d`](https://github.com/SimonLou-Dev/labomatics/commit/741920da8bc5f877e6074cde30fbce7dba19fe96))
+
+Un admin peut ainsi devenir prof sans nouveau compte, mot de passe ni mail (ex: toi-même) — ajoute
+  GET /teachers/lookup-keycloak-user.
+
+- **backend**: Un admin a aussi les droits d'un prof
+  ([`ddd2734`](https://github.com/SimonLou-Dev/labomatics/commit/ddd2734c0fb7423eac3fe377bca6f4e962680770))
+
+- **frontend**: Bouton créer le lab dans la vue prof
+  ([`404a91e`](https://github.com/SimonLou-Dev/labomatics/commit/404a91eca29f4e3c1408c1d199a3e017b9e64766))
+
+- **frontend**: Dates, année scolaire et verrou cluster sur cohort
+  ([`875f784`](https://github.com/SimonLou-Dev/labomatics/commit/875f7848a651786020ed5dadf7923cbb45036921))
+
+Ajoute aussi la colonne "Promotions assignées" sur la page clusters.
+
+- **frontend**: Formulaire profs — rattacher un compte existant
+  ([`ffd9011`](https://github.com/SimonLou-Dev/labomatics/commit/ffd9011b56f0c6e011ec2f410a69400bf3ed7f2a))
+
+- **frontend**: Gestion des profs et recherche de ses élèves
+  ([#58](https://github.com/SimonLou-Dev/labomatics/pull/58),
+  [`1935a55`](https://github.com/SimonLou-Dev/labomatics/commit/1935a55ff4abc173fb307a56663134f72c618b27))
+
+- **frontend**: Mon lab fonctionne pour teacher/admin
+  ([`9b45318`](https://github.com/SimonLou-Dev/labomatics/commit/9b45318867e61e1b1b77170bc02b3fbdd856f1c1))
+
+Termine CreateLabModal (sélection de cluster) et le branche sur Lab.vue.
+
+
 ## v0.5.0-rc.2 (2026-10-27)
 
 ### Bug Fixes
