@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from sqlalchemy import UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -15,6 +17,8 @@ class Cohort(Base, UUIDPkMixin, TimestampMixin):
     is_active: Mapped[bool] = mapped_column(
         default=True,
     )
+    start_date: Mapped[datetime | None] = mapped_column(nullable=True)
+    end_date: Mapped[datetime | None] = mapped_column(nullable=True)
 
     # Relationships
     clusters: Mapped[list["CohortCluster"]] = relationship(

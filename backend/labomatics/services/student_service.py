@@ -3,15 +3,15 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime
 from uuid import UUID
 
-from labomatics.api.dto.lab import LabDataDTO, LabVmDTO, StudentDTO
+from labomatics.api.dto.lab import LabDataDTO, LabOwnerDTO, LabVmDTO
 from labomatics.api.dto.student import (
     StudentImportItemDTO,
     StudentListItemDTO,
     StudentListResponseDTO,
 )
+from labomatics.constants.enums import OwnerRole
 from labomatics.core.config.settings import settings
 from labomatics.core.db.models import Student
 from labomatics.core.db.repository.student import StudentRepository
@@ -52,25 +52,42 @@ class StudentService:
         size: int = 20,
         search: str | None = None,
         cohort: str | None = None,
+        cohort_ids: list[UUID] | None = None,
     ) -> StudentListResponseDTO:
-        """Liste les étudiants actifs avec pagination et filtres."""
+        """Liste les étudiants actifs avec pagination et filtres.
+
+        `cohort_ids`, s'il est fourni (même vide), prime sur `cohort` et est
+        utilisé tel quel — c'est le chemin pris par la recherche scopée d'un
+        teacher (`TeacherService.list_students_for_teacher`), qui doit
+        renvoyer une page vide si le teacher n'a aucune cohort assignée
+        plutôt que de considérer l'absence de filtre comme "voir tout le monde".
+        """
+        if cohort_ids is None and cohort:
+            if not self.cohort_repo:
+                from labomatics.core.db.repository.cohort import CohortRepository
+
+                self.cohort_repo = CohortRepository()
+            matching_cohorts = await self.cohort_repo.where({"name": cohort})
+            cohort_ids = [c.id for c in matching_cohorts]
+
+        if cohort_ids is not None and not cohort_ids:
+            # Filtre cohort actif mais aucune cohort correspondante/assignée :
+            # page vide plutôt qu'un filtre ignoré (qui renverrait tout le monde).
+            return StudentListResponseDTO(
+                items=[], total_count=0, page=page, size=size, total_pages=0
+            )
+
         students, total = await self.repo.list_with_pagination(
-            page, size, search=search
+            page, size, search=search, cohort_ids=cohort_ids
         )
 
         items = []
-        now = datetime.now()
         for student in students:
-            # Trouver enrollment actif (start_date <= now <= end_date)
+            # Enrollment actif = dont la cohort est dans sa fenêtre de dates (#53)
             active_enrollment = next(
-                (e for e in student.enrollments if e.start_date <= now <= e.end_date),
-                None,
+                (e for e in student.enrollments if e.is_active()), None
             )
             cohort_name = active_enrollment.cohort.name if active_enrollment else "—"
-
-            # Appliquer le filtre cohort
-            if cohort and cohort_name != cohort:
-                continue
 
             active_provisioning = next(
                 (p for p in student.lab_provisioning if p.status != "deleting"), None
@@ -116,11 +133,9 @@ class StudentService:
         if not student:
             return None
 
-        # Récupère le cohort_name depuis l'enrollment actif (dates valides)
-        now = datetime.now()
+        # Enrollment actif = dont la cohort est dans sa fenêtre de dates (#53)
         active_enrollment = next(
-            (e for e in student.enrollments if e.start_date <= now <= e.end_date),
-            None,
+            (e for e in student.enrollments if e.is_active()), None
         )
         cohort_name = active_enrollment.cohort.name if active_enrollment else "—"
 
@@ -162,13 +177,13 @@ class StudentService:
             if active_provisioning.cluster:
                 proxmox_url = active_provisioning.cluster.url
 
-        # Construis le DTO StudentDTO
-        student_dto = StudentDTO(
+        owner_dto = LabOwnerDTO(
             id=str(student.id),
             login=student.login,
             first_name=student.first_name,
             last_name=student.last_name,
             email=student.email,
+            role=OwnerRole.STUDENT,
             cohort_name=cohort_name,
             created_at=student.created_at,
         )
@@ -179,7 +194,7 @@ class StudentService:
             openwrt_link = f"https://{wan_ip}:1337/cgi-bin/luci/"
 
         return LabDataDTO(
-            student=student_dto,
+            owner=owner_dto,
             vms=vms,
             wan_ip=wan_ip,
             vxlan_tag=vxlan_tag,
@@ -220,7 +235,7 @@ class StudentService:
                     self.cohort_repo = CohortRepository()
 
                 # Get school year (year, start_date, end_date)
-                school_year, _, _ = get_school_year()
+                school_year, auto_start_date, auto_end_date = get_school_year()
 
                 # Get or create cohort by name + year (idempotent)
                 cohort = await self.cohort_repo.update_or_create(
@@ -228,6 +243,15 @@ class StudentService:
                     defaults={"is_active": True},
                 )
                 logger.info(f"Cohort trouvé/créé: {data.cohort_name} ({school_year})")
+
+                # Dates portées par la Cohort elle-même désormais (#53) : ne
+                # backfill que si elles ne sont pas déjà définies, pour ne pas
+                # écraser une édition manuelle faite depuis l'UI admin.
+                if cohort.start_date is None or cohort.end_date is None:
+                    cohort = await self.cohort_repo.update(
+                        cohort.id,
+                        {"start_date": auto_start_date, "end_date": auto_end_date},
+                    )
 
                 # Assigner le cohort au cluster par défaut
                 from labomatics.core.db.repository.cluster import ClusterRepository
@@ -268,17 +292,12 @@ class StudentService:
 
                     self.enrollment_repo = EnrollmentRepository()
 
-                _, start_date, end_date = get_school_year()
-
                 await self.enrollment_repo.update_or_create(
                     filters={
                         "student_id": student.id,
                         "cohort_id": cohort.id,
                     },
-                    defaults={
-                        "start_date": start_date,
-                        "end_date": end_date,
-                    },
+                    defaults={},
                 )
                 logger.info(f"Enrollment créé/trouvé: {login} -> {data.cohort_name}")
             except Exception as e:

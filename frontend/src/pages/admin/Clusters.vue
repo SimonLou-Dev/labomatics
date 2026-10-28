@@ -146,6 +146,29 @@
           </template>
         </Column>
         <Column
+          field="cohorts"
+          header="Promotions assignées"
+          style="width: 14%"
+        >
+          <template #body="{ data }">
+            <div
+              v-if="cohortsByClusterId[data.id]?.length"
+              class="flex flex-wrap gap-1"
+            >
+              <Badge
+                v-for="cohort in cohortsByClusterId[data.id]"
+                :key="cohort.id"
+                :value="cohort.name"
+                :severity="getCohortColor(cohort.name)"
+              />
+            </div>
+            <span
+              v-else
+              class="text-surface-400"
+            >Aucune promotion (cluster vide)</span>
+          </template>
+        </Column>
+        <Column
           field="is_default_for_new_cohorts"
           header="Défaut"
           style="width: 8%"
@@ -518,6 +541,8 @@ import type {
 import * as clusterApi from '@/api/clusters'
 import * as ipRangeApi from '@/api/ipRanges'
 import * as vxlanRangeApi from '@/api/vxlanRanges'
+import * as cohortsApi from '@/api/cohorts'
+import { getCohortColor } from '@/utils/colors'
 import { useRouter } from 'vue-router'
 
 const toast = useToast()
@@ -531,6 +556,26 @@ const totalRecords = ref(0)
 const loading = ref(false)
 const currentPage = ref(1)
 const pageSize = ref(10)
+
+// Promotions assignées par cluster, calculées côté client depuis la liste
+// des cohorts (cardinalité faible, pas besoin d'étendre GET /clusters).
+const cohortsByClusterId = ref<Record<string, { id: string; name: string }[]>>({})
+
+async function loadCohortsByCluster() {
+  try {
+    const response = await cohortsApi.listCohorts(1, 100)
+    const map: Record<string, { id: string; name: string }[]> = {}
+    for (const cohort of response.items) {
+      for (const cluster of cohort.clusters) {
+        if (!map[cluster.id]) map[cluster.id] = []
+        map[cluster.id].push({ id: cohort.id, name: cohort.name })
+      }
+    }
+    cohortsByClusterId.value = map
+  } catch (err) {
+    console.error('Failed to load cohorts for clusters view:', err)
+  }
+}
 
 const showFormDialog = ref(false)
 const editingCluster = ref<ClusterDTO | null>(null)
@@ -925,5 +970,6 @@ async function importClusterConfig() {
 
 onMounted(() => {
   fetchClusters()
+  loadCohortsByCluster()
 })
 </script>

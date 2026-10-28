@@ -85,6 +85,17 @@ export interface StudentDetailDTO {
   created_at: string
 }
 
+export interface LabOwnerDTO {
+  id: string
+  login: string
+  first_name: string
+  last_name: string
+  email: string
+  role: 'student' | 'teacher' | 'admin'
+  cohort_name: string | null
+  created_at: string
+}
+
 export interface LabVmDTO {
   id: string
   name: string
@@ -103,7 +114,7 @@ export interface LabAllocationDTO {
 }
 
 export interface LabDataDTO {
-  student: StudentDetailDTO
+  owner: LabOwnerDTO
   vms: LabVmDTO[]
   wan_ip: string | null
   vxlan_tag: number | null

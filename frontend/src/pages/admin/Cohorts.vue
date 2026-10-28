@@ -34,12 +34,31 @@
         </Column>
 
         <Column
-          field="year"
-          header="Année"
-          style="width: 10%"
+          field="school_year"
+          header="Année scolaire"
+          style="width: 12%"
         >
           <template #body="{ data }">
-            <span class="font-mono">{{ data.year }}</span>
+            <span class="font-mono">{{ data.school_year }}</span>
+          </template>
+        </Column>
+
+        <Column
+          field="dates"
+          header="Dates"
+          style="width: 15%"
+        >
+          <template #body="{ data }">
+            <span
+              v-if="data.start_date || data.end_date"
+              class="text-sm"
+            >
+              {{ formatDate(data.start_date) }} → {{ formatDate(data.end_date) }}
+            </span>
+            <span
+              v-else
+              class="text-surface-400"
+            >Non définies</span>
           </template>
         </Column>
 
@@ -91,6 +110,12 @@
         >
           <template #body="{ data }">
             <div class="flex gap-2">
+              <Button
+                icon="pi pi-calendar"
+                severity="secondary"
+                size="small"
+                @click="openDatesDialog(data)"
+              />
               <Button
                 icon="pi pi-cog"
                 severity="secondary"
@@ -150,10 +175,16 @@
                   @click="handleSetDefault(cluster.id)"
                 />
                 <Button
+                  v-tooltip="
+                    cluster.has_active_lab
+                      ? 'Des étudiants de cette promotion ont un lab actif sur ce cluster'
+                      : undefined
+                  "
                   icon="pi pi-trash"
                   severity="danger"
                   size="small"
                   text
+                  :disabled="cluster.has_active_lab"
                   @click="handleRemoveCluster(cluster.id)"
                 />
               </div>
@@ -197,6 +228,54 @@
         />
       </template>
     </Dialog>
+
+    <!-- Edit Dates Modal -->
+    <Dialog
+      v-model:visible="showDatesDialog"
+      header="Modifier les dates"
+      modal
+      :style="{ width: '100vw', maxWidth: '450px' }"
+    >
+      <div
+        v-if="editingDatesCohort"
+        class="space-y-4"
+      >
+        <h3 class="font-semibold">
+          Promotion: <span class="text-primary-600">{{ editingDatesCohort.name }}</span>
+        </h3>
+        <div>
+          <label class="block text-sm font-medium mb-2">Date de début</label>
+          <DatePicker
+            v-model="datesFormData.start_date"
+            date-format="dd/mm/yy"
+            show-icon
+            class="w-full"
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-2">Date de fin</label>
+          <DatePicker
+            v-model="datesFormData.end_date"
+            date-format="dd/mm/yy"
+            show-icon
+            class="w-full"
+          />
+        </div>
+      </div>
+
+      <template #footer>
+        <Button
+          label="Annuler"
+          severity="secondary"
+          @click="showDatesDialog = false"
+        />
+        <Button
+          label="Enregistrer"
+          :loading="savingDates"
+          @click="saveDates"
+        />
+      </template>
+    </Dialog>
   </div>
 </template>
 
@@ -209,11 +288,15 @@ import {
   Dialog,
   Badge,
   Select,
+  DatePicker,
 } from 'primevue'
+import { useToast } from 'primevue/usetoast'
 import type { ClusterDTO, DataTableSimplePageEvent } from '@/api/types'
 import type { CohortDTO, CohortListResponseDTO } from '@/api/types/cohorts'
 import * as cohortsApi from '@/api/cohorts'
 import * as clustersApi from '@/api/clusters'
+
+const toast = useToast()
 
 const cohorts = ref<CohortDTO[]>([])
 const allClusters = ref<ClusterDTO[]>([])
@@ -226,6 +309,19 @@ const showManageDialog = ref(false)
 const editingCohort = ref<CohortDTO | null>(null)
 const selectedClusterToAdd = ref<string | null>(null)
 const addingCluster = ref(false)
+
+const showDatesDialog = ref(false)
+const editingDatesCohort = ref<CohortDTO | null>(null)
+const savingDates = ref(false)
+const datesFormData = ref<{ start_date: Date | null; end_date: Date | null }>({
+  start_date: null,
+  end_date: null,
+})
+
+function formatDate(isoDate: string | null): string {
+  if (!isoDate) return '?'
+  return new Date(isoDate).toLocaleDateString('fr-FR')
+}
 
 const availableClustersForAdd = computed(() => {
   if (!editingCohort.value) return []
@@ -253,7 +349,46 @@ async function handleRemoveCluster(clusterId: string) {
     await cohortsApi.removeClusterFromCohort(editingCohort.value.id, clusterId)
     editingCohort.value.clusters = editingCohort.value.clusters.filter((c) => c.id !== clusterId)
   } catch (err) {
+    // Défense en profondeur : le bouton est déjà désactivé si has_active_lab,
+    // mais les données affichées peuvent être obsolètes (409 backend).
+    const detail =
+      (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
+      'Impossible de retirer ce cluster'
+    toast.add({ severity: 'error', summary: 'Erreur', detail, life: 5000 })
     console.error('Failed to remove cluster:', err)
+  }
+}
+
+function openDatesDialog(cohort: CohortDTO) {
+  editingDatesCohort.value = cohort
+  datesFormData.value = {
+    start_date: cohort.start_date ? new Date(cohort.start_date) : null,
+    end_date: cohort.end_date ? new Date(cohort.end_date) : null,
+  }
+  showDatesDialog.value = true
+}
+
+async function saveDates() {
+  if (!editingDatesCohort.value) return
+  savingDates.value = true
+  try {
+    await cohortsApi.updateCohort(editingDatesCohort.value.id, {
+      start_date: datesFormData.value.start_date?.toISOString() ?? null,
+      end_date: datesFormData.value.end_date?.toISOString() ?? null,
+    })
+    toast.add({ severity: 'success', summary: 'Succès', detail: 'Dates mises à jour', life: 3000 })
+    showDatesDialog.value = false
+    await fetchCohorts(currentPage.value)
+  } catch (err) {
+    toast.add({
+      severity: 'error',
+      summary: 'Erreur',
+      detail: 'Impossible de mettre à jour les dates',
+      life: 3000,
+    })
+    console.error('Failed to update cohort dates:', err)
+  } finally {
+    savingDates.value = false
   }
 }
 

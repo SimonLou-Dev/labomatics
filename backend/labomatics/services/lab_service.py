@@ -6,14 +6,15 @@ Orchestration de la création de labs pour students/teachers/admins.
 from __future__ import annotations
 
 import logging
-from datetime import datetime
 from uuid import UUID
 
 from fastapi import HTTPException, status
 
 from labomatics.api.dto.auth import AuthUser
+from labomatics.api.dto.lab import LabDataDTO, LabOwnerDTO, LabVmDTO
 from labomatics.api.dto.notification import JobDTO
 from labomatics.constants.enums import EventType, OwnerRole
+from labomatics.core.db.models.lab_provisioning import LabProvisioning
 from labomatics.core.db.repository.cohort_cluster import CohortClusterRepository
 from labomatics.core.db.repository.student import StudentRepository
 from labomatics.core.db.repository.teacher_cohort import TeacherCohortRepository
@@ -57,7 +58,9 @@ class LabService:
 
         # Chercher un Teacher (TeacherCohort)
         teacher_repo = TeacherCohortRepository()
-        teacher_cohorts = await teacher_repo.list_by_teacher(UUID(user.subject))
+        teacher_cohorts = await teacher_repo.list_by_teacher_keycloak_id(
+            UUID(user.subject)
+        )
         if teacher_cohorts:
             logger.info(f"User {user.username} resolved as TEACHER")
             return OwnerRole.TEACHER, None
@@ -83,7 +86,6 @@ class LabService:
         student_with_enrollments = await student_repo.get_by_id_with_enrollments(
             student.id
         )
-        now = datetime.now()
         active_enroll = next(
             (
                 e
@@ -92,7 +94,7 @@ class LabService:
                     if student_with_enrollments
                     else []
                 )
-                if e.start_date <= now <= e.end_date
+                if e.is_active()
             ),
             None,
         )
@@ -137,6 +139,13 @@ class LabService:
         if owner_role == OwnerRole.STUDENT and cluster_id:
             await self._ensure_cluster_allowed_for_student(
                 student, UUID(str(cluster_id))
+            )
+        elif owner_role != OwnerRole.STUDENT and not cluster_id:
+            # tasks/lab.py::_create_lab lève sinon une ValueError *dans* le job
+            # Celery : l'utilisateur ne voit qu'un échec asynchrone opaque.
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_ENTITY,
+                f"cluster_id requis pour un {owner_role}",
             )
 
         # Convertir cluster_id en string si UUID
@@ -183,3 +192,62 @@ class LabService:
         )
 
         return JobDTO(jobId=job_id)
+
+    @staticmethod
+    def build_owner_lab_data(
+        user: AuthUser, provisioning: LabProvisioning
+    ) -> LabDataDTO:
+        """Construit le LabDataDTO pour un owner non-student (teacher/admin).
+
+        Miroir de `StudentService.get_lab_data`, sans cohort/enrollment : le
+        `provisioning` doit être chargé avec `cluster`, `ip_allocation`,
+        `vxlan_allocation` et `vms` (voir
+        `LabProvisioningRepository.get_by_owner_keycloak_id`).
+        """
+        vms = [
+            LabVmDTO(
+                id=str(vm.id),
+                name=vm.name,
+                cluster_name=vm.cluster_name,
+                state=vm.state,
+                cores=vm.cores,
+                memory=vm.memory,
+                disk=vm.disk,
+                created_at=vm.created_at,
+                notes=vm.notes,
+            )
+            for vm in provisioning.vms
+        ]
+
+        wan_ip = (
+            str(provisioning.ip_allocation.ip_address)
+            if provisioning.ip_allocation
+            else None
+        )
+        vxlan_tag = (
+            provisioning.vxlan_allocation.vni if provisioning.vxlan_allocation else None
+        )
+        openwrt_link = f"https://{wan_ip}:1337/cgi-bin/luci/" if wan_ip else None
+        proxmox_url = provisioning.cluster.url if provisioning.cluster else None
+
+        # AuthUser (claims JWT) ne porte pas prénom/nom séparément, contrairement
+        # à Student (profil Keycloak complet non re-fetché ici pour rester léger).
+        owner_dto = LabOwnerDTO(
+            id=user.subject,
+            login=user.username,
+            first_name=user.username,
+            last_name="",
+            email=user.email,
+            role=OwnerRole(provisioning.owner_role),
+            cohort_name=None,
+            created_at=provisioning.created_at,
+        )
+
+        return LabDataDTO(
+            owner=owner_dto,
+            vms=vms,
+            wan_ip=wan_ip,
+            vxlan_tag=vxlan_tag,
+            openwrt_link=openwrt_link,
+            proxmox_url=proxmox_url,
+        )

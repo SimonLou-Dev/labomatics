@@ -2,12 +2,17 @@
  * Cohorts API endpoints
  */
 import http from './http'
-import type { CohortDTO, CohortListResponseDTO } from './types/cohorts'
+import type { CohortDTO, CohortListResponseDTO, CohortUpdatePayload } from './types/cohorts'
 
 export async function listCohorts(page: number, size: number): Promise<CohortListResponseDTO> {
   const res = await http.get<CohortListResponseDTO>('/cohorts', {
     params: { page, size },
   })
+  return res.data
+}
+
+export async function updateCohort(cohortId: string, payload: CohortUpdatePayload): Promise<CohortDTO> {
+  const res = await http.patch<CohortDTO>(`/cohorts/${cohortId}`, payload)
   return res.data
 }
 

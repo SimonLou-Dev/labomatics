@@ -97,8 +97,12 @@ export async function forceCreateStudentLab(studentId: string): Promise<{ jobId:
   return res.data
 }
 
-export async function createLab(): Promise<{ jobId: string }> {
-  const res = await http.post<{ jobId: string }>('/labs')
+export async function createLab(clusterId?: string): Promise<{ jobId: string }> {
+  const res = await http.post<{ jobId: string }>(
+    '/labs',
+    {},
+    { params: clusterId ? { cluster_id: clusterId } : undefined }
+  )
   return res.data
 }
 

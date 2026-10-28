@@ -18,6 +18,7 @@ from labomatics.core.db.models.student import Student
 
 # Provisioning models
 from labomatics.core.db.models.student_cluster_extra import StudentClusterExtra
+from labomatics.core.db.models.teacher import Teacher
 from labomatics.core.db.models.teacher_cohort import TeacherCohort
 from labomatics.core.db.models.vxlan_allocation import VxlanAllocation
 from labomatics.core.db.models.vxlan_range import VxlanRange
@@ -38,6 +39,7 @@ __all__ = [
     "LabVm",
     "Student",
     "StudentClusterExtra",
+    "Teacher",
     "TeacherCohort",
     "VxlanAllocation",
     "VxlanRange",

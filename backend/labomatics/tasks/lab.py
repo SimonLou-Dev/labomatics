@@ -39,6 +39,20 @@ logger = logging.getLogger(__name__)
 OPENWRT_TEMPLATE_ID = 90200
 
 
+def sanitize_owner_username_for_proxmox(owner_username: str) -> str:
+    """Rend un username Keycloak valide comme nom DNS Proxmox (#58).
+
+    Le nom de la VM routeur (`router-{user_name}`) doit être un nom DNS
+    valide pour Proxmox (lettres/chiffres/tirets/points uniquement, pas
+    d'underscore) : on préserve les points (déjà le cas pour un login
+    étudiant type "jean.dupont") et on remplace tout le reste par un tiret
+    plutôt qu'un underscore, qui n'est lui-même pas valide.
+    """
+    return "".join(
+        c.lower() if c.isalnum() or c in ".-" else "-" for c in owner_username
+    )[:16].strip("-.")
+
+
 async def _create_lab(
     owner_keycloak_id: str,
     owner_role: str,
@@ -83,11 +97,9 @@ async def _create_lab(
             if not student or not student.enrollments:
                 raise ValueError(f"Student {student_id} has no active enrollment")
 
-            # Trouver l'enrollment actif
-            now = datetime.now()
+            # Trouver l'enrollment actif (cohort dans sa fenêtre de dates, #53)
             active_enroll = next(
-                (e for e in student.enrollments if e.start_date <= now <= e.end_date),
-                None,
+                (e for e in student.enrollments if e.is_active()), None
             )
             if not active_enroll:
                 raise ValueError(f"Student {student_id} has no active enrollment")
@@ -290,9 +302,7 @@ async def _create_lab(
         user_name = (
             student.login
             if student_id
-            else "".join(
-                c.lower() if c.isalnum() or c in "-_" else "_" for c in owner_username
-            )[:16]
+            else sanitize_owner_username_for_proxmox(owner_username)
         )
 
         # Calculer la gateway (dernière IP utilisable du subnet)
@@ -452,34 +462,39 @@ async def _create_lab(
             details={"vmid": vmid, "node": dest_node, "vnet": vnet_name},
         )
 
-        # 15. Envoyer mail à l'étudiant avec les infos du lab
-        if student_id:
-            try:
-                from labomatics.services.email_templates import EmailType
-                from labomatics.services.mail_service import MailService
+        # 15. Envoyer mail au propriétaire avec les infos du lab (student,
+        # teacher ou admin — #58, ne dépendait que de student_id jusqu'ici).
+        try:
+            from labomatics.services.email_templates import EmailType
+            from labomatics.services.mail_service import MailService
 
+            if student_id:
                 student_repo = StudentRepository()
                 student = await student_repo.get(UUID(student_id))
+                recipient_email = student.email if student else None
+                recipient_name = student.first_name if student else owner_username
+            else:
+                recipient_email = owner_email
+                recipient_name = owner_username
 
-                if student:
-                    mail_svc = MailService()
-                    await mail_svc.send_templated_mail(
-                        to=student.email,
-                        subject=f"Votre lab est prêt - {cluster.name}",
-                        email_type=EmailType.LAB_PROVISIONED,
-                        context={
-                            "student_name": student.first_name,
-                            "wan_ip": str(wan_ip),
-                            "cluster_name": cluster.name,
-                            "proxmox_url": cluster.url
-                            or f"https://{cluster.host}:8006",
-                            "token_id": token_id,
-                            "token_secret": token_secret,
-                        },
-                    )
-                    logger.info(f"Lab provisioned email sent to {student.email}")
-            except Exception as e:
-                logger.warning(f"Failed to send lab provisioned email: {e}")
+            if recipient_email:
+                mail_svc = MailService()
+                await mail_svc.send_templated_mail(
+                    to=recipient_email,
+                    subject=f"Votre lab est prêt - {cluster.name}",
+                    email_type=EmailType.LAB_PROVISIONED,
+                    context={
+                        "student_name": recipient_name,
+                        "wan_ip": str(wan_ip),
+                        "cluster_name": cluster.name,
+                        "proxmox_url": cluster.url or f"https://{cluster.host}:8006",
+                        "token_id": token_id,
+                        "token_secret": token_secret,
+                    },
+                )
+                logger.info(f"Lab provisioned email sent to {recipient_email}")
+        except Exception as e:
+            logger.warning(f"Failed to send lab provisioned email: {e}")
 
         await emit(job_id, "done", task_id=task_id, message="Lab created successfully")
 

@@ -147,6 +147,8 @@ import {
   ProgressSpinner,
 } from 'primevue'
 import type { ClusterDTO } from '@/api/types'
+import * as clustersApi from '@/api/clusters'
+import * as studentsApi from '@/api/students'
 
 interface Props {
   visible: boolean
@@ -196,10 +198,8 @@ function emitClose() {
 async function fetchClusters() {
   loadingClusters.value = true
   try {
-    // TODO: Import and call actual API
-    // const response = await clustersApi.listClusters(1, 100)
-    // availableClusters.value = response.items
-    console.log('Fetch clusters from API')
+    const response = await clustersApi.listClusters(1, 100)
+    availableClusters.value = response.items
   } catch {
     error.value = 'Impossible de charger les clusters disponibles'
     toast.add({
@@ -225,21 +225,14 @@ async function createLab() {
   loading.value = true
 
   try {
-    const _clusterId = props.isStudent
-      ? undefined // Will use default from backend
-      : selectedClusterId.value
+    const clusterId = props.isStudent
+      ? undefined // Résolu automatiquement par le backend depuis la promo
+      : (selectedClusterId.value ?? undefined)
 
-    // TODO: Call actual API
-    // const response = await labsApi.createLab({
-    //   cluster_id: _clusterId,
-    // })
-    // jobId.value = response.job_id
+    const response = await studentsApi.createLab(clusterId)
+    jobId.value = response.jobId
 
-    // Mock response for now
-    const mockJobId = `job-${Date.now()}`
-    jobId.value = mockJobId
-
-    successMessage.value = `Lab creation started! JobID: ${mockJobId}. You'll receive an email when ready.`
+    successMessage.value = `Création du lab lancée (job ${response.jobId}). Vous recevrez un email quand ce sera prêt.`
 
     toast.add({
       severity: 'success',

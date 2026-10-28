@@ -7,7 +7,7 @@ import type { VxlanRangeDTO } from './types/vxlanRanges'
 import type { StudentListItem } from './types/students'
 
 // Re-export types from their respective modules
-export type { LabDataDTO, StudentListItem } from './types/students'
+export type { LabDataDTO, LabOwnerDTO, StudentListItem } from './types/students'
 export type {
   IpRangeDTO,
   IpRangeCreateDTO,

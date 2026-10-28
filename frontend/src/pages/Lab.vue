@@ -10,10 +10,10 @@
         @click="goToDashboard"
       />
       <h1
-        v-if="labData?.student"
+        v-if="labData?.owner"
         class="text-3xl font-bold"
       >
-        Mon Lab — {{ labData.student.first_name }} {{ labData.student.last_name }} (WAN: {{ labData.wan_ip }})
+        Mon Lab — {{ labData.owner.first_name }} {{ labData.owner.last_name }} (WAN: {{ labData.wan_ip }})
       </h1>
     </div>
 
@@ -45,7 +45,7 @@
 
     <!-- No Lab State -->
     <div
-      v-if="!labData?.student"
+      v-if="!labData?.owner"
       class="flex flex-col items-center justify-center h-96 gap-4"
     >
       <i class="pi pi-inbox text-6xl text-surface-400" />
@@ -60,13 +60,12 @@
         icon="pi pi-plus"
         size="large"
         class="bg-primary-lab-600 hover:bg-primary-lab-700 text-white"
-        :loading="creatingLab"
-        @click="requestLabCreation"
+        @click="showCreateModal = true"
       />
     </div>
 
     <!-- Content -->
-    <div v-if="labData?.student">
+    <div v-if="labData?.owner">
       <!-- Quick Access Cards -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <!-- OpenWRT Router Access -->
@@ -144,22 +143,22 @@
         </Card>
       </div>
 
-      <!-- Student Info Card -->
+      <!-- Owner Info Card -->
       <Card class="mb-6">
         <template #title>
-          Informations Étudiant
+          Informations {{ labData.owner.role === 'student' ? 'Étudiant' : 'Propriétaire' }}
         </template>
         <template #content>
           <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <div class="text-sm text-surface-500 dark:text-surface-400 mb-1">
-                Étudiant
+                Nom
               </div>
               <div class="text-lg font-semibold">
-                {{ labData.student.first_name }} {{ labData.student.last_name }}
+                {{ labData.owner.first_name }} {{ labData.owner.last_name }}
               </div>
               <div class="text-sm text-surface-400">
-                {{ labData.student.login }}
+                {{ labData.owner.login }}
               </div>
             </div>
             <div>
@@ -167,15 +166,15 @@
                 Email
               </div>
               <div class="text-sm font-mono">
-                {{ labData.student.email }}
+                {{ labData.owner.email }}
               </div>
             </div>
-            <div>
+            <div v-if="labData.owner.cohort_name">
               <div class="text-sm text-surface-500 dark:text-surface-400 mb-1">
                 Promotion
               </div>
               <div class="text-sm">
-                {{ labData.student.cohort_name }}
+                {{ labData.owner.cohort_name }}
               </div>
             </div>
             <div>
@@ -183,7 +182,7 @@
                 Date de création
               </div>
               <div class="text-sm">
-                {{ formatDate(labData.student.created_at) }}
+                {{ formatDate(labData.owner.created_at) }}
               </div>
             </div>
           </div>
@@ -324,6 +323,12 @@
         </template>
       </Card>
     </div>
+
+    <CreateLabModal
+      :visible="showCreateModal"
+      :is-student="auth.hasRole('student')"
+      @update:visible="onCreateModalClose"
+    />
   </div>
 </template>
 
@@ -341,15 +346,18 @@ import {
 } from 'primevue'
 import type { LabDataDTO } from '@/api/types'
 import * as studentsApi from '@/api/students'
+import { useAuthStore } from '@/stores/auth'
+import CreateLabModal from '@/components/CreateLabModal.vue'
 
 const router = useRouter()
 const route = useRoute()
 const toast = useToast()
+const auth = useAuthStore()
 
 const labData = ref<LabDataDTO | null>(null)
 const loading = ref(false)
-const creatingLab = ref(false)
 const error = ref<string | null>(null)
+const showCreateModal = ref(false)
 
 function formatDate(dateString: string): string {
   try {
@@ -409,33 +417,12 @@ async function fetchLabData() {
   }
 }
 
-async function requestLabCreation() {
-  creatingLab.value = true
-  error.value = null
-  try {
-    await studentsApi.createLab()
-    toast.add({
-      severity: 'success',
-      summary: 'Succès',
-      detail: 'Création du lab en cours. Vous recevrez un email quand ce sera prêt.',
-      life: 5000,
-    })
-    // Refresh data after a short delay
-    setTimeout(() => {
-      fetchLabData()
-    }, 2000)
-  } catch (err) {
-    const message = err instanceof Error ? err.message : 'Erreur inconnue'
-    error.value = `Impossible de créer le lab: ${message}`
-    toast.add({
-      severity: 'error',
-      summary: 'Erreur',
-      detail: error.value,
-      life: 3000,
-    })
-    console.error('Failed to create lab:', err)
-  } finally {
-    creatingLab.value = false
+function onCreateModalClose(visible: boolean) {
+  showCreateModal.value = visible
+  if (!visible) {
+    // Le modal a pu lancer une création de lab : rafraîchir pour la voir
+    // passer de "pas de lab" à "en cours de provisioning".
+    fetchLabData()
   }
 }
 
