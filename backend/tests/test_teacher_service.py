@@ -22,6 +22,11 @@ from labomatics.core.db.repository.student import StudentRepository
 from labomatics.core.db.repository.teacher import TeacherRepository
 from labomatics.core.db.repository.teacher_cohort import TeacherCohortRepository
 from labomatics.services.teacher_service import TeacherService
+from labomatics.utils.login_helper import (
+    DEFAULT_PASSWORD_LENGTH,
+    DEFAULT_PASSWORD_POLICY,
+    generate_password,
+)
 
 
 def _suffix() -> str:
@@ -47,6 +52,9 @@ class _FakeKeycloakService:
 
     async def add_user_to_group(self, **kwargs):
         self.calls.append(("add_user_to_group", kwargs))
+
+    async def generate_password(self) -> str:
+        return generate_password(DEFAULT_PASSWORD_POLICY)
 
     async def set_user_password(self, **kwargs):
         self.calls.append(("set_user_password", kwargs))
@@ -106,6 +114,12 @@ async def test_create_teacher_persists_db_and_assigns_cohorts(seeded_cohort):
     group_calls = [c for c in keycloak.calls if c[0] == "add_user_to_group"]
     assert group_calls[0][1]["group_name"] == "prof"
     assert len(mail.sent) == 1
+
+    password_calls = [c for c in keycloak.calls if c[0] == "set_user_password"]
+    password = password_calls[0][1]["password"]
+    assert len(password) == DEFAULT_PASSWORD_LENGTH
+    assert password_calls[0][1]["temporary"] is True
+    assert mail.sent[0]["context"]["password"] == password
 
 
 async def test_create_teacher_with_unknown_cohort_id_raises_404():

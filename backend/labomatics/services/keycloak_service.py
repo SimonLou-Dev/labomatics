@@ -8,6 +8,11 @@ from keycloak import KeycloakAdmin
 from keycloak.exceptions import KeycloakError
 
 from labomatics.core.config.settings import settings
+from labomatics.utils.login_helper import (
+    PasswordPolicy,
+    generate_password,
+    parse_password_policy,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +33,7 @@ class KeycloakService:
             client_secret_key=settings.keycloak_client_secret,
             verify=settings.tls_verify,
         )
+        self._password_policy: PasswordPolicy | None = None
 
     async def create_user(
         self, login: str, email: str, first_name: str, last_name: str
@@ -79,6 +85,36 @@ class KeycloakService:
         except KeycloakError as e:
             logger.error(f"Failed to delete Keycloak user {login}: {e}")
             raise
+
+    async def get_password_policy(self) -> PasswordPolicy:
+        """Politique de mot de passe du realm (mise en cache par instance).
+
+        Nécessite le rôle `realm-management/view-realm` : sans lui, Keycloak
+        renvoie une représentation tronquée du realm, sans `passwordPolicy`. On
+        retombe alors (comme en cas d'erreur) sur `DEFAULT_PASSWORD_POLICY`,
+        alignée sur la politique posée par l'installeur.
+        """
+        if self._password_policy is not None:
+            return self._password_policy
+
+        try:
+            realm = self.admin_client.get_realm(settings.keycloak_realm)
+            raw_policy = realm.get("passwordPolicy")
+        except KeycloakError as e:
+            logger.warning(f"Lecture de la passwordPolicy Keycloak impossible: {e}")
+            raw_policy = None
+
+        if not raw_policy:
+            logger.warning(
+                "passwordPolicy du realm absente ou illisible (rôle view-realm "
+                "manquant ?), utilisation de la politique par défaut"
+            )
+        self._password_policy = parse_password_policy(raw_policy)
+        return self._password_policy
+
+    async def generate_password(self) -> str:
+        """Génère un mot de passe conforme à la politique du realm."""
+        return generate_password(await self.get_password_policy())
 
     async def set_user_password(
         self, login: str, password: str, temporary: bool = False

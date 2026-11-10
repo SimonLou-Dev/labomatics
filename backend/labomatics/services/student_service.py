@@ -19,7 +19,6 @@ from labomatics.services.email_templates import EmailType
 from labomatics.tasks.student_cleanup import delete_student
 from labomatics.utils.login_helper import (
     generate_login,
-    generate_password,
     get_school_year,
 )
 from labomatics.worker.jobs import new_job_id
@@ -334,7 +333,7 @@ class StudentService:
             logger.info(f"User ajouté au groupe 'student': {login}")
 
             # 6. Générer password et le définir
-            password = generate_password()
+            password = await keycloak_svc.generate_password()
             await keycloak_svc.set_user_password(
                 login=login, password=password, temporary=True
             )

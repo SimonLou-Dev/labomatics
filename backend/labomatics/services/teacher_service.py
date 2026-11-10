@@ -21,7 +21,7 @@ from labomatics.core.db.repository.cohort import CohortRepository
 from labomatics.core.db.repository.teacher import TeacherRepository
 from labomatics.core.db.repository.teacher_cohort import TeacherCohortRepository
 from labomatics.services.email_templates import EmailType
-from labomatics.utils.login_helper import generate_login, generate_password
+from labomatics.utils.login_helper import generate_login
 
 logger = logging.getLogger(__name__)
 
@@ -186,7 +186,7 @@ class TeacherService:
         )
         await keycloak_svc.add_user_to_group(login=login, group_name="prof")
 
-        password = generate_password()
+        password = await keycloak_svc.generate_password()
         await keycloak_svc.set_user_password(
             login=login, password=password, temporary=True
         )

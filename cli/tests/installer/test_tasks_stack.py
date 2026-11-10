@@ -140,7 +140,7 @@ def test_keycloak_creates_then_second_run_keeps_passwords(tmp_path):
         "assign_client_roles",
         "sa-c-labomatics",
         "realm-management",
-        ("manage-users", "view-users", "manage-clients", "view-clients"),
+        ("manage-users", "view-users", "manage-clients", "view-clients", "view-realm"),
     ) in kc.calls
     client_roles = [c[1] for c in kc.calls if c[0] == "ensure_client_role"]
     assert client_roles == ["manage_user", "manage_cluster"]
