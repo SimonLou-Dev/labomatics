@@ -33,7 +33,14 @@ REALM_ROLES = (
     ),
 )
 LEGACY_SERVICE_USER = "labomatics-admin"
-SERVICE_ROLES = ["manage-users", "view-users", "manage-clients", "view-clients"]
+SERVICE_ROLES = [
+    "manage-users",
+    "view-users",
+    "manage-clients",
+    "view-clients",
+    # Lecture de la passwordPolicy du realm par le backend (#85)
+    "view-realm",
+]
 CLIENT_ID = "labomatics"
 CLIENT_ROLES = ("manage_user", "manage_cluster")
 
