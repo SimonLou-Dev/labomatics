@@ -27,3 +27,6 @@ htmlcov/
 .vscode/
 .idea/
 *.swp
+
+# Claude Code
+CLAUDE.md
