@@ -86,14 +86,34 @@ async def _create_students(
     user_id: str | None = None,
 ) -> None:
     try:
+        # Un étudiant en échec ne bloque pas les suivants, mais il est signalé :
+        # `create_student` l'a déjà retiré de la base, le prochain import le
+        # recréera (#85).
+        failed: list[str] = []
         for student_dict in students_data:
             student = StudentImportItemDTO(**student_dict)
-            await student_service.create_student(data=student)
+            try:
+                await student_service.create_student(data=student)
+            except Exception as e:
+                logger.error(f"Création de l'étudiant {student.id} échouée: {e}")
+                failed.append(f"{student.first_name} {student.last_name}")
 
         if job_id:
             from labomatics.worker.jobs import emit
 
-            await emit(job_id, "done", task_id=task_id, message="Création terminée")
+            if failed:
+                await emit(
+                    job_id,
+                    "error",
+                    task_id=task_id,
+                    message=(
+                        f"{len(failed)}/{len(students_data)} étudiant(s) non créé(s), "
+                        f"à réimporter : {', '.join(failed)}"
+                    ),
+                    failed=failed,
+                )
+            else:
+                await emit(job_id, "done", task_id=task_id, message="Création terminée")
     except Exception as e:
         if job_id:
             from labomatics.worker.jobs import emit

@@ -160,57 +160,92 @@ class TeacherService:
             return await self._to_list_item(teacher)
 
         login = generate_login(data.first_name, data.last_name)
-        teacher = Teacher(
-            login=login,
-            first_name=data.first_name,
-            last_name=data.last_name,
-            email=data.email,
-            is_active=True,
-        )
-        teacher = await self.repo.add(teacher)
-        logger.info(f"Teacher créé en DB: {login}")
-
-        for cohort_id in cohort_ids:
-            await self.teacher_cohort_repo.add(
-                TeacherCohort(teacher_id=teacher.id, cohort_id=cohort_id)
-            )
-
-        # Contrairement à `StudentService.create_student`, on NE PAS avale
-        # l'exception Keycloak ici : il n'existe pas de réimport périodique
-        # qui réconcilierait un prof orphelin sans compte fonctionnel.
-        await keycloak_svc.create_user(
-            login=login,
-            email=data.email,
-            first_name=data.first_name,
-            last_name=data.last_name,
-        )
-        await keycloak_svc.add_user_to_group(login=login, group_name="prof")
-
         password = await keycloak_svc.generate_password()
-        await keycloak_svc.set_user_password(
-            login=login, password=password, temporary=True
+
+        # 1. Keycloak d'abord, mot de passe inclus dans la même requête : si
+        # elle échoue, rien n'a encore été écrit nulle part (#85). Contrairement
+        # à `StudentService.create_student`, l'exception remonte telle quelle :
+        # il n'existe pas de réimport qui réconcilierait un prof incomplet.
+        kc_user = await keycloak_svc.create_user(
+            login=login,
+            email=data.email,
+            first_name=data.first_name,
+            last_name=data.last_name,
+            password=password,
+            temporary=True,
         )
 
-        cohorts = [await self.cohort_repo.get(c) for c in cohort_ids]
-        cohort_names = [c.name for c in cohorts if c]
+        # 2. Le compte Keycloak existe : tout échec à partir d'ici est compensé
+        # (suppression du compte et des lignes DB) pour ne laisser aucun orphelin.
+        teacher: Teacher | None = None
+        try:
+            await keycloak_svc.add_user_to_group(login=login, group_name="prof")
 
-        mail_svc = self.mail_service or MailService()
-        await mail_svc.send_templated_mail(
-            to=data.email,
-            subject=f"Labomatics ESGI Reims - Accès professeur - {data.first_name} {data.last_name}",
-            email_type=EmailType.TEACHER_ENROLLMENT,
-            context={
-                "teacher_name": data.first_name,
-                "cohort_names": cohort_names,
-                "login": login,
-                "email": data.email,
-                "password": password,
-                "portal_url": settings.front_url,
-            },
-        )
-        logger.info(f"Mail d'accès prof envoyé à {data.email}")
+            # keycloak_user_id est indispensable : « mes élèves » et les labs
+            # retrouvent le prof par son identifiant Keycloak.
+            teacher = await self.repo.add(
+                Teacher(
+                    login=login,
+                    first_name=data.first_name,
+                    last_name=data.last_name,
+                    email=data.email,
+                    is_active=True,
+                    keycloak_user_id=UUID(str(kc_user["id"])),
+                )
+            )
+            logger.info(f"Teacher créé en DB: {login}")
+
+            for cohort_id in cohort_ids:
+                await self.teacher_cohort_repo.add(
+                    TeacherCohort(teacher_id=teacher.id, cohort_id=cohort_id)
+                )
+
+            cohorts = [await self.cohort_repo.get(c) for c in cohort_ids]
+            cohort_names = [c.name for c in cohorts if c]
+
+            # Sans ce mail, le prof ne connaît pas son mot de passe : un échec
+            # d'envoi annule donc aussi la création.
+            mail_svc = self.mail_service or MailService()
+            await mail_svc.send_templated_mail(
+                to=data.email,
+                subject=f"Labomatics ESGI Reims - Accès professeur - {data.first_name} {data.last_name}",
+                email_type=EmailType.TEACHER_ENROLLMENT,
+                context={
+                    "teacher_name": data.first_name,
+                    "cohort_names": cohort_names,
+                    "login": login,
+                    "email": data.email,
+                    "password": password,
+                    "portal_url": settings.front_url,
+                },
+            )
+            logger.info(f"Mail d'accès prof envoyé à {data.email}")
+        except Exception:
+            await self._rollback_teacher_creation(login, teacher, keycloak_svc)
+            raise
 
         return await self._to_list_item(teacher)
+
+    async def _rollback_teacher_creation(
+        self, login: str, teacher: Teacher | None, keycloak_svc
+    ) -> None:
+        """Annule une création de prof partielle (best-effort, n'échoue jamais).
+
+        Chaque étape est isolée : un échec de nettoyage est logué mais ne doit
+        pas masquer l'exception d'origine, relancée par l'appelant.
+        """
+        if teacher is not None:
+            try:
+                for tc in await self.teacher_cohort_repo.list_by_teacher_id(teacher.id):
+                    await self.teacher_cohort_repo.delete(tc.id)
+                await self.repo.delete(teacher.id)
+            except Exception as e:
+                logger.error(f"Rollback DB du prof {login} impossible: {e}")
+
+        try:
+            await keycloak_svc.delete_user(login=login)
+        except Exception as e:
+            logger.error(f"Rollback du compte Keycloak {login} impossible: {e}")
 
     async def update_teacher(
         self, teacher_id: UUID, data: TeacherUpdateDTO

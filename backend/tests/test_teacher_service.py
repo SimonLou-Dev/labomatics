@@ -35,23 +35,36 @@ def _suffix() -> str:
 
 class _FakeKeycloakService:
     def __init__(
-        self, *, fail: bool = False, existing_users: dict | None = None
+        self,
+        *,
+        fail: bool = False,
+        fail_on: set[str] | None = None,
+        existing_users: dict | None = None,
     ) -> None:
-        self.fail = fail
+        # `fail=True` : raccourci historique pour un échec de `create_user`
+        self.fail_on = set(fail_on or ()) | ({"create_user"} if fail else set())
         self.calls: list[tuple[str, dict]] = []
         self.existing_users = existing_users or {}
+        self.created_id = str(uuid.uuid4())
+
+    def _maybe_fail(self, method: str) -> None:
+        if method in self.fail_on:
+            raise RuntimeError(f"keycloak {method} failed")
+
+    def called(self, method: str) -> list[dict]:
+        return [kwargs for name, kwargs in self.calls if name == method]
 
     async def create_user(self, **kwargs):
         self.calls.append(("create_user", kwargs))
-        if self.fail:
-            raise RuntimeError("keycloak unreachable")
-        return {"id": str(uuid.uuid4())}
+        self._maybe_fail("create_user")
+        return {"id": self.created_id}
 
     async def update_user(self, **kwargs):
         self.calls.append(("update_user", kwargs))
 
     async def add_user_to_group(self, **kwargs):
         self.calls.append(("add_user_to_group", kwargs))
+        self._maybe_fail("add_user_to_group")
 
     async def generate_password(self) -> str:
         return generate_password(DEFAULT_PASSWORD_POLICY)
@@ -68,10 +81,13 @@ class _FakeKeycloakService:
 
 
 class _FakeMailService:
-    def __init__(self) -> None:
+    def __init__(self, *, fail: bool = False) -> None:
+        self.fail = fail
         self.sent: list[dict] = []
 
     async def send_templated_mail(self, **kwargs):
+        if self.fail:
+            raise RuntimeError("brevo unreachable")
         self.sent.append(kwargs)
 
 
@@ -115,11 +131,18 @@ async def test_create_teacher_persists_db_and_assigns_cohorts(seeded_cohort):
     assert group_calls[0][1]["group_name"] == "prof"
     assert len(mail.sent) == 1
 
-    password_calls = [c for c in keycloak.calls if c[0] == "set_user_password"]
-    password = password_calls[0][1]["password"]
+    # #85 : mot de passe conforme, envoyé avec la création du compte (atomique)
+    create_call = keycloak.called("create_user")[0]
+    password = create_call["password"]
     assert len(password) == DEFAULT_PASSWORD_LENGTH
-    assert password_calls[0][1]["temporary"] is True
+    assert create_call["temporary"] is True
+    assert keycloak.called("set_user_password") == []
     assert mail.sent[0]["context"]["password"] == password
+
+    # Le prof est rattaché à son compte Keycloak (requis par « mes élèves »)
+    teacher = await TeacherRepository().get(uuid.UUID(result.id))
+    assert teacher is not None
+    assert teacher.keycloak_user_id == uuid.UUID(keycloak.created_id)
 
 
 async def test_create_teacher_with_unknown_cohort_id_raises_404():
@@ -140,20 +163,58 @@ async def test_create_teacher_with_unknown_cohort_id_raises_404():
     assert await teacher_repo.get_by_email(data.email) is None
 
 
-async def test_create_teacher_propagates_keycloak_failure(seeded_cohort):
-    """Contrairement à `create_student`, l'échec Keycloak n'est pas avalé."""
-    service = TeacherService(
-        keycloak_service=_FakeKeycloakService(fail=True),
-        mail_service=_FakeMailService(),
-    )
-    data = TeacherCreateDTO(
+def _teacher_data(seeded_cohort) -> TeacherCreateDTO:
+    return TeacherCreateDTO(
         first_name="Jean",
         last_name="Martin",
         email=f"jean.martin-{_suffix()}@test.local",
         cohort_ids=[str(seeded_cohort.id)],
     )
+
+
+async def _assert_no_teacher_left(email: str, seeded_cohort) -> None:
+    assert await TeacherRepository().get_by_email(email) is None
+    assert await TeacherCohortRepository().list_by_cohort(seeded_cohort.id) == []
+
+
+async def test_create_teacher_propagates_keycloak_failure(seeded_cohort):
+    """Contrairement à `create_student`, l'échec Keycloak n'est pas avalé.
+
+    Keycloak étant appelé en premier, rien n'est écrit en base et il n'y a
+    aucun compte à supprimer.
+    """
+    keycloak = _FakeKeycloakService(fail=True)
+    service = TeacherService(keycloak_service=keycloak, mail_service=_FakeMailService())
+    data = _teacher_data(seeded_cohort)
+
     with pytest.raises(RuntimeError):
         await service.create_teacher(data)
+
+    await _assert_no_teacher_left(data.email, seeded_cohort)
+    assert keycloak.called("delete_user") == []
+
+
+@pytest.mark.parametrize(
+    ("keycloak_fail_on", "mail_fail"),
+    [({"add_user_to_group"}, False), (set(), True)],
+    ids=["group_assignment_fails", "mail_fails"],
+)
+async def test_create_teacher_failure_after_keycloak_rolls_everything_back(
+    seeded_cohort, keycloak_fail_on, mail_fail
+):
+    """#85 : un échec après la création du compte ne laisse aucun orphelin."""
+    keycloak = _FakeKeycloakService(fail_on=keycloak_fail_on)
+    service = TeacherService(
+        keycloak_service=keycloak, mail_service=_FakeMailService(fail=mail_fail)
+    )
+    data = _teacher_data(seeded_cohort)
+
+    with pytest.raises(RuntimeError):
+        await service.create_teacher(data)
+
+    await _assert_no_teacher_left(data.email, seeded_cohort)
+    login = keycloak.called("create_user")[0]["login"]
+    assert keycloak.called("delete_user") == [{"login": login}]
 
 
 async def test_update_teacher_resyncs_cohorts(seeded_cohort):

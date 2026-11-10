@@ -302,17 +302,25 @@ class StudentService:
             except Exception as e:
                 logger.error(f"Erreur création Enrollment pour {login}: {e}")
 
-        # 4. Créer l'utilisateur en Keycloak + envoyer mail
-        try:
-            from labomatics.services.mail_service import MailService
+        # 4. Créer l'utilisateur en Keycloak (mot de passe inclus) + envoyer mail.
+        # Tout échec annule l'étudiant (DB + Keycloak) puis remonte : l'import
+        # le signale, et comme il n'est plus en base, le prochain import le
+        # recréera au lieu de laisser un compte inutilisable (#85).
+        from labomatics.services.mail_service import MailService
 
-            keycloak_svc = self.keycloak_service or KeycloakService()
+        keycloak_svc = self.keycloak_service or KeycloakService()
+        kc_created = False
+        try:
+            password = await keycloak_svc.generate_password()
             result = await keycloak_svc.create_user(
                 login=login,
                 email=data.email,
                 first_name=data.first_name,
                 last_name=data.last_name,
+                password=password,
+                temporary=True,
             )
+            kc_created = True
 
             # Mettre à jour student avec le keycloak_user_id
             keycloak_user_id = None
@@ -332,14 +340,7 @@ class StudentService:
             await keycloak_svc.add_user_to_group(login=login, group_name="student")
             logger.info(f"User ajouté au groupe 'student': {login}")
 
-            # 6. Générer password et le définir
-            password = await keycloak_svc.generate_password()
-            await keycloak_svc.set_user_password(
-                login=login, password=password, temporary=True
-            )
-            logger.info(f"Password défini pour {login}")
-
-            # 7. Envoyer mail avec identifiants (templé)
+            # 6. Envoyer mail avec identifiants (templé)
             mail_svc = self.mail_service or MailService()
             subject = (
                 f"Labomatics ESGI Reims accès - {data.first_name} {data.last_name}"
@@ -367,7 +368,37 @@ class StudentService:
 
         except Exception as e:
             logger.error(f"Erreur création Keycloak pour {login}: {e}")
-            # Ne pas échouer le process complet si Keycloak échoue
+            await self._rollback_student_creation(
+                student, keycloak_svc if kc_created else None
+            )
+            raise
+
+    async def _rollback_student_creation(self, student: Student, keycloak_svc) -> None:
+        """Annule une création d'étudiant partielle (best-effort, n'échoue jamais).
+
+        La cohort et son rattachement au cluster sont conservés : ils sont
+        idempotents et partagés avec les autres étudiants de la promo.
+        """
+        try:
+            if not self.enrollment_repo:
+                from labomatics.core.db.repository.enrollment import (
+                    EnrollmentRepository,
+                )
+
+                self.enrollment_repo = EnrollmentRepository()
+            for enrollment in await self.enrollment_repo.list_by_student(student.id):
+                await self.enrollment_repo.delete(enrollment.id)
+            await self.repo.delete(student.id)
+        except Exception as e:
+            logger.error(f"Rollback DB de l'étudiant {student.login} impossible: {e}")
+
+        if keycloak_svc is not None:
+            try:
+                await keycloak_svc.delete_user(login=student.login)
+            except Exception as e:
+                logger.error(
+                    f"Rollback du compte Keycloak {student.login} impossible: {e}"
+                )
 
     async def update_student(self, data: StudentImportItemDTO) -> None:
         """Met à jour un étudiant existant (login non modifiable)."""

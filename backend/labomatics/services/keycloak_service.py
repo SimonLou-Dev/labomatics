@@ -36,19 +36,34 @@ class KeycloakService:
         self._password_policy: PasswordPolicy | None = None
 
     async def create_user(
-        self, login: str, email: str, first_name: str, last_name: str
+        self,
+        login: str,
+        email: str,
+        first_name: str,
+        last_name: str,
+        password: str | None = None,
+        temporary: bool = True,
     ) -> dict:
-        """Crée un user dans Keycloak."""
+        """Crée un user dans Keycloak, avec son mot de passe si fourni.
+
+        Le mot de passe part dans la même requête que le compte : si Keycloak
+        le juge non conforme à la politique du realm, il refuse la création
+        entière, ce qui évite un compte sans mot de passe (#85).
+        """
+        payload: dict = {
+            "username": login,
+            "email": email,
+            "firstName": first_name,
+            "lastName": last_name,
+            "enabled": True,
+        }
+        if password is not None:
+            payload["credentials"] = [
+                {"type": "password", "value": password, "temporary": temporary}
+            ]
+
         try:
-            user_id = self.admin_client.create_user(
-                {
-                    "username": login,
-                    "email": email,
-                    "firstName": first_name,
-                    "lastName": last_name,
-                    "enabled": True,
-                }
-            )
+            user_id = self.admin_client.create_user(payload)
             logger.info(f"Created Keycloak user {login} with id {user_id}")
             return {"id": user_id, "username": login, "email": email}
         except KeycloakError as e:
