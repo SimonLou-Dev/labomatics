@@ -1,6 +1,37 @@
 # CHANGELOG
 
 
+## v0.5.0-rc.4 (2026-11-10)
+
+### Bug Fixes
+
+- **backend**: Creation atomique prof/etudiant avec rollback sans orphelin si erreur
+  ([`04a4a2d`](https://github.com/SimonLou-Dev/labomatics/commit/04a4a2d867a2ea39d0d2e568dbc5db44f01d4570))
+
+- **backend**: Mots de passe générés conformes à la politique Keycloak
+  ([`884baf0`](https://github.com/SimonLou-Dev/labomatics/commit/884baf04d9d194a17df6d94eaafa54df5720dbb3))
+
+Le générateur produisait 12 caractères avec un seul caractère garanti par classe, alors que le realm
+  impose length(16), specialChars(2), upperCase(2), digits(2) et lowerCase(3). Keycloak rejetait
+  donc systématiquement set_user_password (400 invalidPasswordMinLengthMessage), à la création d'un
+  prof comme d'un étudiant.
+
+- generate_password() prend une PasswordPolicy : minimums garantis par classe, longueur par défaut
+  20, relevée si la somme des minimums l'exige et plafonnée par maxLength. - parse_password_policy()
+  convertit la chaîne passwordPolicy du realm ; les règles absentes gardent des valeurs par défaut
+  alignées sur celles de l'installeur. - KeycloakService.get_password_policy() lit la politique du
+  realm (mise en cache par instance) et retombe sur la politique par défaut si elle est absente ou
+  illisible, par exemple sans le rôle view-realm. - TeacherService et StudentService passent par
+  KeycloakService.generate_password().
+
+Refs #85
+
+### Chores
+
+- Ignored claude.md
+  ([`21b4021`](https://github.com/SimonLou-Dev/labomatics/commit/21b4021be6fe64a047596bb2bbfb1b4672c53f54))
+
+
 ## v0.5.0-rc.3 (2026-10-28)
 
 ### Bug Fixes
